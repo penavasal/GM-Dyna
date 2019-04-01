@@ -6,7 +6,7 @@ function Explicit_solver
     %--------------------------------------------------------------------------
     % Initialize variables
     %--------------------------------------------------------------------------
-    global GEOMETRY SOLVER TIME
+    global GEOMETRY SOLVER TIME VARIABLE
 
     %----------------------------------------------------------------------
     % Initial state & initial shape functions and matrixes - Save
@@ -15,7 +15,7 @@ function Explicit_solver
     [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         ~,load_s]=init;
     
-    save(OUTPUT.name, 'GEOMETRY');
+    save(OUTPUT.name, 'GEOMETRY','VARIABLE','SOLVER');
     
     %[lumped]   = lumped_mass(Shape_function,Mat_state);
     %[lumped_C] = lumped_damp(Shape_function,Mat_state);

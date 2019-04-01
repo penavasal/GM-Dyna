@@ -6,7 +6,7 @@ function Implicit_solver
     %--------------------------------------------------------------------------
     % Initialize variables
     %--------------------------------------------------------------------------
-    global GEOMETRY SOLVER TIME
+    global GEOMETRY SOLVER TIME VARIABLE
 
     %----------------------------------------------------------------------
     % Initial state & initial shape functions and matrixes - Save
@@ -16,7 +16,7 @@ function Implicit_solver
         stiff_mtx,load_s]=init;
     
     
-    save(OUTPUT.name, 'GEOMETRY');
+    save(OUTPUT.name, 'GEOMETRY', 'VARIABLE', 'SOLVER');
 
     %--------------------------------------------------------------------------
     % Initial matrices
