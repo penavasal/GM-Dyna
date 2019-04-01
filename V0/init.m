@@ -143,7 +143,7 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
         [OUTPUT_2]=read_output;     
         OUTPUT=together_outputs(OUTPUT,OUTPUT_2,dim);
         
-        [Shape_function]=LME_EP_ini(Mat_state,Disp_field);
+        [Shape_function]=LME_EP(Mat_state,Disp_field,0);
         
         [stiff_mtx,Int_var,Mat_state,~]=...
         Constitutive(1,ste,Int_var,Mat_state,Shape_function,0);
@@ -178,7 +178,7 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
         Disp_field.a(:,2)=GLOBAL.a(:,1);
         Disp_field.d(:,2)=GLOBAL.d(:,1);
         
-        [Shape_function]=LME_EP_ini(Mat_state,Disp_field);
+        [Shape_function]=LME_EP(Mat_state,Disp_field,0);
         
         [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
             initial_state(Shape_function,Disp_field,Int_var,Mat_state,...
