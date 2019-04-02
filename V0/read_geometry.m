@@ -1,96 +1,164 @@
-
-function [xg]= geo_mesh(SHAPE,D1,DISC,PLOT_ini,AMP,filename)
+function read_geometry(UW,ELEMENT,DIM,PLOT_ini,AMP,filename,pathgeo)
 
     global GEOMETRY
     
-    if SHAPE==1
-        [x_a,GEOMETRY.elem,~,~]=read_geo(SHAPE,D1,filename);
-        [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,D1);
-        %[nodes,sp]=size(x_a);
-        [elements,~]=size(GEOMETRY.elem);
-        GEOMETRY.x_0=x_a;
+    [x,elem,NNE,El_type]=read_mesh(filename,pathgeo,DIM);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Initial checks
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if strcmp(ELEMENT{1},'L1')
+        if DIM>1
+            fprintf('Error, DIM mismatches with spatial dimension of the mesh!!\n')
+            stop
+        end
+    else
+        if strcmp(ELEMENT{1},'L6')
+            f1=strcat(filename,'_esq');
+            if ismac || isunix  % Code to run on Mac or Unix plaform 
+                f_i=strcat(pathgeo,'/',f1,'.msh');
+            elseif ispc         % Code to run on Windows platform
+                f_i=strcat(pathgeo,'\',f1,'.msh');
+            else
+                disp('Platform not supported')
+                stop
+            end 
+            if isfile(f_i)
+                [x_e,elemesq,~,~]=Geo_DynCLM(filename,pathgeo,DIM);
+            else
+                PLOT_ini=0;
+            end
+        end
+            
+        if DIM==3
+            fprintf('Error, DIM mismatches with spatial dimension of the mesh!!\n')
+            stop
+        end 
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Build the mesh
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    x_a=x*AMP;     
+    if strcmp(ELEMENT{1},'T3') ...
+            || strcmp(ELEMENT{1},'T3-inverse')...
+            || strcmp(ELEMENT{1},'T3-diamond')
+        
+        if NNE==4
+            if strcmp(ELEMENT{1},'T3')
+                [GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
+                    split2(x_a,elem);
+                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
+                elem_0=GEOMETRY.elem;
+            elseif strcmp(ELEMENT{1},'T3-inverse')
+                [elem]=reverse(elem); %reverse
+                [GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
+                    split2(x_a,elem);
+                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
+                elem_0=GEOMETRY.elem;
+            elseif strcmp(ELEMENT{1},'T3-diamond')
+                %Patch 4P1P0
+                [xp]=q_g_center(x_a,elem);
+                [x_a,GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
+                    split(x_a,elem,xp);
+                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
+                elem_0=GEOMETRY.elem;
+            end
+            
+        elseif NNE==3
+            GEOMETRY.elem=elem;
+            [GEOMETRY.ELEMENT(:),GEOMETRY.ELEMENT(:).Area]=...
+                g_center(x_a,GEOMETRY.elem,DIM);
+            [elements,~]=size(GEOMETRY.elem);
+            GEOMETRY.x_0=x_a;
+            elem_0=GEOMETRY.elem;
+            GEOMETRY.patch_el=(1:elements)';  
+            GEOMETRY.patch_con=(1:elements)'; 
+        end
+        
+    elseif strcmp(ELEMENT{1},'Q4')
+        
+        GEOMETRY.elem=elem;
+        [elements,~]=size(elem);
+        [xg,GEOMETRY.Area]=g_center(x_a,elem,DIM);
         elem_0=GEOMETRY.elem;
+        %No patches
         GEOMETRY.patch_el=(1:elements)';  
-        GEOMETRY.patch_con=(1:elements)';        
-    elseif SHAPE==2
-        [x_a,GEOMETRY.elem,GEOMETRY.x_0,elem_0]=read_geo(SHAPE,D1,filename);
-        [xg,GEOMETRY.Area]=g_center(x_a,elem_0,D1);
-        %[nodes,sp]=size(x_a);
+        GEOMETRY.patch_con=(1:elements)'; 
+        
+    elseif strcmp(ELEMENT{1},'Q4-4')
+        elem_0=elem;
+        [xg,GEOMETRY.elem,GEOMETRY.Area,GEOMETRY.patch_el,...
+            GEOMETRY.patch_con]=quad4xg(x_a,elem);
+        
+    elseif strcmp(ELEMENT{1},'T6')
+        [xg,GEOMETRY.Area]=g_center(x_a,elemesq,DIM);
         [elements,~]=size(GEOMETRY.elem);
         GEOMETRY.patch_el=(1:elements)';  
         GEOMETRY.patch_con=(1:elements)';
-
-    elseif SHAPE==3
-        [x_a,elem,~,~]=read_geo(SHAPE,D1,filename);
-        x_a=x_a*AMP;
-        if DISC==1
-            GEOMETRY.elem=elem;
-            [elements,~]=size(elem);
-            [xg,GEOMETRY.Area]=g_center(x_a,elem,D1);
-            elem_0=GEOMETRY.elem;
-            %No patches
-            GEOMETRY.patch_el=(1:elements)';  
-            GEOMETRY.patch_con=(1:elements)'; 
-        elseif DISC==2
-            elem_0=elem;
-            [xg,GEOMETRY.elem,GEOMETRY.Area,GEOMETRY.patch_el,...
-                GEOMETRY.patch_con]=quad4xg(x_a,elem);
-        elseif DISC==3
-            [GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
-                split2(x_a,elem);
-            [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,D1);
-            elem_0=GEOMETRY.elem;
-        elseif DISC==4
-            [elem]=reverse(elem); %reverse
-            [GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
-                split2(x_a,elem);
-            [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,D1);
-            elem_0=GEOMETRY.elem;
-        elseif DISC==5
-            %Patch 4P1P0
-            [xp]=q_g_center(x_a,elem);
-            [x_a,GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
-                split(x_a,elem,xp);
-            [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,D1);
-            elem_0=GEOMETRY.elem;
-        end
-
-        [aa,bb]=size(GEOMETRY.patch_con);
-        GEOMETRY.Area_p=zeros(aa,1);
-        for i=1:aa
-            for j=1:bb
-                GEOMETRY.Area_p(i)=GEOMETRY.Area_p(i) +...
-                    GEOMETRY.Area(GEOMETRY.patch_con(i,j));
-            end
-        end 
-        GEOMETRY.x_0=x_a;
         
     end
 
+    [aa,bb]=size(GEOMETRY.patch_con);
+    GEOMETRY.Area_p=zeros(aa,1);
+    for i=1:aa
+        for j=1:bb
+            GEOMETRY.Area_p(i)=GEOMETRY.Area_p(i) +...
+                GEOMETRY.Area(GEOMETRY.patch_con(i,j));
+        end
+    end 
+    
+    GEOMETRY.x_0=x_a;
+    GEOMETRY.xg=xg;
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Geometry parameters
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    [GEOMETRY.nodes,GEOMETRY.sp]=size(GEOMETRY.x_0);
+    [GEOMETRY.elements,NNE_f]=size(GEOMETRY.elem);
+    
+    % Degrees of freedom
+    if UW==0
+        GEOMETRY.df=GEOMETRY.sp;
+    elseif UW==1
+        GEOMETRY.df=2*GEOMETRY.sp;
+    elseif UW==2
+        GEOMETRY.df=GEOMETRY.sp+1;
+    elseif UW==3
+        GEOMETRY.df=2*GEOMETRY.sp+1;
+    end   
+    
     % Mesh size
-    [elements,NNE]=size(GEOMETRY.elem);
-    [nodes,~]=size(x_a);
-    h(elements,1)=0;
-    GEOMETRY.h_nds(nodes,1)=0;
-    for e=1:elements
-        if NNE==3
+    h(GEOMETRY.elements,1)=0;
+    GEOMETRY.h_nds(GEOMETRY.nodes,1)=0;
+    for e=1:GEOMETRY.elements
+        if NNE_f==3
             h(e)=sqrt(2*GEOMETRY.Area(e));
-        elseif NNE==4
+        elseif NNE_f==4
             h(e)=sqrt(GEOMETRY.Area(e));
         end
-        for i=1:NNE
+        for i=1:NNE_f
             GEOMETRY.h_nds(GEOMETRY.elem(e,i))=...
                 max(GEOMETRY.h_nds(GEOMETRY.elem(e,i)),h(e));
         end
     end
     GEOMETRY.h_ini=h;
 
-    %--------------------------------------------------------------------------
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Plot
-    %--------------------------------------------------------------------------
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if PLOT_ini
         plot_nb(0,0,x_a,xg,elem_0,0,0)
     end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Add shape function parameters
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if strcmp(ELEMENT{2},'LME')
+        read_LME;
+    end
+
 end
 
 function [x_a,nw_elem,patch_con,patch_el]=split(x_a,elem,xp)
@@ -215,47 +283,6 @@ function [elem2]=reverse(elem)
         elem2(i,4)=elem(i,3);
     end
 
-end
-
-function [x_a,elem,x_e,elemesq]=read_geo(SHAPE,D1,filename)
-
-
-    if SHAPE==1
-
-        [x_a,elem]=data;
-        x_e=x_a;
-        elemesq=elem;
-
-    elseif SHAPE==2
-
-        [x_e,elemesq]=data;
-        [x_a,elem]=quad1;
-
-    elseif SHAPE==3
-
-        if D1~=1
-            [x_a,elem]=eval(filename);
-        else
-            TOTAL=40;
-            elem=zeros(TOTAL,2);
-            x_a=zeros(TOTAL+1,1);
-            delta_x=0.1333/TOTAL;
-            for i=1:TOTAL+1
-                x_a(i,1)=(i-1)*delta_x;
-            end
-
-            for i=1:TOTAL
-                elem(i,1)=i;
-                elem(i,2)=i+1;
-            end
-        end
-
-        x_e=x_a;
-        elemesq=elem;
-
-    end
-    
-    
 end
 
 function [xg,elem,Area,patch_el,patch_con]=quad4xg(x_a,elem_0)
@@ -409,4 +436,81 @@ function [xg,Area]=g_center(x_a,elem,D1)
         end
    end
         
+end
+
+function [x,elem,NNE,El_type]=read_mesh(str1,str2,DIM)
+
+
+    close all
+    
+    % File: Geo_DynCLM
+    %   Read geometry in *.msh and save in the geometry variables
+
+    % Date:
+    %   Version 2.0   02.06.2019
+
+    %Input file name
+    if ismac || isunix  % Code to run on Mac or Unix plaform 
+        filename_i=strcat(str2,'/',str1,'.msh');
+    elseif ispc         % Code to run on Windows platform
+        filename_i=strcat(str2,'\',str1,'.msh');
+    else
+        disp('Platform not supported')
+        stop
+    end 
+
+    f_i = fopen(filename_i, 'rt');
+    formato = '%s %s %s %s %s %s %s'; % formato de cada línea 
+
+    tsargs = {...
+        'HeaderLines',0,...
+        'HeaderColumns',0,...
+        'ReturnOnError',false,...
+        'EmptyValue',0,...
+        'CollectOutput',true,...
+        'EndOfLine','\r\n'};
+
+    % Collect info
+    res  = textscan(f_i,formato,-1,tsargs{:});
+    data=res{1};
+    
+    fclose(f_i);
+    
+    % CHECK
+    if DIM>str2double(data{1,3})
+    	fprintf('Error, DIM mismatches with spatial dimension of the mesh!!\n')
+        stop
+    end
+    
+    El_type=data{1,5};
+    NNE=str2double(data{1,7});
+        
+
+    fin=0;
+    t=3;
+    in=1;
+    while fin==0
+        if strcmp(data{t,1},'End')
+            break;
+        end
+        for i=2:DIM+1
+            x(in,i-1)=str2double(data{t,i});
+        end
+        t=t+1;
+        in=in+1;
+    end
+    
+    t=t+2;
+    in=1;
+    while fin==0
+        if strcmp(data{t,1},'End')
+            break;
+        end
+        for i=2:NNE+1
+            elem(in,i-1)=str2double(data{t,i});
+        end
+        t=t+1;
+        in=in+1;
+    end
+
 end

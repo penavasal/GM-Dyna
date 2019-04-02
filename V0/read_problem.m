@@ -5,21 +5,17 @@ function read_problem
 %   Read some important problem parameters from problem.txt
 %
 % Date:
-%   Version 1.0   12.04.2018
+%   Version 2.0   02.04.2019
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Some possible parameters if they are not read
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    global VARIABLE SOLVER GEOMETRY TI_param
-    
-    % PATHS
-    f1=0;
-    f2=0;
+    global VARIABLE SOLVER TI_param
     
     % GEOMETRY
+    filename='data_m';
+    pathgeo='Geom';
     DIM=0;
-    SHAPE=3;
-    DISC=2;
     PLOT_ini=0;
     AMP=1;
     
@@ -30,13 +26,12 @@ function read_problem
     delta=0;
     alpha=0;
     theta=1;
-
-    % FLAGS
-    DOF = 1;
     
     SOLVER.REMAPPING = 0;
     SOLVER.LIN = 0;
-    SOLVER.AXI=0;   
+    SOLVER.AXI=0;
+    
+    ELEMENT={'',''};
     
     SOLVER.time_factor=1;
     
@@ -48,7 +43,7 @@ function read_problem
     
     SOLVER.INIT_STEP=0;
     
-    GEOMETRY.thickness=1;
+    SOLVER.thickness=1;
     
     % VARIABLES
     VARIABLE.rho_w=0;
@@ -64,6 +59,7 @@ function read_problem
     % Convertir a vector numérico
     b1= cellfun(@str2num, data{2}, 'UniformOutput', false);
     b2= data{2};
+    b3= data{3};
     [l,~] = size(b1);
     b=zeros(l,1);
     for i=1:l
@@ -94,47 +90,71 @@ function read_problem
             case 'PLOT_INI'
                 PLOT_ini=b(t);  % Geometry at the beggining
                 continue
-            case 'DIM'
+            case 'DIMENSION'
                 DIM=b(t);        % Flag for the Dimension
                 continue
-            case 'SHAPE'
-                SHAPE=b(t);     % 1-FE lineal, 2- FE quad, 3- LME
-                continue
-            case 'B_BAR'
-                SOLVER.B_BAR=b(t);  
-                continue
-            case 'F_BAR'
-                SOLVER.F_BAR=b(t);  
-                continue
-            case 'F_BAR_W'
-                SOLVER.F_BAR_W=b(t);  
-                continue
-            case 'CONFIGURATION'
-                if b2{t}=='PLAIN_STRAIN'
-                    if GEOMETRY.thickness==0
-                        GEOMETRY.thickness=1;
-                    end
-                elseif b2{t}=='AXISYMMETRIC'
-                    SOLVER.AXI=1;
-                    GEOMETRY.thickness=1;
+            case 'ELEMENT'
+                ELEMENT{1}=b2{t};
+                if b3{t}
+                    ELEMENT{2}=b3{t};    
                 end
-                continue
-            case 'THICKNESS'
-                GEOMETRY.thickness=b(t);  
                 continue
             case 'DISCRETIZATION'
                 DISC=b(t);  %1- quad (1IP), 2- quad (4IP) 
                             %3- 2P1P0, 4- reverse (3), 5- 4P1P0
                 continue
-            case 'DOF'
-                DOF=b(t);   % 1-Solid, 2- U-W
+            case 'SCALE'
+                AMP=b(t);  % 1, no amplification of the mesh
+                continue
+            case 'REMAPPING'
+                SOLVER.REMAPPING=b(t);
+                continue
+            case 'FILE'
+                filename=b2{t};
+                f2=1;
+                continue
+            case 'PATH_GEOM'
+                pathgeo=b2{t};
+                f1=1;
+                continue
+            case 'CONFIGURATION'
+                if strcmp(b2{t},'PLAIN_STRAIN')
+                    if SOLVER.thickness==0
+                        SOLVER.thickness=1;
+                    end
+                elseif strcmp(b2{t},'AXISYMMETRIC')
+                    SOLVER.AXI=1;
+                    SOLVER.thickness=1;
+                end
+                continue
+            case 'THICKNESS'
+                SOLVER.thickness=b(t);  
                 continue
             case 'LINEARIZATION'
                 SOLVER.LIN=b(t);   
                 continue
-            case 'UW'
-                SOLVER.UW=b(t);  % Water (1) or not (0)
-                if SOLVER.UW==1
+            case 'PROBLEM'
+                if strcmp(b2{t},'OTM')
+                    SOLVER.TYPE=0;
+                elseif strcmp(b2{t},'MPM')
+                    SOLVER.TYPE=1;
+                elseif strcmp(b2{t},'FEM')
+                    SOLVER.TYPE=2;
+                    fprintf('Error, NOT IMPLEMENTED FEM YET!!\n')
+                    stop
+                end
+                continue
+            case 'FORMULATION'
+                if strcmp(b2{t},'U')
+                    SOLVER.UW=0;
+                elseif strcmp(b2{t},'UW')
+                    SOLVER.UW=1;
+                elseif strcmp(b2{t},'UPw')
+                    SOLVER.UW=2;
+                elseif strcmp(b2{t},'UWPw')
+                    SOLVER.UW=3;
+                end
+                if SOLVER.UW>=1
                     if VARIABLE.rho_w==0
                         VARIABLE.rho_w=1000;
                     end
@@ -172,19 +192,14 @@ function read_problem
             case 'GRAVITY'
                 VARIABLE.g=b(t);   
                 continue
-            case 'AMP'
-                AMP=b(t);  % 1, no amplification of the mesh
+            case 'B_BAR'
+                SOLVER.B_BAR=b(t);  
                 continue
-            case 'REMAPPING'
-                SOLVER.REMAPPING=b(t);
+            case 'F_BAR'
+                SOLVER.F_BAR=b(t);  
                 continue
-            case 'FILE'
-                filename=b2{t};
-                f2=1;
-                continue
-            case 'PATH_GEOM'
-                pathgeo=b2{t};
-                f1=1;
+            case 'F_BAR_W'
+                SOLVER.F_BAR_W=b(t);  
                 continue
             case 'TIME_FINAL'
                 SOLVER.Time_final=b(t);
@@ -281,41 +296,15 @@ function read_problem
     end
     
     fclose(fid); 
-      
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Add shape function parameters
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if SHAPE==3
-        read_LME;
-    end
-    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Add the geometry
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if f1
-        if ismac || isunix  % Code to run on Mac or Unix plaform 
-            addpath(path,pathgeo);
-        elseif ispc         % Code to run on Windows platform
-            addpath(path,pathgeo);
-        else
-            disp('Platform not supported')
-            stop
-        end 
-    end
-    if f2==0
-        filename='data_m';
-    end
+%     if f2==0
+%         filename='data_m';
+%     end
     
-    [GEOMETRY.xg0]=geo_mesh(SHAPE,DIM,DISC,PLOT_ini,AMP,filename);
-
-    [GEOMETRY.nodes,GEOMETRY.sp]=size(GEOMETRY.x_0);
-    [GEOMETRY.elements,~]=size(GEOMETRY.elem);
-    
-    if GEOMETRY.sp~=DIM
-        disp('Be careful, DIM mismatches with spatial dimension of the mesh!!');
-    end
-    
-    GEOMETRY.df=DOF*GEOMETRY.sp;
+    read_geometry(SOLVER.UW,ELEMENT,DIM,PLOT_ini,AMP,filename,pathgeo);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%SOLVER
