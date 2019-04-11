@@ -144,9 +144,9 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field);
         
         [stiff_mtx,Int_var,Mat_state,~]=...
-        Constitutive(1,ste,Int_var,Mat_state,Shape_function,0);
+        Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,0);
         [load_s(:,1),~]=calculate_forces...
-            (ste,Shape_function,Mat_state,Disp_field,OUTPUT);
+            (ste,MAT_POINT,Disp_field,OUTPUT);
         SOLVER.INIT_file=0;
         
         Mat_state.pw(:,3)=Mat_state.pw(:,2)-Mat_state.pw(:,1);

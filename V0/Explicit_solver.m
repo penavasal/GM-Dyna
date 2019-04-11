@@ -17,8 +17,8 @@ function Explicit_solver(MAT_POINT)
     
     save(OUTPUT.name, 'GEOMETRY','VARIABLE','SOLVER');
     
-    %[lumped]   = lumped_mass(Shape_function,Mat_state);
-    %[lumped_C] = lumped_damp(Shape_function,Mat_state);
+    %[lumped]   = lumped_mass(MAT_POINT);
+    %[lumped_C] = lumped_damp(MAT_POINT,Mat_state);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % LOOP

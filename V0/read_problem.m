@@ -10,7 +10,7 @@ function MAT_POINT=read_problem
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Some possible parameters if they are not read
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    global VARIABLE SOLVER TI_param
+    global VARIABLE SOLVER
     
     % GEOMETRY
     filename='data_m';
@@ -321,14 +321,12 @@ function MAT_POINT=read_problem
     % Read material properties
     read_material;
     
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Add shape function parameters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     [MAT_POINT]=shape_function_calculation(0,MAT_POINT);
    
-
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%SOLVER
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,113 +338,12 @@ function MAT_POINT=read_problem
     %----------------------------------------------------------------------
     % Solver variables: Time Integration Scheme
     %----------------------------------------------------------------------
-    if TIS==1
-        alpha=0;
-    elseif TIS==3 || TIS==4 || TIS==6
-        if rho
-            if am || af
-                disp('Error, do I take alpha_f, alpha_m or rho??')
-            else
-                 if TIS==3                   %GENERALIZED ALPHA
-                    af=rho/(1+rho);
-                    am=(2*rho-1)/(1+rho);
-
-                    delta=0.5+af-am;
-                    alpha=0.25*(1-am+af)^2;
-                elseif TIS==4                  %HHT
-                    am=0;
-                    af=(1-rho)/(1+rho);
-
-                    delta=(1+2*af)/2;
-                    alpha=0.25*(1+af)^2;      
-
-                elseif TIS==6                   %WBZ
-                    af=0;
-                    am=(rho-1)/(1+rho);
-
-                    delta=0.5-am;
-                    alpha=0.25*(1-am)^2;
-                 end
-            end
-        elseif am || af
-             if TIS==3                   %GENERALIZED ALPHA
-                delta=0.5+af-am;
-                alpha=0.25*(1-am+af)^2;
-            elseif TIS==4                  %HHT
-                delta=(1+2*af)/2;
-                alpha=0.25*(1+af)^2;      
-            elseif TIS==6                   %WBZ
-                delta=0.5-am;
-                alpha=0.25*(1-am)^2;
-             end
-        end
-    elseif TIS==5                  %WILSON-THETA
-        if theta==0
-            disp('Error, theta cannot be zero for Wilson')
-        end
-        alpha=1/4;
-        delta=1/2;
-    elseif TIS==7                   %COLLOCATION METHOD
-        if theta==0 
-            disp('Error, theta cannot be zero for Collocation')
-        end
-        if alpha==0 
-            disp('Error, alpha cannot be zero for Collocation')
-        end
-        if delta==0 
-            disp('Error, delta cannot be zero for Collocation')
-        end
-    end
-
-    TI_param=[af,am,delta,alpha,theta];
+    Time_Scheme.parameters(TIS,af,am,delta,alpha,theta);
     
     %----------------------------------------------------------------------
     % Time-related conditions
     %----------------------------------------------------------------------
-    TIME_INT_var;
+    Time_Scheme.variables;
     
 end
 
-function TIME_INT_var
-
-    global MATERIAL VARIABLE SOLVER GEOMETRY TIME
-
-    
-    h=GEOMETRY.h_ini;
-    tt(GEOMETRY.elements,1)=0;
-    for e=1:GEOMETRY.elements
-        if SOLVER.UW
-            tt(e,1)=min(h(e)/MATERIAL.MAT(6,MATERIAL.e(e)),...
-            h(e)/sqrt(MATERIAL.MAT(28,MATERIAL.e(e))/VARIABLE.rho_w));
-        else
-            tt(e,1)=h(e)/MATERIAL.MAT(6,MATERIAL.e(e));
-        end
-    end
-    TT=min(tt);
-    CFL=SOLVER.time_step/TT;
-    fprintf('%f of CFL\n',CFL);
-
-    delta_t=SOLVER.time_step;
-    
-    ste=1;
-    t(ste,1)=0;
-    while t(ste,1)<SOLVER.Time_final
-        ste=ste+1;
-        delta_t=delta_t*SOLVER.time_factor;
-        t(ste,1)=t(ste-1,1)+delta_t;
-    end
-    SOLVER.Time_final=t(ste,1);
-    SOLVER.step_final=ste;
-    TIME.t=t;
-    
-
-    if SOLVER.SAVE_I==1
-        SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I);
-    else
-        SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I)+1;
-    end
-    TIME.tp=zeros(SOLVER.dim,1);
-    fprintf('%i plot steps\n',SOLVER.dim);
-    fprintf('Save %i times before the final\n',round(SOLVER.dim/SOLVER.SAVE_F));
-
-end

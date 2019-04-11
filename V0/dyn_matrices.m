@@ -165,11 +165,11 @@ function [damp_mtx]=damp_lin_uw(MAT_POINT,Mat_state,d)
         
         volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
         n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/MAT_POINT(i).J;
-
-        nd = Shape_function.near{i};
+        
+        nd = MAT_POINT(i).near;
         m  = length(nd);
-        sh = Shape_function.p{i};
-        b  = Shape_function.B{i};
+        sh = MAT_POINT(i).N;
+        b  = MAT_POINT(i).B;
         
         dk=0;
         
