@@ -1,5 +1,5 @@
 
-function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT)
+function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
 
     global GEOMETRY SOLVER
     
@@ -85,6 +85,66 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT)
         end
 
     else
+        
+        if strcmp(SOLVER.TYPE{2},'LME')
+            disp('Falta por hacer')
+        else
+            if SOLVER.TYPE{1}==1 %MPM
+                
+                for i=1:GEOMETRY.mat_points
+
+                    el=MAT_POINT(i).element;
+                    [I]=IoO(MAT_POINT(i).xg,...
+                        Disp_field.x_a,GEOMETRY.elem(el,:));
+                    
+                    
+                    if I==0 || el==0
+                        e=0;
+                        while I==0
+                            e=e+1;
+                            if e>elements
+                                disp('out of the limits of the grid')
+                                stop
+                            end
+                            if e~=el
+                                [I]=IoO(MAT_POINT(i).xg,Disp_field.x_a,...
+                                    GEOMETRY.elem(e,:));  
+                            end
+                        end
+
+                        
+                        elem=GEOMETRY.elem(e,:);
+                        % Discover isoparametric coordinates
+                        coord=zeros(length(elem),GEOMETRY.sp);
+                        for j=1:length(elem)
+                            coord(j,:)=GEOMETRY.x_0(elem(j),:);
+                        end
+                        [xilist_0,coord_xi] = ...
+                            FEM.integrationpoints(GEOMETRY.sp,length(elem),1);
+                        [xilist]=FEM.search_xilist_NR(coord,MAT_POINT(i).xg,...
+                            xilist_0,coord_xi);
+                    else
+                        elem=GEOMETRY.elem(el,:);
+                        % Discover isoparametric coordinates
+                        coord=zeros(length(elem),GEOMETRY.sp);
+                        for j=1:length(elem)
+                            coord(j,:)=GEOMETRY.x_0(elem(j),:);
+                        end
+                        [~,coord_xi] = ...
+                            FEM.integrationpoints(GEOMETRY.sp,length(elem),1);
+                        [xilist]=FEM.search_xilist_NR(coord,MAT_POINT(i).xg,...
+                            MAT_POINT(i).xi,coord_xi);
+                        %[xilist]=FEM.search_xilist(coord,MAT_POINT(i).xg,xilist,i);
+                    end
+
+                    MAT_POINT(i).xi=xilist;
+
+                    % Calculate initial shape function
+                    [MAT_POINT]=FEM.shapef(i,coord,xilist,MAT_POINT);
+                end
+                
+            end
+        end
     
     end
 
