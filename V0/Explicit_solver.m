@@ -1,5 +1,5 @@
 
-function Explicit_solver
+function Explicit_solver(MAT_POINT)
 
     tic;
     
@@ -12,8 +12,8 @@ function Explicit_solver
     % Initial state & initial shape functions and matrixes - Save
     %----------------------------------------------------------------------
     
-    [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
-        ~,load_s]=init;
+    [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
+        ~,load_s]=init(MAT_POINT);
     
     save(OUTPUT.name, 'GEOMETRY','VARIABLE','SOLVER');
     
@@ -29,23 +29,23 @@ function Explicit_solver
         % 1. Forces
         load_s(:,2)=load_s(:,1);
         [load_s(:,1),OUTPUT]=calculate_forces...
-            (ste,Shape_function,Mat_state,Disp_field,OUTPUT);
+            (ste,MAT_POINT,Disp_field,OUTPUT);
 
         % --------------------------------------------------------
         % 2. Predictor         
-        [Disp_field,Mat_state,Shape_function,FAIL]=explicit_predictor...
-            (ste,Disp_field,Shape_function,Mat_state,FAIL);
+        [Disp_field,Mat_state,MAT_POINT,FAIL]=explicit_predictor...
+            (ste,Disp_field,MAT_POINT,Mat_state,FAIL);
         
 
         % 3. Recompute mass and damping matrices
-        [lumped]   = lumped_mass(Shape_function,Mat_state);
-        [lumped_C] = lumped_damp(Shape_function,Mat_state);
+        [lumped]   = lumped_mass(MAT_POINT);
+        [lumped_C] = lumped_damp(MAT_POINT,Mat_state);
 
         % 4. Constitutive &/O Stiffness_mat
         [~,Int_var,Mat_state,~]=...
-            Constitutive(3,ste,Int_var,Mat_state,Shape_function,FAIL);
+            Constitutive(3,ste,Int_var,Mat_state,MAT_POINT,FAIL);
 
-        [OUTPUT]=reaction(Mat_state.fint,OUTPUT);
+        [OUTPUT]=AUX.reaction(Mat_state.fint,OUTPUT);
 
         %  5. Final conditions: corrector
         
@@ -75,16 +75,16 @@ function Explicit_solver
             GLOBAL.Sy(:,ste_p)      = Int_var.Sy(:,1);
             GLOBAL.Sy_r(:,ste_p)    = Int_var.Sy_r(:,1);
 
-            [GLOBAL.gamma_nds(:,ste_p)]=Ep2Ep_n...
-                (GLOBAL.gamma,Shape_function,ste_p);
+            [GLOBAL.gamma_nds(:,ste_p)]=AUX.Ep2Ep_n...
+                (GLOBAL.gamma,MAT_POINT,ste_p);
 
-            for e=1:GEOMETRY.elements
+            for e=1:GEOMETRY.mat_points
                 [GLOBAL.Ps(e,ste_p),GLOBAL.Qs(e,ste_p)]=...
-                    invar(Mat_state.Sigma(:,1),e);   %PRESSURE
+                    AUX.invar(Mat_state.Sigma(:,1),e);   %PRESSURE
             end         
             [GLOBAL.Es(:,ste_p),GLOBAL.Es_p(:,ste_p)]=...
-                strains(Mat_state.F,Mat_state.Be);
-            GLOBAL.J(:,ste_p)       = Mat_state.J(:,1);        %JACOBIAN
+                AUX.strains(Mat_state.F,Mat_state.Be);
+            [GLOBAL.J(:,ste_p)]=AUX.S2list(MAT_POINT,'J'); %JACOBIAN
             GLOBAL.Sigma(:,ste_p)   = Mat_state.Sigma(:,1);    %STRESS
             GLOBAL.F(:,ste_p)       = Mat_state.F(:,1);  %DEFORMATION GRADIENT
             GLOBAL.Be(:,ste_p)      = Mat_state.Be(:,1); %LEFT CAUCHY GREEN 
@@ -100,8 +100,7 @@ function Explicit_solver
         % 7. Save info
         if ((rem(ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) ...
                 || (ste==SOLVER.step_final) || (FAIL==1))
-            GLOBAL.xg  = Mat_state.xg;
-            save(OUTPUT.name,'ste','ste_p','TIME','Shape_function',...
+            save(OUTPUT.name,'ste','ste_p','TIME','MAT_POINT',...
                 'GLOBAL','OUTPUT','-append')
         end
         

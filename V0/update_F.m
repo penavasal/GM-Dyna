@@ -1,5 +1,5 @@
 
-function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
+function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
     
     global GEOMETRY SOLVER
     
@@ -17,17 +17,17 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
     f_v=zeros(sp*sp+1,1);
     f_v_w=zeros(sp*sp+1,1);
 
-    jacobians=zeros(GEOMETRY.elements,1);
+    jacobians=zeros(GEOMETRY.mat_points,1);
         
     % Update **********************
     for j=1:aa
         for k=1:bb
             e=GEOMETRY.patch_con(j,k);
-            nd = Shape_function.near{e};
+            nd = MAT_POINT(e).near;
             nn = length(nd);
             
 
-            b=Shape_function.B{e};
+            b=MAT_POINT(e).B;
             if SOLVER.AXI
                 bs=zeros(5,nn*2);
                 bw=zeros(5,nn*2);
@@ -75,8 +75,8 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
             for i=1:5
                 f_v(i,1)=Mat_state.F((e-1)*5 + i,2);
             end           
-            [F]=v2m(f_v,sp);            
-            [dF]=v2m(dF_,sp);
+            [F]=AUX.v2m(f_v,sp);            
+            [dF]=AUX.v2m(dF_,sp);
             F=dF*F;           
             jacobians(e)=det(F);
             
@@ -100,8 +100,8 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
                 for i=1:5
                     f_v_w(i,1)=Mat_state.Fw((e-1)*5 + i,2);
                 end           
-                [F_w]=v2m(f_v_w,sp);
-                [dFw]=v2m(dF_w,sp);
+                [F_w]=AUX.v2m(f_v_w,sp);
+                [dFw]=AUX.v2m(dF_w,sp);
                 F_w=dFw*F_w;
                 
             end
@@ -114,10 +114,10 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
                 logJ(j)=logJ(j) + GEOMETRY.Area(e)*jacobians(e)*log(jacobians(e));
             else
                 % New jaco
-                Mat_state.J(e)=jacobians(e);
+                MAT_POINT(e).J=jacobians(e);
                 
                 %Storage of vector F
-                [f]=m2v(F,sp);
+                [f]=AUX.m2v(F,sp);
                 for i=1:5
                     Mat_state.F(e*5+1-i,1)=f(6-i);
                 end
@@ -130,9 +130,7 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
                     %Principal strecht
                     C=F_'*F_;
                     [EP_]=Principal(C);
-                    for i=1:3
-                        Shape_function.EP((e-1)*3+i,1)=EP_(i);
-                    end
+                    MAT_POINT(e).EP(:,1)=EP_(:);
                 end
             end
             if SOLVER.UW==1
@@ -144,7 +142,7 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
                     logJ_w(j)=logJ_w(j) + GEOMETRY.Area(e)*det(F_w)*log(det(F_w));
                 else
                     %Storage of vector F
-                    [f_w]=m2v(F_w,sp);
+                    [f_w]=AUX.m2v(F_w,sp);
                     for i=1:5
                         Mat_state.Fw(e*5+1-i,1)=f_w(6-i);
                     end
@@ -168,10 +166,10 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
                 end
                 
                 % New vol, dens, jaco
-                Mat_state.J(e)=jacobians(e);
+                MAT_POINT(e).J=jacobians(e);
                 
                 %Storage of vector F
-                [f]=m2v(F_,sp);
+                [f]=AUX.m2v(F_,sp);
                 for i=1:5
                     Mat_state.F(e*5+1-i,1)=f(6-i);
                 end
@@ -180,9 +178,7 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
                     %Principal strecht
                     C=F_'*F_;
                     [EP_]=Principal(C);
-                    for i=1:3
-                        Shape_function.EP((e-1)*3+i,1)=EP_(i);
-                    end
+                    MAT_POINT(e).EP(:,1)=EP_(:);
                 end
             end
         end
@@ -206,7 +202,7 @@ function [Mat_state,Shape_function]=update_F(d,Mat_state,Shape_function)
                     %F_w_=(J_bar/det(F_w))^(1/3)*F_w;
 
                     %Storage of vector F
-                    [f_w]=m2v(F_w_,sp);
+                    [f_w]=AUX.m2v(F_w_,sp);
                     for i=1:5
                         Mat_state.Fw(e*5+1-i,1)=f_w(6-i);
                     end

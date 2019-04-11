@@ -102,7 +102,7 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
                         e=0;
                         while I==0
                             e=e+1;
-                            if e>elements
+                            if e>GEOMETRY.elements
                                 disp('out of the limits of the grid')
                                 stop
                             end

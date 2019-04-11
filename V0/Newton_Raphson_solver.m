@@ -1,7 +1,7 @@
 
-function [Disp_field,Mat_state,Shape_function,FAIL]=...
+function [Disp_field,Mat_state,MAT_POINT,FAIL]=...
             Newton_Raphson_solver(ste,GT,InvK,mass_mtx,damp_mtx,load_s,...
-            Shape_function,Disp_field,Int_var,Mat_state,FAIL)
+            MAT_POINT,Disp_field,Int_var,Mat_state,FAIL)
         
     global SOLVER GEOMETRY
     
@@ -36,7 +36,7 @@ function [Disp_field,Mat_state,Shape_function,FAIL]=...
          end
 
         % 2.2 Deformation gradient
-        [Mat_state,Shape_function]=update_F(d0,Mat_state,Shape_function);
+        [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
 
         if SOLVER.REMAPPING
 %         [B,near,p,gamma_,lam_LME,REMAP,wrap,EP]=LME_EP(jacobians,...
@@ -52,14 +52,14 @@ function [Disp_field,Mat_state,Shape_function,FAIL]=...
             if rem(iter,NR1)==0
 
                 [stiff_mtx,Int_var,Mat_state,FAIL]=...
-                    Constitutive(1,ste,Int_var,Mat_state,Shape_function,FAIL);
+                    Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,FAIL);
 
                 [matrix]=G_matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
 
                 [InvK,~]=apply_conditions(0,ste,matrix,0);
             else           
                 [~,Int_var,Mat_state,FAIL]=...
-                    Constitutive(0,ste,Int_var,Mat_state,Shape_function,FAIL);
+                    Constitutive(0,ste,Int_var,Mat_state,MAT_POINT,FAIL);
             end
         end
 

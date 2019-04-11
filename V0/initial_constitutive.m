@@ -1,6 +1,6 @@
 
 function [Mat_state,stiff_mtx,Int_var]=...
-    initial_constitutive(Shape_function,Mat_state,Int_var)
+    initial_constitutive(MAT_POINT,Mat_state,Int_var)
 
     global GEOMETRY SOLVER VARIABLE MATERIAL
     
@@ -20,16 +20,16 @@ function [Mat_state,stiff_mtx,Int_var]=...
    
     TOL=1e-3;
     
-    for e=1:GEOMETRY.elements
+    for e=1:GEOMETRY.mat_points
         
         tens_1=0;
         tens_2=0;
         
         if SOLVER.UW
-            n=1-(1-MAT(16,Mat(e)))/Mat_state.J(e);
+            n=1-(1-MAT(16,Mat(e)))/MAT_POINT(e).J;
             dens=n*VARIABLE.rho_w+(1-n)*MAT(3,Mat(e));
         else
-            dens=MAT(3,Mat(e))/Mat_state.J(e);
+            dens=MAT(3,Mat(e))/MAT_POINT(e).J;
         end
         
         K0=MAT(26,Mat(e));
@@ -40,11 +40,11 @@ function [Mat_state,stiff_mtx,Int_var]=...
         
         %% Initial Stress
         if SOLVER.INITIAL_COND(1)==1
-            H=max(Mat_state.xg(:,2));
-            tens_1=dens*VARIABLE.g*(H-Mat_state.xg(e,2));
+            H=max(MAT_POINT(:).xg(2));
+            tens_1=dens*VARIABLE.g*(H-MAT_POINT(e).xg(2));
             if SOLVER.UW==1
                 Mat_state.pw(e,1)=VARIABLE.rho_w*VARIABLE.g*...
-                    (H-Mat_state.xg(e,2));
+                    (H-MAT_POINT(e).xg(2));
             end
         end
         
@@ -71,8 +71,8 @@ function [Mat_state,stiff_mtx,Int_var]=...
             f_v(i,1)=Mat_state.F((e-1)*5 + i,1);
             f_old(i,1)=Mat_state.F((e-1)*5 + i,2);
         end           
-        [F]=v2m(f_v,GEOMETRY.sp);
-        [Fold]=v2m(f_old,GEOMETRY.sp);
+        [F]=AUX.v2m(f_v,GEOMETRY.sp);
+        [Fold]=AUX.v2m(f_old,GEOMETRY.sp);
         jacobians=det(F);
         
         if MODEL(Mat(e))>2
@@ -110,7 +110,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
             end
             
             if SOLVER.AXI
-                [sig]=E2e(T);
+                [sig]=AUX.E2e(T);
                 ds=sig-sig_0;
                 
                 D=A;
@@ -120,11 +120,11 @@ function [Mat_state,stiff_mtx,Int_var]=...
                 else
                     ee(:,iter)=ee(:,iter-1)-A\ds;
                 end
-                [E]=e2E(ee(:,iter));
+                [E]=AUX.e2E(ee(:,iter));
             else
                 D=A(1:3,1:3);
 
-                [sig]=E2e(T);
+                [sig]=AUX.E2e(T);
                 ds=sig(1:3)-sig_0(1:3);
 
                 if iter==1
@@ -132,7 +132,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
                 else
                     ee(1:3,iter)=ee(1:3,iter-1)-D\ds;
                 end
-                [E]=e2E(ee(:,iter));
+                [E]=AUX.e2E(ee(:,iter));
             end
 
             for i=1:3
@@ -147,7 +147,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
         
         %% DEFORMATION GRADIENT
 %         e_fin=D\sig;  
-%         [E]=e2E(e_fin);
+%         [E]=AUX.e2E(e_fin);
 %         for i=1:3
 %             F(i,i)=1/sqrt(exp(2*E(i,i)));
 %         end
@@ -155,7 +155,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
         
         
         %% Stiffness matrix
-        [stiff_mtx]=stiff_mat(Shape_function,Mat_state,e,stiff_mtx,T,A);
+        [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A);
         
         
         %% Store vectors
@@ -167,22 +167,22 @@ function [Mat_state,stiff_mtx,Int_var]=...
             Mat_state.Sigma((e-1)*4+i,1)=T_vec(i,1);
         end
         
-        Mat_state.J(e)    =   jacobians;
+        MAT_POINT(e).J    =   jacobians;
         if MODEL(Mat(e))>2
             Int_var.Sy(e,2)   =   Int_var.Sy(e,1);
             Int_var.Sy_r(e,2) =   Int_var.Sy_r(e,1);
             Int_var.P0(e,1)   =   press;
         end
         
-        [be]=m2v(Be,GEOMETRY.sp);
-        [f]=m2v(F,GEOMETRY.sp);
+        [be]=AUX.m2v(Be,GEOMETRY.sp);
+        [f]=AUX.m2v(F,GEOMETRY.sp);
         for i=1:5
             Mat_state.Be((e-1)*5+i,2)=be(i,1);
             Mat_state.F((e-1)*5+i,2)=f(i,1);
         end 
         
 %         if UW==1
-%             [f_w]=m2v(F_w,sp);
+%             [f_w]=AUX.m2v(F_w,sp);
 %             for i=1:5
 %                 Mat_state.Fw((e-1)*5+i,2)=f_w(i,1);
 %             end 
@@ -190,27 +190,4 @@ function [Mat_state,stiff_mtx,Int_var]=...
              
     end
 
-end
-
-function [E]=e2E(e)
-   
-    E=zeros(3,3);
-
-    %Build matrix
-    E(1,1)=e(1);
-    E(2,2)=e(2);
-    E(3,3)=e(4);
-    E(1,2)=e(3);
-    E(2,1)=e(3);
-end
-
-function [e]=E2e(E)
-   
-    e=zeros(4,1);
-
-    %Build vector
-    e(1)=E(1,1);
-    e(2)=E(2,2);
-    e(3)=E(1,2);
-    e(4)=E(3,3);%+E(2,1);
 end

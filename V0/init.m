@@ -1,18 +1,12 @@
-function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
-        stiff_mtx,load_s]=init
+function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
+        stiff_mtx,load_s]=init(MAT_POINT)
     
     global GEOMETRY VARIABLE MATERIAL TIME SOLVER
-    
-    if GEOMETRY.sp==2
-        l1=5;
-        l2=4;
-    elseif GEOMETRY.sp==3
-        l1=9;
-        l2=6;
-    end
-    
+        
     l0          = GEOMETRY.df*GEOMETRY.nodes;
-    elements    = GEOMETRY.elements;
+    l1          = GEOMETRY.f_dim;
+    l2          = GEOMETRY.s_dim;
+    elements    = GEOMETRY.mat_points;
     nodes       = GEOMETRY.nodes;
     dim         = SOLVER.dim; 
 
@@ -39,8 +33,8 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
     Mat_state.Be=zeros(l1*elements,2);
     Mat_state.Sigma=zeros(l2*elements,2);
     Mat_state.xg=zeros(elements,2);
-    Mat_state.J=ones(elements,1);
     Mat_state.fint=zeros(l0,2);
+    
     if SOLVER.UW==1
         Mat_state.k=zeros(elements,1);
         Mat_state.pw=zeros(elements,3);
@@ -114,8 +108,7 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
                      GLOBAL.d((j-1)*GEOMETRY.df+i,ste_p);
             end
          end
-        Mat_state.xg   = GLOBAL.xg;
-           
+                   
         Disp_field.a(:,2)=GLOBAL.a(:,ste_p);
         Disp_field.v(:,2)=GLOBAL.v(:,ste_p);
         Disp_field.d(:,2)=GLOBAL.d(:,ste_p);
@@ -132,7 +125,8 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
         Mat_state.F(:,1)=GLOBAL.F(:,ste_p);          %DEFORMATION GRADIENT
         Mat_state.Be(:,2)=GLOBAL.Be(:,ste_p);              %LEFT CAUCHY GREEN 
         
-        Mat_state.J=GLOBAL.J(:,ste_p);
+        [MAT_POINT]=list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
+        [MAT_POINT]=list2S(MAT_POINT,'xg',GLOBAL.xg(:,ste_p)); %Revisar
         
         if SOLVER.UW==1
             Mat_state.pw(:,2)=GLOBAL.pw(:,ste_p);
@@ -143,7 +137,11 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
         [OUTPUT_2]=read_output;     
         OUTPUT=together_outputs(OUTPUT,OUTPUT_2,dim);
         
-        [Shape_function]=LME_EP(Mat_state,Disp_field,0);
+        disp('revisar funcion de forma')
+        
+        %[Shape_function]=LME_EP(Mat_state,Disp_field,0);
+        
+        MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field);
         
         [stiff_mtx,Int_var,Mat_state,~]=...
         Constitutive(1,ste,Int_var,Mat_state,Shape_function,0);
@@ -153,12 +151,10 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
         
         Mat_state.pw(:,3)=Mat_state.pw(:,2)-Mat_state.pw(:,1);
         
-        
-        
+
     else
         Disp_field.x_a=GEOMETRY.x_0;
-        Mat_state.xg=GEOMETRY.xg0;
-        GLOBAL.xg=GEOMETRY.xg0;
+        GLOBAL.xg=GEOMETRY.xg_0;
         
         [Mat_state]=ini_F(Mat_state,l1,elements,GEOMETRY.sp,SOLVER.UW);
         
@@ -178,10 +174,8 @@ function [ste,ste_p,Shape_function,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,..
         Disp_field.a(:,2)=GLOBAL.a(:,1);
         Disp_field.d(:,2)=GLOBAL.d(:,1);
         
-        [Shape_function]=LME_EP(Mat_state,Disp_field,0);
-        
         [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
-            initial_state(Shape_function,Disp_field,Int_var,Mat_state,...
+            initial_state(MAT_POINT,Disp_field,Int_var,Mat_state,...
             GLOBAL,OUTPUT);
         
     end 
@@ -303,40 +297,40 @@ end
 
 
 function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
-         initial_state(Shape_function,Disp_field,Int_var,Mat_state,...
+         initial_state(MAT_POINT,Disp_field,Int_var,Mat_state,...
          GLOBAL,OUTPUT)
 
     global GEOMETRY SOLVER
     
     % 1. Stress and deformation gradient
     [Mat_state,matrix,Int_var]=initial_constitutive...
-        (Shape_function,Mat_state,Int_var);
+        (MAT_POINT,Mat_state,Int_var);
     
     % 2. Calculate forces
     load_s=zeros(GEOMETRY.nodes*GEOMETRY.df,2);
     
-    [Mat_state]=internal_forces(Shape_function,Mat_state);
+    [Mat_state]=internal_forces(MAT_POINT,Mat_state);
     [load_s(:,1),OUTPUT]=...
-            calculate_forces(1,Shape_function,Mat_state,Disp_field,OUTPUT);
+            calculate_forces(1,MAT_POINT,Disp_field,OUTPUT);
     
     GT= load_s(:,1)-Mat_state.fint(:,1);
     [InvK,GT]=apply_conditions(3,1,matrix,GT);
     
     % 3. Newton-Raphson
-    [Disp_field,Mat_state,Shape_function,FAIL]=Newton_Raphson_solver...
-        (1,GT,InvK,0,0,load_s,Shape_function,Disp_field,Int_var,Mat_state,0);
+    [Disp_field,Mat_state,MAT_POINT,FAIL]=Newton_Raphson_solver...
+        (1,GT,InvK,0,0,load_s,MAT_POINT,Disp_field,Int_var,Mat_state,0);
 
     
     % 4. Calculate initial stiffness matrix    
-    [Mat_state,Shape_function]=...
-        update_F(Disp_field.d,Mat_state,Shape_function);
+    [Mat_state,MAT_POINT]=...
+        update_F(Disp_field.d,Mat_state,MAT_POINT);
 
     [stiff_mtx,Int_var,Mat_state,~]=...
-                Constitutive(2,1,Int_var,Mat_state,Shape_function,FAIL);
+                Constitutive(2,1,Int_var,Mat_state,MAT_POINT,FAIL);
      
      % 5. Save information
-     for e=1:GEOMETRY.elements
-         [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=invar(Mat_state.Sigma(:,1),e);   
+     for e=1:GEOMETRY.mat_points
+         [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=AUX.invar(Mat_state.Sigma(:,1),e);   
      end         %PRESSURE
      
      Mat_state.Be(:,2)  = Mat_state.Be(:,1);
@@ -351,12 +345,12 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
      
      if SOLVER.UW
          Mat_state.pw(:,3)=SOLVER.INITIAL_COND(2)*...
-             ones(GEOMETRY.elements,1)-Mat_state.pw(:,1);
+             ones(GEOMETRY.mat_points,1)-Mat_state.pw(:,1);
          GLOBAL.pw(:,1)=Mat_state.pw(:,1)+Mat_state.pw(:,3);
      end
      
      % 6. Plot initial state
-     plot_initial_state(GLOBAL.Ps(:,1),Disp_field.d(:,1),Shape_function.near);
+     plot_initial_state(GLOBAL.Ps(:,1),Disp_field.d(:,1));
      
      % 7. Displacement?
      if SOLVER.INITIAL_d==0
@@ -369,7 +363,7 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
 
 end
 
-function plot_initial_state(P0,d0,near)
+function plot_initial_state(P0,d0)
 
     global GEOMETRY
     
@@ -392,7 +386,7 @@ function plot_initial_state(P0,d0,near)
     figure(1)
     
     subplot(121)
-    PW1=griddata(GEOMETRY.xg0(:,1),GEOMETRY.xg0(:,2),P0,x1,y1,'cubic');
+    PW1=griddata(GEOMETRY.xg_0(:,1),GEOMETRY.xg_0(:,2),P0,x1,y1,'cubic');
     surf(x1,y1,PW1)
     colorbar
     axis([min(x_0(:,1)),max(x_0(:,1)),min(x_0(:,2)),max(x_0(:,2))])
@@ -411,10 +405,10 @@ function plot_initial_state(P0,d0,near)
     % Structure
     subplot(122)
     
-    plot_nb(0,near,GEOMETRY.x_0,GEOMETRY.xg0,GEOMETRY.elem,d,0)
+    plot_nb(0,0,GEOMETRY.x_0,GEOMETRY.xg_0,GEOMETRY.elem,d,0)
     
     hold on
-    plot_nb(0,near,GEOMETRY.x_0,GEOMETRY.xg0,GEOMETRY.elem,d,1)
+    plot_nb(0,0,GEOMETRY.x_0,GEOMETRY.xg_0,GEOMETRY.elem,d,1)
     axis(elaxis)
     title('Current and deformed configuration')
     hold off

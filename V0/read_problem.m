@@ -10,7 +10,7 @@ function MAT_POINT=read_problem
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Some possible parameters if they are not read
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    global VARIABLE SOLVER TI_param GEOMETRY
+    global VARIABLE SOLVER TI_param
     
     % GEOMETRY
     filename='data_m';

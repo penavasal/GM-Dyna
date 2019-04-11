@@ -1,4 +1,4 @@
-function [lumped]=lumped_mass(Shape_function,Mat_state)
+function [lumped]=lumped_mass(MAT_POINT)
 
     global MATERIAL GEOMETRY SOLVER VARIABLE
     
@@ -18,18 +18,18 @@ function [lumped]=lumped_mass(Shape_function,Mat_state)
     end
     
     %% Lumped Mass **********************
-    for i=1:GEOMETRY.elements
-        volume=GEOMETRY.Area(i)*Mat_state.J(i);
+    for i=1:GEOMETRY.mat_points
+        volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
         if SOLVER.UW
-            n=1-(1-MAT(16,Material(i)))/Mat_state.J(i);
+            n=1-(1-MAT(16,Material(i)))/MAT_POINT(i).J;
             dens=n*VARIABLE.rho_w+(1-n)*MAT(3,Material(i));
         else
-            dens=MAT(3,Material(i))/Mat_state.J(i);
+            dens=MAT(3,Material(i))/MAT_POINT(i).J;
         end
         
-        nd = Shape_function.near{i};
+        nd = MAT_POINT(i).near;
         m  = length(nd);
-        sh = Shape_function.p{i};
+        sh = MAT_POINT(i).N;
         for t1=1:m
             for k=1:sp
                 lumped.mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...

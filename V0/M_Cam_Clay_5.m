@@ -403,7 +403,7 @@ function [aep]=aep_calculation(Kt,epsev,epsesTR,epses,dgamma,dgamma_,P,Q,...
         r23=sqrt(2/3); 
         
         m=[1 1 0 1];
-        [n_vec]=E2e(n);
+        [n_vec]=AUX.E2e(n);
         
         I4=eye(4);
         I1=m'*m;
@@ -644,17 +644,6 @@ function [A] = Atang_v( epsev,epses,dgamma,P,Q,Pcd,Pcs,lambda,kappa,mu,...
 
 end
 
-
-function [e]=E2e(E)
-   
-    e=zeros(4,1);
-
-    %Build vector
-    e(1)=E(1,1);
-    e(2)=E(2,2);
-    e(3)=E(1,2);
-    e(4)=E(3,3);
-end
 
 function [q]=s_j2(s)
     %L2-norm of deviatoric stress

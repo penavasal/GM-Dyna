@@ -1,4 +1,4 @@
-function [Mat_state]=internal_forces(Shape_function,Mat_state)
+function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
 
     global GEOMETRY SOLVER
     
@@ -7,13 +7,13 @@ function [Mat_state]=internal_forces(Shape_function,Mat_state)
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
 
-    for e=1:GEOMETRY.elements
+    for e=1:GEOMETRY.mat_points
         
-        nd = Shape_function.near{e};
-        nn=length(nd);
+        nd=MAT_POINT(e).near;
+        B_=MAT_POINT(e).B;
+        nn =length(nd);
 
         % Derivatives
-        B_=Shape_function.B{e};
         if SOLVER.AXI
             sh=zeros(3,nn);
             for i=1:nn
@@ -34,16 +34,16 @@ function [Mat_state]=internal_forces(Shape_function,Mat_state)
             sig(i,1)=Mat_state.Sigma((e-1)*4+i,1);
         end
         
-        [T]=e2E(sig);
+        [T]=AUX.e2E(sig);
         
         % ----------------------------
         % Internal forces
         % ----------------------------
-        volume=GEOMETRY.Area(e)*Mat_state.J(e);
+        volume=GEOMETRY.Area(e)*MAT_POINT(e).J;
         if SOLVER.AXI
             mat=[1 0 1; 0 1 0];
             Tt=mat*T;
-            vol=2*pi*Mat_state.xg(e,1)*volume;
+            vol=2*pi*MAT_POINT(e).xg(1)*volume;
         else
             Tt=T(1:2,1:2);
             vol=volume;
@@ -89,18 +89,6 @@ function [Mat_state]=internal_forces(Shape_function,Mat_state)
         end
         clear sh
     end
-end
-
-function [E]=e2E(e)
-   
-    E=zeros(3,3);
-
-    %Build matrix
-    E(1,1)=e(1);
-    E(2,2)=e(2);
-    E(3,3)=e(3);
-    E(1,2)=e(4);
-    E(2,1)=e(4);
 end
 
     

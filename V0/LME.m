@@ -635,8 +635,9 @@
 
             % As described in [1], gamma measures the degree of locality, the larger,
             % the closer to Delaunay finite elements
-            gamma_lme = LME_param(1);
-            gamma_=gamma_lme*ones(GEOMETRY.elements,1);
+            
+            %gamma_lme = LME_param(1);
+            %gamma_=gamma_lme*ones(GEOMETRY.mat_points,1);
 
             %Tolerance to make new re-mapping or not and proportion to do it
             tol_search = LME_param(5);

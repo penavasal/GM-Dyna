@@ -242,16 +242,20 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
         if GEOMETRY.sp==2
             GEOMETRY.b_dim=3;
             GEOMETRY.s_dim=4;
+            GEOMETRY.f_dim=5;
         elseif GEOMETRY.sp==1
             GEOMETRY.b_dim=1;
             GEOMETRY.s_dim=1;
+            GEOMETRY.f_dim=1;
         else
             GEOMETRY.b_dim=6;
             GEOMETRY.s_dim=6;
+            GEOMETRY.f_dim=9;
         end  
     elseif AXI==1
         GEOMETRY.b_dim=3;
         GEOMETRY.s_dim=4;
+        GEOMETRY.f_dim=5;
     else 
         disp('DIMENSION OF THE AXI PARAMETER??')
         stop
@@ -268,6 +272,7 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
                      'N', zeros(NNE_f,1),...
                      'B', zeros(GEOMETRY.b_dim,GEOMETRY.sp*NNE_f),...
                      'EP', zeros(3,2),...
+                     'J', ones(1),...
                      'w', zeros(1),...
                      'xi', zeros(GEOMETRY.sp,1)...
                  );

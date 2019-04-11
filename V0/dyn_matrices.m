@@ -1,4 +1,4 @@
-function [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,Shape_function,d)
+function [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,MAT_POINT,d)
 
     global MATERIAL TI_param SOLVER GEOMETRY VARIABLE
     
@@ -11,23 +11,23 @@ function [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,Shape_function,d)
     damp_mtx=zeros(GEOMETRY.nodes*df,GEOMETRY.nodes*df);
     
     if alpha || SOLVER.UW==1 
-        for i=1:GEOMETRY.elements
-            volume=GEOMETRY.Area(i)*Mat_state.J(i);
+        for i=1:GEOMETRY.mat_points
+            volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
             if SOLVER.UW
-                n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/Mat_state.J(i);
+                n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/MAT_POINT(i).J;
                 dens=n*rho_w+(1-n)*MATERIAL.MAT(3,MATERIAL.e(i));
             else
-                dens=MATERIAL.MAT(3,MATERIAL.e(i))/Mat_state.J(i);
+                dens=MATERIAL.MAT(3,MATERIAL.e(i))/MAT_POINT(i).J;
             end
 
             if SOLVER.AXI
-                t=2*pi*Mat_state.xg(i,1)*volume;
+                t=2*pi*MAT_POINT(i).xg(1)*volume;
             else
                 t=volume;
             end
-            nd = Shape_function.near{i};
+            nd = MAT_POINT(i).near;
             m  = length(nd);
-            sh = Shape_function.p{i};
+            sh = MAT_POINT(i).N;
 
             for t1=1:m
                 for t2=1:m
@@ -63,29 +63,34 @@ function [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,Shape_function,d)
     
     if SOLVER.LIN && SOLVER.UW==1 && SOLVER.AXI==0
         if alpha
-            [M1]=mass_lin_uw(Shape_function,Mat_state,d);
+            [M1]=mass_lin_uw(MAT_POINT,d);
             mass_mtx=mass_mtx+M1;
         end
-        [C1]=damp_lin_uw(near,p,B,volume,perm,dw,n);
+        [C1]=damp_lin_uw(MAT_POINT,Mat_state,d);
         damp_mtx=damp_mtx+C1;
     end
     
 end
 
-function [mass_mtx]=mass_lin_uw(Shape_function,Mat_state,d)
+function [mass_mtx]=mass_lin_uw(MAT_POINT,d)
 
-    global MAT Material elements nodes sp rho_w df Area
-    mass_mtx=zeros(nodes*df,nodes*df);
+    global GEOMETRY VARIABLE MATERIAL
     
-    for i=1:elements
+    sp=GEOMETRY.sp;
+    df=GEOMETRY.df;
+    rho_w=VARIABLE.rho_w;
+    
+    mass_mtx=zeros(GEOMETRY.nodes*GEOMETRY.df);
+    
+    for i=1:GEOMETRY.mat_points
         
-        volume=Area(i)*Mat_state.J(i);
-        n=1-(1-MAT(16,Material(i)))/Mat_state.J(i);
+        volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
+        n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/MAT_POINT(i).J;
 
-        nd = Shape_function.near{i};
+        nd = MAT_POINT(i).near;
         m  = length(nd);
-        sh = Shape_function.p{i};
-        b  = Shape_function.B{i};
+        sh = MAT_POINT(i).N;
+        b  = MAT_POINT(i).B;
         
         T=[1 1 0]*b;
         
@@ -99,10 +104,10 @@ function [mass_mtx]=mass_lin_uw(Shape_function,Mat_state,d)
             end
         end
         
-        N=zeros(sp,m*sp);
+        N=zeros(GEOMETRY.sp,m*GEOMETRY.sp);
         for j=1:m
-            N(1,(j-1)*sp+1)=sh(j);
-            N(2,(j-1)*sp+2)=sh(j);
+            N(1,(j-1)*GEOMETRY.sp+1)=sh(j);
+            N(2,(j-1)*GEOMETRY.sp+2)=sh(j);
         end
         
         U=N*u;
@@ -147,15 +152,19 @@ function [mass_mtx]=mass_lin_uw(Shape_function,Mat_state,d)
     end
 end
 
-function [damp_mtx]=damp_lin_uw(Shape_function,Mat_state,d)
+function [damp_mtx]=damp_lin_uw(MAT_POINT,Mat_state,d)
+     
+    global GEOMETRY MATERIAL
+    
+    sp=GEOMETRY.sp;
+    df=GEOMETRY.df;
 
-    global elements nodes sp df  MAT Material Area
-      
-    damp_mtx=zeros(nodes*df,nodes*df);
-    for i=1:elements
+    damp_mtx=zeros(GEOMETRY.nodes*df);
+    
+    for i=1:GEOMETRY.mat_points
         
-        volume=Area(i)*Mat_state.J(i);
-        n=1-(1-MAT(16,Material(i)))/Mat_state.J(i);
+        volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
+        n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/MAT_POINT(i).J;
 
         nd = Shape_function.near{i};
         m  = length(nd);

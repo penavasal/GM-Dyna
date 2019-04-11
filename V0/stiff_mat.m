@@ -1,5 +1,5 @@
 
-function [stiff_mtx]=stiff_mat(Shape_function,Mat_state,e,stiff_mtx,T,A)
+function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A)
 
     global GEOMETRY SOLVER
 
@@ -7,19 +7,22 @@ function [stiff_mtx]=stiff_mat(Shape_function,Mat_state,e,stiff_mtx,T,A)
     sp=GEOMETRY.sp;
     
     % Derivatives
-    nb=Shape_function.near{e};
-    b =Shape_function.B{e};
+    nb=MAT_POINT(e).near;
+    b=MAT_POINT(e).B;
     n =length(nb);
     
-    volume=GEOMETRY.Area(e)*Mat_state.J(e);
+                
+
+    
+    volume=GEOMETRY.Area(e)*MAT_POINT(e).J;
     if SOLVER.AXI
         dim=4;
         if SOLVER.UW==0
             d2=dim;
-            vol=-2*pi*Mat_state.xg(e,1)*volume; % Por que negativo??
+            vol=-2*pi*MAT_POINT(e).xg(1)*volume; % Por que negativo??
         else
             d2=7;
-            vol=2*pi*Mat_state.xg(e,1)*volume;
+            vol=2*pi*MAT_POINT(e).xg(1)*volume;
         end
         
     else
@@ -45,9 +48,9 @@ function [stiff_mtx]=stiff_mat(Shape_function,Mat_state,e,stiff_mtx,T,A)
         [K_geo]=Geo(b,T,n,sp);
     elseif SOLVER.UW==1
         % Material
-        [K_mat]=Mat_UW(b,n,e,D,Mat_state.J(e),sp,df);
+        [K_mat]=Mat_UW(b,n,e,D,MAT_POINT(e).J,sp,df);
         % Geometrical
-        [K_geo]=Geo_UW(e,Mat_state,b,n,nb,T,sp,df);
+        [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df);
     end
     
     
@@ -109,7 +112,7 @@ function [K_mat]=Mat_UW(b,n,i,D,J,sp,df)
 
 end
 
-function [K_geo]=Geo_UW(e,Mat_state,b,n,nb,T,sp,df)
+function [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df)
 
     global SOLVER MATERIAL
     
@@ -149,7 +152,7 @@ function [K_geo]=Geo_UW(e,Mat_state,b,n,nb,T,sp,df)
     end
     
     %Water
-    nn=1-(1-MAT(16,Material(e)))/Mat_state.J(e);
+    nn=1-(1-MAT(16,Material(e)))/MAT_POINT(e).J;
     [M4]=linearization(nn,b,nb,sp);
     
     %Solid

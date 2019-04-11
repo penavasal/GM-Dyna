@@ -318,7 +318,7 @@ function [A,Sc,gamma,dgamma,sy,Be]=...
         % Matrixes
         I4=eye(4);
         m=[1 1 0 1];
-        [s_vec]=E2e(s);
+        [s_vec]=AUX.E2e(s);
         
         I1=m'*m;
         M1=I4-1/3*I1;
@@ -360,17 +360,3 @@ end
 function [H]=der_Sy(Sy0,E0,N_1,g)
     H=Sy0*N_1/E0*(1+g/E0)^(N_1-1);
 end
-
-function [e]=E2e(E)
-   
-    e=zeros(4,1);
-
-    %Build vector
-    e(1)=E(1,1);
-    e(2)=E(2,2);
-    e(3)=E(1,2);
-    e(4)=E(3,3);
-end
-
-        
-       

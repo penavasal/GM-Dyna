@@ -1,7 +1,7 @@
 % Hay que arreglar la parte de contacto
 
-function [Disp_field,Mat_state,Shape_function,FAIL]=explicit_predictor...
-            (ste,Disp_field,Shape_function,Mat_state,FAIL)
+function [Disp_field,Mat_state,MAT_POINT,FAIL]=explicit_predictor...
+            (ste,Disp_field,MAT_POINT,Mat_state,FAIL)
 
     global GEOMETRY TI_param TIME
     sp=GEOMETRY.sp;
@@ -64,11 +64,11 @@ function [Disp_field,Mat_state,Shape_function,FAIL]=explicit_predictor...
 %         REMAP=1;  %Flag
 %         iter=1;
 %         error_tol=min(h_ini.*sqrt(jacobians))*1e-6;
-%         wrap=zeros(elements,1);
+%         wrap=zeros(GEOMETRY.mat_points,1);
 %         while REMAP==1           
-            [Mat_state.xg]=update_mp(d0,Shape_function,Mat_state.xg);
+            [MAT_POINT]=update_mp(d0,MAT_POINT);
             
-            [Mat_state,Shape_function]=update_F(d0,Mat_state,Shape_function);
+            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
 
 %             if iter==1
 %                 xg1=xg2;

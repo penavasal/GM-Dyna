@@ -1,5 +1,5 @@
 function [load_s,OUTPUT]=...
-            calculate_forces(ste,Shape_function,Mat_state,Disp_field,OUTPUT)
+            calculate_forces(ste,MAT_POINT,Disp_field,OUTPUT)
 
     global SOLVER LOAD GEOMETRY
 
@@ -14,7 +14,7 @@ function [load_s,OUTPUT]=...
     end
 
     
-    [lumped]=lumped_mass(Shape_function,Mat_state);
+    [lumped]=lumped_mass(MAT_POINT);
     
     load=zeros(GEOMETRY.nodes*df,LOAD.size);
     acce=zeros(GEOMETRY.nodes*df,LOAD.size);

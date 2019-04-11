@@ -108,8 +108,8 @@
                     f_v(i,1)=def_G((e-1)*5 + i,1);
                     be(i,1)=b_e((e-1)*5 + i,1);
                 end           
-                [F]=v2m(f_v,GEOMETRY.sp);
-                [Be]=v2m(be,GEOMETRY.sp);
+                [F]=AUX.v2m(f_v,GEOMETRY.sp);
+                [Be]=AUX.v2m(be,GEOMETRY.sp);
 
                 Btot = F*F';
                 Etot = logm(Btot)/2;
@@ -127,14 +127,14 @@
         end
         
         % Plastic Strains in Mat. Points to nodes
-        function [Gamma_nds]=Ep2Ep_n(Gamma_tot,Shape_function,ste_p)
+        function [Gamma_nds]=Ep2Ep_n(Gamma_tot,MAT_POINT,ste_p)
 
             global GEOMETRY
             Gamma_nds=zeros(GEOMETRY.nodes,1);
 
             for i=1:GEOMETRY.mat_points
-                sh=Shape_function.p{i};
-                nds=Shape_function.near{i};
+                sh=MAT_POINT(i).N;
+                nds=MAT_POINT(i).near;
                 n=length(nds);
                 for j=1:n
                     Gamma_nds(nds(j),1)=Gamma_nds(nds(j),1)+sh(j)*Gamma_tot(i,ste_p);
@@ -154,7 +154,7 @@
         
         % Structure to list
         function [S]=list2S(S,field,list)
-            [a,b]=size(list);
+            [a,~]=size(list);
             %list=zeros(b,1);
             for i=1:a
                 S(i) = setfield(S(i),field,list(i,:));
