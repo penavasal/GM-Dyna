@@ -453,12 +453,12 @@ function localization(R)
             end
         end
 
-        for e=1:GEOMETRY.elements
+        for e=1:GEOMETRY.mat_points
             tol=GEOMETRY.h_ini(e,1)/5;
-            if (GEOMETRY.xg0(e,2)>=R(2,m*2-1)-tol) ...
-                    && (GEOMETRY.xg0(e,2)<=R(2,m*2)+tol)
-                if (GEOMETRY.xg0(e,1)>=R(1,m*2-1)-tol) ...
-                        && (GEOMETRY.xg0(e,1)<=R(1,m*2)+tol)
+            if (GEOMETRY.xg_0(e,2)>=R(2,m*2-1)-tol) ...
+                    && (GEOMETRY.xg_0(e,2)<=R(2,m*2)+tol)
+                if (GEOMETRY.xg_0(e,1)>=R(1,m*2-1)-tol) ...
+                        && (GEOMETRY.xg_0(e,1)<=R(1,m*2)+tol)
                     MATERIAL.e(e)=m;
                 end
             end

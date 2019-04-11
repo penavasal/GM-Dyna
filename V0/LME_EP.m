@@ -13,7 +13,6 @@ function [Shape_function]=LME_EP(Mat_state,Disp_field,INITIAL)
     
     B={0};
     near={0};
-    [near]=first_near(GEOMETRY.elem,near);
     p={0};
 
     % As described in [1], gamma measures the degree of locality, the larger,
@@ -97,24 +96,6 @@ function [Shape_function]=LME_EP(Mat_state,Disp_field,INITIAL)
             stop;
         end
     end
-
-    %% MAKE Bbar - Patch
-    if SOLVER.B_BAR==1
-        [B,near,p]=bbar_matrix...
-            (x_a,GEOMETRY.patch_con,GEOMETRY.patch_el,...
-            GEOMETRY.elements,near,dp,p,volume,B,wrap,SOLVER.B_BAR);
-    else
-        [B]=b_m(GEOMETRY.elements,near,dp,GEOMETRY.sp,wrap,B,xg,p);
-    end
-    
-    %% SAVE info
-    Shape_function.title='Shape function, derivatives and connectivity';
-    Shape_function.B=B;
-    Shape_function.near=near;
-    Shape_function.p=p;
-    Shape_function.gamma=gamma_;
-    Shape_function.lambda=lam_LME;
-    Shape_function.EP=EP;
 
 end
 

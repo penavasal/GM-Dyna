@@ -1,5 +1,5 @@
 
-function read_problem
+function MAT_POINT=read_problem
 
 % File: read_problem
 %   Read some important problem parameters from problem.txt
@@ -10,10 +10,12 @@ function read_problem
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Some possible parameters if they are not read
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    global VARIABLE SOLVER TI_param
+    global VARIABLE SOLVER TI_param GEOMETRY
     
     % GEOMETRY
     filename='data_m';
+    filegrid='';
+    GRID='';
     pathgeo='Geom';
     DIM=0;
     PLOT_ini=0;
@@ -31,8 +33,6 @@ function read_problem
     SOLVER.LIN = 0;
     SOLVER.AXI=0;
     
-    ELEMENT={'',''};
-    
     SOLVER.time_factor=1;
     
     SOLVER.B_BAR=0;
@@ -42,6 +42,8 @@ function read_problem
     SOLVER.INITIAL_COND=zeros(2,1);
     
     SOLVER.INIT_STEP=0;
+    
+    SOLVER.TYPE={'' ''};
     
     SOLVER.thickness=1;
     
@@ -94,10 +96,10 @@ function read_problem
                 DIM=b(t);        % Flag for the Dimension
                 continue
             case 'ELEMENT'
-                ELEMENT{1}=b2{t};
-                if b3{t}
-                    ELEMENT{2}=b3{t};    
-                end
+                ELEMENT=b2{t};
+                continue
+            case 'GRID_TYPE'
+                GRID=b2{t};
                 continue
             case 'DISCRETIZATION'
                 DISC=b(t);  %1- quad (1IP), 2- quad (4IP) 
@@ -111,14 +113,16 @@ function read_problem
                 continue
             case 'FILE'
                 filename=b2{t};
-                f2=1;
+                continue
+            case 'GRID'
+                filegrid=b2{t};
                 continue
             case 'PATH_GEOM'
                 pathgeo=b2{t};
-                f1=1;
                 continue
             case 'CONFIGURATION'
                 if strcmp(b2{t},'PLAIN_STRAIN')
+                    SOLVER.AXI=0;
                     if SOLVER.thickness==0
                         SOLVER.thickness=1;
                     end
@@ -135,13 +139,16 @@ function read_problem
                 continue
             case 'PROBLEM'
                 if strcmp(b2{t},'OTM')
-                    SOLVER.TYPE=0;
+                    SOLVER.TYPE{1}=0;
                 elseif strcmp(b2{t},'MPM')
-                    SOLVER.TYPE=1;
+                    SOLVER.TYPE{1}=1;
                 elseif strcmp(b2{t},'FEM')
-                    SOLVER.TYPE=2;
+                    SOLVER.TYPE{1}=2;
                     fprintf('Error, NOT IMPLEMENTED FEM YET!!\n')
                     stop
+                end
+                if b3{t}
+                    SOLVER.TYPE{2}=b3{t};    
                 end
                 continue
             case 'FORMULATION'
@@ -300,12 +307,28 @@ function read_problem
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Add the geometry
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     if f2==0
-%         filename='data_m';
-%     end
     
-    read_geometry(SOLVER.UW,ELEMENT,DIM,PLOT_ini,AMP,filename,pathgeo);
+    MAT_POINT = read_geometry(...
+        ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegrid,pathgeo);
     
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Add a physical problem
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %--------------------------------------------------------------------------
+    % PARAMETERS
+    %--------------------------------------------------------------------------
+    % Read material properties
+    read_material;
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Add shape function parameters
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    [MAT_POINT]=shape_function_calculation(0,MAT_POINT);
+   
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%SOLVER
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -377,4 +400,53 @@ function read_problem
 
     TI_param=[af,am,delta,alpha,theta];
     
+    %----------------------------------------------------------------------
+    % Time-related conditions
+    %----------------------------------------------------------------------
+    TIME_INT_var;
+    
+end
+
+function TIME_INT_var
+
+    global MATERIAL VARIABLE SOLVER GEOMETRY TIME
+
+    
+    h=GEOMETRY.h_ini;
+    tt(GEOMETRY.elements,1)=0;
+    for e=1:GEOMETRY.elements
+        if SOLVER.UW
+            tt(e,1)=min(h(e)/MATERIAL.MAT(6,MATERIAL.e(e)),...
+            h(e)/sqrt(MATERIAL.MAT(28,MATERIAL.e(e))/VARIABLE.rho_w));
+        else
+            tt(e,1)=h(e)/MATERIAL.MAT(6,MATERIAL.e(e));
+        end
+    end
+    TT=min(tt);
+    CFL=SOLVER.time_step/TT;
+    fprintf('%f of CFL\n',CFL);
+
+    delta_t=SOLVER.time_step;
+    
+    ste=1;
+    t(ste,1)=0;
+    while t(ste,1)<SOLVER.Time_final
+        ste=ste+1;
+        delta_t=delta_t*SOLVER.time_factor;
+        t(ste,1)=t(ste-1,1)+delta_t;
+    end
+    SOLVER.Time_final=t(ste,1);
+    SOLVER.step_final=ste;
+    TIME.t=t;
+    
+
+    if SOLVER.SAVE_I==1
+        SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I);
+    else
+        SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I)+1;
+    end
+    TIME.tp=zeros(SOLVER.dim,1);
+    fprintf('%i plot steps\n',SOLVER.dim);
+    fprintf('Save %i times before the final\n',round(SOLVER.dim/SOLVER.SAVE_F));
+
 end

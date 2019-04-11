@@ -1,104 +1,214 @@
-function read_geometry(UW,ELEMENT,DIM,PLOT_ini,AMP,filename,pathgeo)
+function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegrid,pathgeo)
 
-    global GEOMETRY
+    global GEOMETRY SOLVER
     
-    [x,elem,NNE,El_type]=read_mesh(filename,pathgeo,DIM);
-
+    UW=SOLVER.UW;
+    AXI=SOLVER.AXI;
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % GRID TYPE
+    % Explore if there is a different grid or we employ the original file
     % Initial checks
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if strcmp(ELEMENT{1},'L1')
-        if DIM>1
+
+    grid=0;
+    
+    if DIM==1
+        if not(strcmp(GRID,'L1'))
             fprintf('Error, DIM mismatches with spatial dimension of the mesh!!\n')
             stop
         end
+    elseif DIM>2
+            fprintf('Error, DIM not implemented!!\n')
+            stop
     else
-        if strcmp(ELEMENT{1},'L6')
-            f1=strcat(filename,'_esq');
-            if ismac || isunix  % Code to run on Mac or Unix plaform 
-                f_i=strcat(pathgeo,'/',f1,'.msh');
-            elseif ispc         % Code to run on Windows platform
-                f_i=strcat(pathgeo,'\',f1,'.msh');
+        if not(strcmp(filegrid,filename))
+            if not(strcmp(filegrid,''))
+                filegrid=filename;
+                if strcmp(GRID,'') 
+                    fprintf('Error, Undefined grid type!!\n')
+                    stop
+                elseif strcmp(GRID,'Q4')
+                    if strcmp(ELEMENT,'T3') || strcmp(ELEMENT,'L1') ||...
+                    strcmp(ELEMENT,'T3-inverse')|| strcmp(ELEMENT,'T3-diamond')
+                        fprintf('Error, wrong definition of grid type!!\n')
+                        stop
+                    end
+                elseif strcmp(GRID,'T6') || strcmp(GRID,'T3')
+                    if strcmp(ELEMENT,'Q4') || strcmp(ELEMENT,'Q4-4') ||...
+                            strcmp(ELEMENT,'L1')
+                        fprintf('Error, wrong definition of grid type!!\n')
+                        stop
+                    end
+                elseif strcmp(GRID,'L1')
+                    if not(strcmp(ELEMENT,'L1'))
+                        fprintf('Error, wrong definition of grid type!!\n')
+                        stop
+                    end  
+                end
+            elseif SOLVER.TYPE{1}~=1
+                filegrid=filename;
             else
-                disp('Platform not supported')
-                stop
-            end 
-            if isfile(f_i)
-                [x_e,elemesq,~,~]=Geo_DynCLM(filename,pathgeo,DIM);
-            else
-                PLOT_ini=0;
+                grid=1;
+                [x_mp,elem_mp,NNE_mp,~]=read_mesh(filename,pathgeo,DIM);
+            end
+        else
+            if strcmp(GRID,'T6')
+                f1=strcat(filegrid,'_esq');
+                if ismac || isunix  % Code to run on Mac or Unix plaform 
+                    f_i=strcat(pathgeo,'/',f1,'.msh');
+                elseif ispc         % Code to run on Windows platform
+                    f_i=strcat(pathgeo,'\',f1,'.msh');
+                else
+                    disp('Platform not supported')
+                    stop
+                end 
+                if isfile(f_i)
+                    [x_e,elem_0,~,~]=read_mesh(f_i,pathgeo,DIM);
+                else
+                    disp('Cannot plot initial mesh, check it please')
+                    PLOT_ini=0;
+                end
             end
         end
             
-        if DIM==3
-            fprintf('Error, DIM mismatches with spatial dimension of the mesh!!\n')
-            stop
-        end 
     end
+
+
+    GEOMETRY=struct('elem',0,'patch_con',0,'patch_el',0,'Area',0,'x_0',0,...
+        'elements',0,'nodes',0,'Area_p',0,'sp',0,'df',0,'xg_0',0,...
+        'h_ini',0,'h_nds',0,'mat_points',0,'node_connect',0);
+
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Build the mesh
+    % Build the grid mesh
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    x_a=x*AMP;     
-    if strcmp(ELEMENT{1},'T3') ...
-            || strcmp(ELEMENT{1},'T3-inverse')...
-            || strcmp(ELEMENT{1},'T3-diamond')
+          
+    
+    
+    [x,elem,NNE,~]=read_mesh(filegrid,pathgeo,DIM);
+    x_a=x*AMP;    % SCALE
+    
+    if strcmp(GRID,'T3')
         
-        if NNE==4
-            if strcmp(ELEMENT{1},'T3')
-                [GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
+        if NNE==4 && grid==0
+            if strcmp(ELEMENT,'T3')
+                [elem,patch_con,patch_el]=...
                     split2(x_a,elem);
-                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
-                elem_0=GEOMETRY.elem;
-            elseif strcmp(ELEMENT{1},'T3-inverse')
+            elseif strcmp(ELEMENT,'T3-inverse')
                 [elem]=reverse(elem); %reverse
-                [GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
-                    split2(x_a,elem);
-                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
-                elem_0=GEOMETRY.elem;
-            elseif strcmp(ELEMENT{1},'T3-diamond')
+                [elem,patch_con,patch_el]=split2(x_a,elem);
+            elseif strcmp(ELEMENT,'T3-diamond')
                 %Patch 4P1P0
                 [xp]=q_g_center(x_a,elem);
-                [x_a,GEOMETRY.elem,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
-                    split(x_a,elem,xp);
-                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
-                elem_0=GEOMETRY.elem;
+                [x_a,elem,patch_con,patch_el]=split(x_a,elem,xp);
             end
+            
+            GEOMETRY.elem=elem;
+            GEOMETRY.patch_con=patch_con;
+            GEOMETRY.patch_el=patch_el;
+            [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
             
         elseif NNE==3
             GEOMETRY.elem=elem;
-            [GEOMETRY.ELEMENT(:),GEOMETRY.ELEMENT(:).Area]=...
-                g_center(x_a,GEOMETRY.elem,DIM);
+            if grid==0
+                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
+                [elements,~]=size(GEOMETRY.elem);
+                GEOMETRY.x_0=x_a;
+                GEOMETRY.patch_el=(1:elements)';  
+                GEOMETRY.patch_con=(1:elements)'; 
+            end
+        else
+            fprintf('Error, wrong definition of grid type!!\n')
+            stop
+        end
+            
+    elseif strcmp(GRID,'T6')
+        GEOMETRY.elem=elem;
+        if grid==0 
+            [xg,GEOMETRY.Area]=g_center(x_a,elem_0,DIM);
             [elements,~]=size(GEOMETRY.elem);
-            GEOMETRY.x_0=x_a;
-            elem_0=GEOMETRY.elem;
             GEOMETRY.patch_el=(1:elements)';  
-            GEOMETRY.patch_con=(1:elements)'; 
+            GEOMETRY.patch_con=(1:elements)';
         end
         
-    elseif strcmp(ELEMENT{1},'Q4')
-        
-        GEOMETRY.elem=elem;
-        [elements,~]=size(elem);
-        [xg,GEOMETRY.Area]=g_center(x_a,elem,DIM);
-        elem_0=GEOMETRY.elem;
-        %No patches
-        GEOMETRY.patch_el=(1:elements)';  
-        GEOMETRY.patch_con=(1:elements)'; 
-        
-    elseif strcmp(ELEMENT{1},'Q4-4')
-        elem_0=elem;
-        [xg,GEOMETRY.elem,GEOMETRY.Area,GEOMETRY.patch_el,...
-            GEOMETRY.patch_con]=quad4xg(x_a,elem);
-        
-    elseif strcmp(ELEMENT{1},'T6')
-        [xg,GEOMETRY.Area]=g_center(x_a,elemesq,DIM);
-        [elements,~]=size(GEOMETRY.elem);
-        GEOMETRY.patch_el=(1:elements)';  
-        GEOMETRY.patch_con=(1:elements)';
-        
-    end
+    elseif strcmp(GRID,'Q4')
+        if grid==1
+            GEOMETRY.elem=elem;
+        else
+            if strcmp(ELEMENT,'Q4')
+                GEOMETRY.elem=elem;
+                if grid==0
+                    [elements,~]=size(elem);
+                    [xg,GEOMETRY.Area]=g_center(x_a,elem,DIM);
+                    GEOMETRY.patch_el=(1:elements)';  
+                    GEOMETRY.patch_con=(1:elements)'; 
+                end
 
+            elseif strcmp(ELEMENT,'Q4-4')
+                elem_0=elem;
+                [xg,GEOMETRY.elem,GEOMETRY.Area,GEOMETRY.patch_el,...
+                    GEOMETRY.patch_con]=quad4xg(x_a,elem);
+            end
+        end
+    end
+    
+    if not(strcmp(ELEMENT,'T6'))
+        x_e=x_a;
+        elem_0=GEOMETRY.elem;
+    end
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Get the material point position
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if grid==1
+        x_mp=x_mp*AMP;     
+        if strcmp(ELEMENT,'T3') ||  strcmp(ELEMENT,'T3-inverse') ||...
+                strcmp(ELEMENT,'T3-diamond')
+            if NNE_mp==4
+                if strcmp(ELEMENT,'T3')
+                    [~,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
+                        split2(x_mp,elem_mp);
+                elseif strcmp(ELEMENT,'T3-inverse')
+                    [elem_mp]=reverse(elem_mp); %reverse
+                    [~,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
+                        split2(x_mp,elem_mp);
+                elseif strcmp(ELEMENT,'T3-diamond')
+                    %Patch 4P1P0
+                    [xp]=q_g_center(x_mp,elem_mp);
+                    [x_mp,~,GEOMETRY.patch_con,GEOMETRY.patch_el]=...
+                        split(x_mp,elem_mp,xp);
+                end
+                
+                [xg,GEOMETRY.Area]=g_center(x_mp,elem_mp,DIM);
+
+            elseif NNE_mp==3
+                [xg,GEOMETRY.Area]=g_center(x_mp,elem_mp,DIM);
+                [els,~]=size(elem_mp);
+                GEOMETRY.patch_el=(1:els)';  
+                GEOMETRY.patch_con=(1:els)'; 
+            end
+
+        elseif strcmp(ELEMENT,'Q4')
+
+            [els,~]=size(elem_mp);
+            [xg,GEOMETRY.Area]=g_center(x_mp,elem_mp,DIM);
+            %No patches
+            GEOMETRY.patch_el=(1:els)';  
+            GEOMETRY.patch_con=(1:els)'; 
+
+        elseif strcmp(ELEMENT,'Q4-4')
+            elem_0=elem;
+            [xg,~,GEOMETRY.Area,GEOMETRY.patch_el,...
+                GEOMETRY.patch_con]=quad4xg(x_mp,elem_mp);
+        end
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Geometry parameters
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    
     [aa,bb]=size(GEOMETRY.patch_con);
     GEOMETRY.Area_p=zeros(aa,1);
     for i=1:aa
@@ -108,15 +218,14 @@ function read_geometry(UW,ELEMENT,DIM,PLOT_ini,AMP,filename,pathgeo)
         end
     end 
     
+    
     GEOMETRY.x_0=x_a;
-    GEOMETRY.xg=xg;
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Geometry parameters
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    GEOMETRY.xg_0=xg;
     
     [GEOMETRY.nodes,GEOMETRY.sp]=size(GEOMETRY.x_0);
     [GEOMETRY.elements,NNE_f]=size(GEOMETRY.elem);
+    
+    [GEOMETRY.mat_points,~]=size(xg);
     
     % Degrees of freedom
     if UW==0
@@ -127,37 +236,142 @@ function read_geometry(UW,ELEMENT,DIM,PLOT_ini,AMP,filename,pathgeo)
         GEOMETRY.df=GEOMETRY.sp+1;
     elseif UW==3
         GEOMETRY.df=2*GEOMETRY.sp+1;
-    end   
+    end
     
-    % Mesh size
-    h(GEOMETRY.elements,1)=0;
-    GEOMETRY.h_nds(GEOMETRY.nodes,1)=0;
+    if AXI==0
+        if GEOMETRY.sp==2
+            GEOMETRY.b_dim=3;
+            GEOMETRY.s_dim=4;
+        elseif GEOMETRY.sp==1
+            GEOMETRY.b_dim=1;
+            GEOMETRY.s_dim=1;
+        else
+            GEOMETRY.b_dim=6;
+            GEOMETRY.s_dim=6;
+        end  
+    elseif AXI==1
+        GEOMETRY.b_dim=3;
+        GEOMETRY.s_dim=4;
+    else 
+        disp('DIMENSION OF THE AXI PARAMETER??')
+        stop
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Creation of MAT_POINT object
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    
+    MAT_POINT(1:GEOMETRY.mat_points)=...
+              struct('xg', zeros(GEOMETRY.sp,1),...
+                     'element', zeros(1),...
+                     'near', zeros(NNE_f,1),...
+                     'N', zeros(NNE_f,1),...
+                     'B', zeros(GEOMETRY.b_dim,GEOMETRY.sp*NNE_f),...
+                     'EP', zeros(3,2),...
+                     'w', zeros(1),...
+                     'xi', zeros(GEOMETRY.sp,1)...
+                 );
+             
+    [MAT_POINT]=AUX.list2S(MAT_POINT,'xg',xg);
+    
+    %-----------------------------------------
+    % NODE CONNECTIVITY
+    %-----------------------------------------
+    node_connect=cell(GEOMETRY.nodes,1);
     for e=1:GEOMETRY.elements
-        if NNE_f==3
-            h(e)=sqrt(2*GEOMETRY.Area(e));
-        elseif NNE_f==4
-            h(e)=sqrt(GEOMETRY.Area(e));
-        end
         for i=1:NNE_f
-            GEOMETRY.h_nds(GEOMETRY.elem(e,i))=...
-                max(GEOMETRY.h_nds(GEOMETRY.elem(e,i)),h(e));
+            node_connect(GEOMETRY.elem(e,i))=...
+                {cat(2,node_connect{GEOMETRY.elem(e,i)},e)};
         end
     end
-    GEOMETRY.h_ini=h;
+    GEOMETRY.node_connect=node_connect;
+    
+    %--------------------------------------------------
+    % near ELEMENTs
+    %-------------------------------------------------- 
+    element_near=cell(GEOMETRY.elements,1);
+    for e=1:GEOMETRY.elements
+        for i=1:NNE_f
+            nc=node_connect{GEOMETRY.elem(e,i)};
+            for j=1:length(nc)
+                if nc(j)~=e && not(ismember(nc(j),element_near{e}))
+                	element_near(e)=...
+                        {cat(2,element_near{e},nc(j))};
+                end
+            end
+        end
+        GEOMETRY.element_near{e,1}=sort(element_near{e});
+    end
+    %--------------------------------------------------
+    % MATERIAL POINT in ELEMENT, and initial neighbors
+    %--------------------------------------------------       
+    if grid==1
+        for mp=1:GEOMETRY.mat_points
+            if I==0
+                e=0;
+                while I==0
+                    e=e+1;
+                    if e>GEOMETRY.elements
+                        disp('Error, out of the mesh');
+                        stop
+                    end
+                    [I]=AUX.IoO(getfield(S(mp),'xg'),...
+                            GEOMETRY.x_a,GEOMETRY.elem(e,:));  
+                end 
+            end
+            MAT_POINT(mp).element=e;
+            MAT_POINT(mp).near=GEOMETRY.elem(e,:);
+        end
+    else
+        if strcmp(ELEMENT,'Q4-4')
+            mp=0;
+            for e=1:GEOMETRY.elements
+                for j=1:4
+                    mp=mp+1;
+                    MAT_POINT(mp).element=e;
+                    MAT_POINT(mp).near=GEOMETRY.elem(e,:);
+                end
+            end
+        else
+            for mp=1:GEOMETRY.mat_points
+                MAT_POINT(mp).element=mp;
+                MAT_POINT(mp).near=GEOMETRY.elem(mp,:);
+            end
+        end
+    end
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Mesh size
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+    GEOMETRY.h_ini=zeros(GEOMETRY.mat_points,1);
+    GEOMETRY.h_nds(GEOMETRY.nodes,1)=0;
+    aux=zeros(GEOMETRY.nodes,1);
+    for e=1:GEOMETRY.mat_points
+        if strcmp(ELEMENT,'T3') || strcmp(ELEMENT,'T3-inverse') || ...
+                strcmp(ELEMENT,'T3-diamond')
+            GEOMETRY.h_ini(e)=sqrt(2*GEOMETRY.Area(e));
+        elseif strcmp(ELEMENT,'Q4-4')||strcmp(ELEMENT,'Q4')
+            GEOMETRY.h_ini(e)=sqrt(GEOMETRY.Area(e));
+        end
+        near=MAT_POINT(e).near;
+        for i=1:length(near)
+            aux(near(i))=aux(near(i))+1;
+            GEOMETRY.h_nds(near(i))=...
+                GEOMETRY.h_nds(near(i))+GEOMETRY.h_ini(e);
+        end
+    end
+    
+    GEOMETRY.h_nds=GEOMETRY.h_nds./aux;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Plot
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if PLOT_ini
-        plot_nb(0,0,x_a,xg,elem_0,0,0)
+        plot_nb(0,0,x_e,xg,elem_0,0,0)
     end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Add shape function parameters
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if strcmp(ELEMENT{2},'LME')
-        read_LME;
-    end
+
 
 end
 
@@ -285,7 +499,7 @@ function [elem2]=reverse(elem)
 
 end
 
-function [xg,elem,Area,patch_el,patch_con]=quad4xg(x_a,elem_0)
+function [xg,elem_0,Area,patch_el,patch_con]=quad4xg(x_a,elem_0)
 
     [~,sp]=size(x_a);
     [elements,NNE]=size(elem_0);
@@ -349,7 +563,7 @@ function [xg,elem,Area,patch_el,patch_con]=quad4xg(x_a,elem_0)
             for j=1:sp
                 xg(k,j)=xp(j);
             end
-            elem(k,:)=elem_0(e,:);
+            %elem(k,:)=elem_0(e,:);
             Area(k)=area_/NNE;
             
         end 
