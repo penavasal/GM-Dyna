@@ -1,56 +1,15 @@
 
 classdef Time_Scheme
-    properties (Dependent)       
+    properties      
         af=0;
         am=0;
         delta=0;
         alpha=0;
-        theta=0;
+        theta=1;
+        gamma=0;
     end
-    methods(Static)
-        function variables
-            global MATERIAL VARIABLE SOLVER GEOMETRY TIME
-
-            h=GEOMETRY.h_ini;
-            tt(GEOMETRY.elements,1)=0;
-            for e=1:GEOMETRY.elements
-                if SOLVER.UW
-                    tt(e,1)=min(h(e)/MATERIAL.MAT(6,MATERIAL.e(e)),...
-                    h(e)/sqrt(MATERIAL.MAT(28,MATERIAL.e(e))/VARIABLE.rho_w));
-                else
-                    tt(e,1)=h(e)/MATERIAL.MAT(6,MATERIAL.e(e));
-                end
-            end
-            TT=min(tt);
-            CFL=SOLVER.time_step/TT;
-            fprintf('%f of CFL\n',CFL);
-
-            delta_t=SOLVER.time_step;
-
-            ste=1;
-            t(ste,1)=0;
-            while t(ste,1)<SOLVER.Time_final
-                ste=ste+1;
-                delta_t=delta_t*SOLVER.time_factor;
-                t(ste,1)=t(ste-1,1)+delta_t;
-            end
-            SOLVER.Time_final=t(ste,1);
-            SOLVER.step_final=ste;
-            TIME.t=t;
-
-
-            if SOLVER.SAVE_I==1
-                SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I);
-            else
-                SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I)+1;
-            end
-            TIME.tp=zeros(SOLVER.dim,1);
-            fprintf('%i plot steps\n',SOLVER.dim);
-            fprintf('Save %i times before the final\n',round(SOLVER.dim/SOLVER.SAVE_F));
-
-        end
-        
-        function parameters(TIS,af,am,delta,alpha,theta)
+    methods
+        function obj=Time_Scheme(TIS,af,am,delta,alpha,theta)
             if TIS==1
                 alpha=0;
             elseif TIS==3 || TIS==4 || TIS==6
@@ -109,22 +68,67 @@ classdef Time_Scheme
                 end
             end
             
-            Time_Scheme.af=af;
-            Time_Scheme.am=am;
-            Time_Scheme.delta=delta;
-            Time_Scheme.alpha=alpha;
-            Time_Scheme.theta=theta;
+            obj.af=af;
+            obj.am=am;
+            obj.delta=delta;
+            obj.gamma=delta;
+            obj.alpha=alpha;
+            obj.theta=theta;
         end
-        
+     
+    end
+    methods(Static)
+        function variables
+            global MATERIAL VARIABLE SOLVER GEOMETRY TIME
+
+            h=GEOMETRY.h_ini;
+            tt(GEOMETRY.elements,1)=0;
+            for e=1:GEOMETRY.elements
+                if SOLVER.UW
+                    tt(e,1)=min(h(e)/MATERIAL.MAT(6,MATERIAL.e(e)),...
+                    h(e)/sqrt(MATERIAL.MAT(28,MATERIAL.e(e))/VARIABLE.rho_w));
+                else
+                    tt(e,1)=h(e)/MATERIAL.MAT(6,MATERIAL.e(e));
+                end
+            end
+            TT=min(tt);
+            CFL=SOLVER.time_step/TT;
+            fprintf('%f of CFL\n',CFL);
+
+            delta_t=SOLVER.time_step;
+
+            ste=1;
+            t(ste,1)=0;
+            while t(ste,1)<SOLVER.Time_final
+                ste=ste+1;
+                delta_t=delta_t*SOLVER.time_factor;
+                t(ste,1)=t(ste-1,1)+delta_t;
+            end
+            SOLVER.Time_final=t(ste,1);
+            SOLVER.step_final=ste;
+            TIME.t=t;
+
+
+            if SOLVER.SAVE_I==1
+                SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I);
+            else
+                SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I)+1;
+            end
+            TIME.tp=zeros(SOLVER.dim,1);
+            fprintf('%i plot steps\n',SOLVER.dim);
+            fprintf('Save %i times before the final\n',round(SOLVER.dim/SOLVER.SAVE_F));
+
+        end
+             
         function [GT]=calculation(d1,a1,v1,Fint,Mm,Cm,load,load1,ste)
             
-            global TI_param TIME
+            global TI_scheme TIME
 
-            af=TI_param(1);
-            am=TI_param(2);
-            delta=TI_param(3);
-            alpha=TI_param(4);
-            theta=TI_param(5);
+            af=TI_scheme.af;
+            am=TI_scheme.am;
+            delta=TI_scheme.delta;
+            alpha=TI_scheme.alpha;
+            theta=TI_scheme.theta;
 
             if ste==1
                 delta_t=TIME.t(ste+1)-TIME.t(ste);
@@ -160,14 +164,15 @@ classdef Time_Scheme
         end
         
         function [matrix]=matrix(mass_mtx,stiff_mtx,damp_mtx,ste)
+            
+            global TI_scheme TIME
 
-            global TI_param TIME
+            af=TI_scheme.af;
+            am=TI_scheme.am;
+            delta=TI_scheme.delta;
+            alpha=TI_scheme.alpha;
+            theta=TI_scheme.theta;
 
-            af=TI_param(1);
-            am=TI_param(2);
-            delta=TI_param(3);
-            alpha=TI_param(4);  
-            theta=TI_param(5);
 
             if ste==1
                 delta_t=TIME.t(ste+1)-TIME.t(ste);
@@ -189,14 +194,12 @@ classdef Time_Scheme
         end
         
         function [incr_d]=solver_1(InvK,FT,a1,v1,ste)
+            
+            global TI_scheme TIME
 
-            global TI_param TIME
+            alpha=TI_scheme.alpha;
+            theta=TI_scheme.theta;
 
-            %af=TI_param(1);
-            %am=TI_param(2);
-            %delta=TI_param(3);
-            alpha=TI_param(4);
-            theta=TI_param(5);
 
             if ste==1
                 delta_t=TIME.t(ste+1)-TIME.t(ste);
@@ -225,15 +228,16 @@ classdef Time_Scheme
 
         end
         
-        function [a1,v1]=G_solver_2(d1,a1,v1,ste)
+        function [a1,v1]=solver_2(d1,a1,v1,ste)
+            
+            global TI_scheme TIME
 
-            global TI_param TIME
+            af=TI_scheme.af;
+            am=TI_scheme.am;
+            delta=TI_scheme.delta;
+            alpha=TI_scheme.alpha;
+            theta=TI_scheme.theta;
 
-            af=TI_param(1);
-            am=TI_param(2);
-            delta=TI_param(3);
-            alpha=TI_param(4);
-            theta=TI_param(5);
 
             du=d1(:,1)-d1(:,2);
 

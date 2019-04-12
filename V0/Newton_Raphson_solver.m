@@ -26,7 +26,7 @@ function [Disp_field,Mat_state,MAT_POINT,FAIL]=...
     while error(iter) > TOL
 
         % 2.1 Solver        
-        [du(:,iter)]=G_solver_1(InvK,GT,a0,v0,ste);
+        [du(:,iter)]=Time_Scheme.solver_1(InvK,GT,a0,v0,ste);
         d0(:,1)=d0(:,1)+du(:,iter);
             
         for j=1:GEOMETRY.nodes
@@ -54,7 +54,7 @@ function [Disp_field,Mat_state,MAT_POINT,FAIL]=...
                 [stiff_mtx,Int_var,Mat_state,FAIL]=...
                     Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,FAIL);
 
-                [matrix]=G_matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
+                [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
 
                 [InvK,~]=apply_conditions(0,ste,matrix,0);
             else           
@@ -64,7 +64,7 @@ function [Disp_field,Mat_state,MAT_POINT,FAIL]=...
         end
 
         % 2.4 G calculation
-        [GT]=G_calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
+        [GT]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
             damp_mtx,load_s(:,1),load_s(:,2),ste);
 
         [~,GT]=apply_conditions(2,ste,0,GT);

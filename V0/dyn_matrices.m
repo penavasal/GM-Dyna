@@ -1,8 +1,8 @@
 function [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,MAT_POINT,d)
 
-    global MATERIAL TI_param SOLVER GEOMETRY VARIABLE
+    global MATERIAL TI_scheme SOLVER GEOMETRY VARIABLE
     
-    alpha=TI_param(4);
+    alpha=TI_scheme.alpha;
     rho_w=VARIABLE.rho_w;
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;

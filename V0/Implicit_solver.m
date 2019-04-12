@@ -23,7 +23,7 @@ function Implicit_solver(MAT_POINT)
     %--------------------------------------------------------------------------
     [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,MAT_POINT,Disp_field.d);
     
-    [matrix]=G_matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
+    [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
         
     [InvK,~]=apply_conditions(0,ste,matrix,0);
          
@@ -38,7 +38,7 @@ function Implicit_solver(MAT_POINT)
         [load_s(:,1),OUTPUT]=calculate_forces...
             (ste,MAT_POINT,Disp_field,OUTPUT);
         
-        [GT]=G_calculation(Disp_field.d,Disp_field.a,Disp_field.v,...
+        [GT]=Time_Scheme.calculation(Disp_field.d,Disp_field.a,Disp_field.v,...
             Mat_state.fint,mass_mtx,damp_mtx,load_s(:,1),load_s(:,2),ste);  
 
         [~,GT]=apply_conditions(1,ste,matrix,GT);
@@ -61,7 +61,7 @@ function Implicit_solver(MAT_POINT)
         [OUTPUT]=AUX.reaction(Mat_state.fint,OUTPUT);
         
         %  5. Assemble time integration matrix and apply conditions
-        [matrix]=G_matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
+        [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
         [InvK,~]=apply_conditions(0,ste,matrix,0);
  
         % 6. Storage

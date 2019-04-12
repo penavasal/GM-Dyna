@@ -2,7 +2,7 @@
 function [Disp_field]=explicit_corrector...
     (ste,lumped,C,Disp_field,load_t,int_Ft)
 
-    global GEOMETRY TI_param TIME SOLVER
+    global GEOMETRY TI_scheme TIME SOLVER
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
@@ -39,7 +39,7 @@ function [Disp_field]=explicit_corrector...
         vs=v0;
     end
     
-    gamma=TI_param(3);
+    gamma=TI_scheme.gamma;
     
     %% 0. Boundary conditions
     [boundary,~,~]=calculate_boundaries(ste);
