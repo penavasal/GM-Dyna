@@ -13,7 +13,7 @@ function Implicit_solver(MAT_POINT)
     %----------------------------------------------------------------------
     
     [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
-        stiff_mtx,load_s]=init(MAT_POINT);
+        stiff_mtx,load_s,MATRIX]=init(MAT_POINT);
     
     
     save(OUTPUT.name, 'GEOMETRY', 'VARIABLE', 'SOLVER');
@@ -21,9 +21,9 @@ function Implicit_solver(MAT_POINT)
     %--------------------------------------------------------------------------
     % Initial matrices
     %--------------------------------------------------------------------------
-    [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,MAT_POINT,Disp_field.d);
+    [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX);
     
-    [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
+    [matrix]=Time_Scheme.matrix(MATRIX.mass,stiff_mtx,MATRIX.damp,ste);
         
     [InvK,~]=apply_conditions(0,ste,matrix,0);
          
@@ -36,23 +36,23 @@ function Implicit_solver(MAT_POINT)
         % 1. Forces
         load_s(:,2)=load_s(:,1);
         [load_s(:,1),OUTPUT]=calculate_forces...
-            (ste,MAT_POINT,Disp_field,OUTPUT);
+            (ste,MAT_POINT,Disp_field,OUTPUT,MATRIX);
         
         [GT]=Time_Scheme.calculation(Disp_field.d,Disp_field.a,Disp_field.v,...
-            Mat_state.fint,mass_mtx,damp_mtx,load_s(:,1),load_s(:,2),ste);  
+            Mat_state.fint,MATRIX.mass,MATRIX.damp,load_s(:,1),load_s(:,2),ste);  
 
         [~,GT]=apply_conditions(1,ste,matrix,GT);
 
         % --------------------------------------------------------
         % 2. Predictor      
         [Disp_field,Mat_state,MAT_POINT,FAIL]=implicit_predictor...
-            (ste,GT,InvK,mass_mtx,damp_mtx,load_s,Disp_field,...
+            (ste,GT,InvK,MATRIX.mass,MATRIX.damp,load_s,Disp_field,...
             MAT_POINT,Mat_state,Int_var,FAIL);
     
         % --------------------------------------------------------
 
         % 3. Recompute mass and damping matrices
-        [mass_mtx,damp_mtx]=dyn_matrices(Mat_state,MAT_POINT,Disp_field.d);
+        [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX);
 
         % 4. Constitutive & Stiffness_mat
         [stiff_mtx,Int_var,Mat_state,~]=...
@@ -61,7 +61,7 @@ function Implicit_solver(MAT_POINT)
         [OUTPUT]=AUX.reaction(Mat_state.fint,OUTPUT);
         
         %  5. Assemble time integration matrix and apply conditions
-        [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
+        [matrix]=Time_Scheme.matrix(MATRIX.mass,stiff_mtx,MATRIX.damp,ste);
         [InvK,~]=apply_conditions(0,ste,matrix,0);
  
         % 6. Storage
@@ -82,6 +82,8 @@ function Implicit_solver(MAT_POINT)
             GLOBAL.dgamma(:,ste_p)  = Int_var.dgamma(:,1);
             GLOBAL.Sy(:,ste_p)      = Int_var.Sy(:,1);
             GLOBAL.Sy_r(:,ste_p)    = Int_var.Sy_r(:,1);
+            
+            GLOBAL.xg(:,ste_p)      = AUX.reshape_S2list(MAT_POINT,'xg');
 
             [GLOBAL.gamma_nds(:,ste_p)]=AUX.Ep2Ep_n...
                 (GLOBAL.gamma,MAT_POINT,ste_p);

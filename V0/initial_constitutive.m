@@ -8,14 +8,18 @@ function [Mat_state,stiff_mtx,Int_var]=...
     Mat=MATERIAL.e;
     MAT=MATERIAL.MAT;
     
+    df=GEOMETRY.df;
+    dimf=GEOMETRY.f_dim;
+    dims=GEOMETRY.s_dim;
+    
     
     Kt=1;
 
-    stiff_mtx = zeros(GEOMETRY.df*GEOMETRY.nodes,GEOMETRY.df*GEOMETRY.nodes);
+    stiff_mtx = zeros(df*GEOMETRY.nodes);
     
-    f_v       = zeros(GEOMETRY.sp*GEOMETRY.sp+1,1);
-    f_old     = zeros(GEOMETRY.sp*GEOMETRY.sp+1,1);
-    sig_0     = zeros(4,1);
+    f_v       = zeros(dimf,1);
+    f_old     = zeros(dimf,1);
+    sig_0     = zeros(dims,1);
     
    
     TOL=1e-3;
@@ -67,12 +71,12 @@ function [Mat_state,stiff_mtx,Int_var]=...
         
         
         %% Vector F, Fp to Matrixes
-        for i=1:5
-            f_v(i,1)=Mat_state.F((e-1)*5 + i,1);
-            f_old(i,1)=Mat_state.F((e-1)*5 + i,2);
+        for i=1:dimf
+            f_v(i,1)=Mat_state.F((e-1)*dimf + i,1);
+            f_old(i,1)=Mat_state.F((e-1)*dimf + i,2);
         end           
-        [F]=AUX.v2m(f_v,GEOMETRY.sp);
-        [Fold]=AUX.v2m(f_old,GEOMETRY.sp);
+        [F]=AUX.v2m(f_v);
+        [Fold]=AUX.v2m(f_old);
         jacobians=det(F);
         
         if MODEL(Mat(e))>2
@@ -84,8 +88,8 @@ function [Mat_state,stiff_mtx,Int_var]=...
              
         %% Calculate the deformation gradient state
         error(1)=1e32;
-        ee=zeros(4,1);
-        e_fin=zeros(4,1);
+        ee=zeros(dims,1);
+        e_fin=zeros(dims,1);
         iter=1;
         while error(iter) > TOL
         
@@ -163,8 +167,8 @@ function [Mat_state,stiff_mtx,Int_var]=...
         T_vec(2,1)=T(2,2);
         T_vec(3,1)=T(3,3);
         T_vec(4,1)=T(1,2);
-        for i=1:4
-            Mat_state.Sigma((e-1)*4+i,1)=T_vec(i,1);
+        for i=1:dims
+            Mat_state.Sigma((e-1)*dims+i,1)=T_vec(i,1);
         end
         
         MAT_POINT(e).J    =   jacobians;
@@ -174,17 +178,17 @@ function [Mat_state,stiff_mtx,Int_var]=...
             Int_var.P0(e,1)   =   press;
         end
         
-        [be]=AUX.m2v(Be,GEOMETRY.sp);
-        [f]=AUX.m2v(F,GEOMETRY.sp);
-        for i=1:5
-            Mat_state.Be((e-1)*5+i,2)=be(i,1);
-            Mat_state.F((e-1)*5+i,2)=f(i,1);
+        [be]=AUX.m2v(Be);
+        [f]=AUX.m2v(F);
+        for i=1:dimf
+            Mat_state.Be((e-1)*dimf+i,2)=be(i,1);
+            Mat_state.F((e-1)*dimf+i,2)=f(i,1);
         end 
         
 %         if UW==1
-%             [f_w]=AUX.m2v(F_w,sp);
-%             for i=1:5
-%                 Mat_state.Fw((e-1)*5+i,2)=f_w(i,1);
+%             [f_w]=AUX.m2v(F_w);
+%             for i=1:dimf
+%                 Mat_state.Fw((e-1)*dimf+i,2)=f_w(i,1);
 %             end 
 %         end
              

@@ -3,7 +3,7 @@
 function [Disp_field,Mat_state,MAT_POINT,FAIL]=explicit_predictor...
             (ste,Disp_field,MAT_POINT,Mat_state,FAIL)
 
-    global GEOMETRY TI_scheme TIME
+    global GEOMETRY TIME
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
@@ -14,7 +14,7 @@ function [Disp_field,Mat_state,MAT_POINT,FAIL]=explicit_predictor...
         time_step=TIME.t(ste)-TIME.t(ste-1);
     end  
     
-    gamma=TI_scheme.gamma;
+    gamma=TIME.gamma;
     x_a = Disp_field.x_a;
     d0  = Disp_field.d;
     a0  = Disp_field.a;

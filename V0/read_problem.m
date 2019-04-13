@@ -10,7 +10,7 @@ function MAT_POINT=read_problem
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Some possible parameters if they are not read
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    global VARIABLE SOLVER TI_scheme
+    global VARIABLE SOLVER TIME
     
     % GEOMETRY
     filename='data_m';
@@ -338,12 +338,12 @@ function MAT_POINT=read_problem
     %----------------------------------------------------------------------
     % Solver variables: Time Integration Scheme
     %----------------------------------------------------------------------
-    TI_scheme=Time_Scheme(TIS,af,am,delta,alpha,theta);
+    TIME=Time_Scheme(TIS,af,am,delta,alpha,theta);
     
     %----------------------------------------------------------------------
     % Time-related conditions
     %----------------------------------------------------------------------
-    TI_scheme.variables;
+    TIME.variables;
     
 end
 

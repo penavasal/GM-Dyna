@@ -1,5 +1,5 @@
 function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
-        stiff_mtx,load_s]=init(MAT_POINT)
+        stiff_mtx,load_s,MATRIX]=init(MAT_POINT)
     
     global GEOMETRY VARIABLE MATERIAL TIME SOLVER
         
@@ -32,7 +32,6 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
     Mat_state.F=zeros(l1*elements,2);
     Mat_state.Be=zeros(l1*elements,2);
     Mat_state.Sigma=zeros(l2*elements,2);
-    Mat_state.xg=zeros(elements,2);
     Mat_state.fint=zeros(l0,2);
     
     if SOLVER.UW==1
@@ -63,12 +62,13 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
     GLOBAL.Es   = zeros(l2*elements,dim);
     GLOBAL.Es_p = zeros(l2*elements,dim);
     GLOBAL.J    = ones(elements,dim);
-    GLOBAL.xg   = zeros(elements,2);
+    GLOBAL.xg   = zeros(elements*GEOMETRY.sp,dim);
     if SOLVER.UW==1
         GLOBAL.pw=zeros(elements,dim);
         GLOBAL.Fw=zeros(l1*elements,dim);
     end
     
+    MATRIX=DYN_MATRIX;
   
     %----------------------------------------------------------------------
     % VECTORS OF PARAMETERS
@@ -126,7 +126,9 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         Mat_state.Be(:,2)=GLOBAL.Be(:,ste_p);              %LEFT CAUCHY GREEN 
         
         [MAT_POINT]=list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
-        [MAT_POINT]=list2S(MAT_POINT,'xg',GLOBAL.xg(:,ste_p)); %Revisar
+        
+        [MAT_POINT]=list2S(MAT_POINT,'xg',...
+            reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
         
         if SOLVER.UW==1
             Mat_state.pw(:,2)=GLOBAL.pw(:,ste_p);
@@ -176,7 +178,7 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         
         [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
             initial_state(MAT_POINT,Disp_field,Int_var,Mat_state,...
-            GLOBAL,OUTPUT);
+            GLOBAL,OUTPUT,MATRIX);
         
     end 
 
@@ -298,7 +300,7 @@ end
 
 function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
          initial_state(MAT_POINT,Disp_field,Int_var,Mat_state,...
-         GLOBAL,OUTPUT)
+         GLOBAL,OUTPUT,MATRIX)
 
     global GEOMETRY SOLVER
     
@@ -311,7 +313,7 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
     
     [Mat_state]=internal_forces(MAT_POINT,Mat_state);
     [load_s(:,1),OUTPUT]=...
-            calculate_forces(1,MAT_POINT,Disp_field,OUTPUT);
+            calculate_forces(1,MAT_POINT,Disp_field,OUTPUT,MATRIX);
     
     GT= load_s(:,1)-Mat_state.fint(:,1);
     [InvK,GT]=apply_conditions(3,1,matrix,GT);

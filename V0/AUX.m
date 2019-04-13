@@ -5,10 +5,13 @@
         
         % P & Q invariants
         function [P2,Q2]=invar(Ss,e)
+            global GEOMETRY
+            
+            dims=GEOMETRY.s_dim;
 
-            ss=zeros(4,1);
-            for i=1:4
-                ss(5-i)=Ss(e*4+1-i);
+            ss=zeros(dims,1);
+            for i=1:dims
+                ss(dims+1-i)=Ss(e*dims+1-i);
             end
 
             Sc=AUX.e2E(ss);
@@ -25,33 +28,63 @@
         % STRESS - STRAIN vector to tensor
         function [E]=e2E(e)
 
-            E=zeros(3,3);
-
-            %Build matrix
-
-            E(1,1)=e(1);
-            E(2,2)=e(2);
-            E(1,2)=e(4);
-            E(2,1)=e(4);
-            E(3,3)=e(3);
-
+            global GEOMETRY 
+            
+            if GEOMETRY.sp==1
+                E=e(1);
+            else
+                E=zeros(3,3);
+                %Build matrix
+                if GEOMETRY.sp==2
+                    E(1,1)=e(1);
+                    E(2,2)=e(2);
+                    E(1,2)=e(4);
+                    E(2,1)=e(4);
+                    E(3,3)=e(3);
+                else
+                    E(1,1)=e(1);
+                    E(2,2)=e(2);
+                    E(1,2)=e(4);
+                    E(2,1)=e(4);
+                    E(1,3)=e(5);
+                    E(3,1)=e(5);
+                    E(2,3)=e(6);
+                    E(3,2)=e(6);
+                    E(3,3)=e(3);
+                end
+            end
         end
         
         % STRESS - STRAIN tensor to vector
         function [e]=E2e(E)
-            e=zeros(4,1);
-
+            
+            global GEOMETRY
+            
+            e=zeros(GEOMETRY.s_dim,1);
+            
             %Build vector
             e(1)=E(1,1);
-            e(2)=E(2,2);
-            e(3)=E(3,3);
-            e(4)=E(1,2);%+E(2,1);
+            if GEOMETRY.sp>1
+                e(2)=E(2,2);
+                e(3)=E(3,3);
+                e(4)=E(1,2);
+                if GEOMETRY.sp>2
+                	e(5)=E(1,3);
+                    e(6)=E(2,3);
+                end
+            end
+                    
         end
         
         % DEF GRADIENT tensor to vector
-        function [f]=m2v(F,sp)
+        function [f]=m2v(F)
 
-            f=zeros(sp*sp+1,1);
+            global GEOMETRY
+            
+            sp=GEOMETRY.sp;
+            dimf=GEOMETRY.f_dim;
+            
+            f=zeros(dimf,1);
 
             %Build vector
             for i=1:sp
@@ -59,13 +92,24 @@
                    f((i-1)*sp+j,1)=F(i,j);
                 end
             end
-            f(sp*sp+1,1)=F(i+1,j+1);
+            if sp==2
+                f(sp*sp+1,1)=F(i+1,j+1);
+            end
         end
         
         % DEF GRADIENT vector to tensor
-        function [F]=v2m(def_G,sp)
+        function [F]=v2m(def_G)
    
-            F=zeros(sp+1,sp+1);
+            global GEOMETRY
+            
+            sp=GEOMETRY.sp;
+            dimf=GEOMETRY.f_dim;
+            
+            if sp==1
+                F=zeros(sp,sp);
+            else
+                F=zeros(3,3);
+            end
 
             %Build matrix
             for i=1:sp
@@ -73,7 +117,9 @@
                     F(i,j)=def_G((i-1)*sp+j,1);
                 end
             end
-            F(i+1,j+1)=def_G(sp*sp+1,1);
+            if sp==2
+                F(3,3)=def_G(dimf,1);
+            end
         end
         
         % Reaction forces
@@ -100,16 +146,19 @@
 
             global GEOMETRY
 
-            [es,es_p]=deal(zeros(GEOMETRY.mat_points*4,1));
-            [f_v,be]=deal(zeros(5,1));
+            dimf=GEOMETRY.f_dim;
+            dims=GEOMETRY.s_dim;
+            
+            [es,es_p]=deal(zeros(GEOMETRY.mat_points*dims,1));
+            [f_v,be]=deal(zeros(dimf,1));
 
             for e=1:GEOMETRY.mat_points
-                for i=1:5
-                    f_v(i,1)=def_G((e-1)*5 + i,1);
-                    be(i,1)=b_e((e-1)*5 + i,1);
+                for i=1:dimf
+                    f_v(i,1)=def_G((e-1)*dimf + i,1);
+                    be(i,1)=b_e((e-1)*dimf + i,1);
                 end           
-                [F]=AUX.v2m(f_v,GEOMETRY.sp);
-                [Be]=AUX.v2m(be,GEOMETRY.sp);
+                [F]=AUX.v2m(f_v);
+                [Be]=AUX.v2m(be);
 
                 Btot = F*F';
                 Etot = logm(Btot)/2;
@@ -118,9 +167,9 @@
 
                 [ee]=AUX.E2e(Ee);
                 [ep]=AUX.E2e(Ep);
-                for i=1:4
-                    es((e-1)*4+i,1)=ee(i,1);
-                    es_p((e-1)*4+i,1)=ep(i,1);
+                for i=1:dims
+                    es((e-1)*dims+i,1)=ee(i,1);
+                    es_p((e-1)*dims+i,1)=ep(i,1);
                 end
             end
 
@@ -152,7 +201,7 @@
             end
         end
         
-        % Structure to list
+        % list to Structure
         function [S]=list2S(S,field,list)
             [a,~]=size(list);
             %list=zeros(b,1);
@@ -198,6 +247,15 @@
                 end
             end
         end
+        
+        % Reshape structure to save
+        function [list2]=reshape_S2list(S,field)
+            [list]=AUX.S2list(S,field);
+            [a,b]=size(list);
+            list2=reshape(list,[a*b,1]);
+        end
+        
+        
     end
  end
  

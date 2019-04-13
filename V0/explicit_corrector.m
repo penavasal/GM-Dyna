@@ -1,8 +1,8 @@
 
 function [Disp_field]=explicit_corrector...
-    (ste,lumped,C,Disp_field,load_t,int_Ft)
+    (ste,MATRIX,Disp_field,load_t,int_Ft)
 
-    global GEOMETRY TI_scheme TIME SOLVER
+    global GEOMETRY TIME SOLVER
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
@@ -39,7 +39,7 @@ function [Disp_field]=explicit_corrector...
         vs=v0;
     end
     
-    gamma=TI_scheme.gamma;
+    gamma=TIME.gamma;
     
     %% 0. Boundary conditions
     [boundary,~,~]=calculate_boundaries(ste);
@@ -48,21 +48,22 @@ function [Disp_field]=explicit_corrector...
 
     if SOLVER.UW==1
         % 5.1 W Solver
-        residual=lumped.mass_w*(int_Fs(:,1)-int_Fs(:,2)) - ...
-            (lumped.mass_w-lumped.mass)*(int_Fw(:,1)-int_Fw(:,2))...
-            + time_step*lumped.mass*C*aw(:,2)...
-            + lumped.mass_w*(load_s(:,1)-load_s(:,2))...
-            - lumped.mass*(load_w(:,1)-load_w(:,2));
+        residual=MATRIX.l_mass_w*(int_Fs(:,1)-int_Fs(:,2)) - ...
+            (MATRIX.l_mass_w-MATRIX.l_mass)*(int_Fw(:,1)-int_Fw(:,2))...
+            + time_step*MATRIX.l_mass*C*aw(:,2)...
+            + MATRIX.l_mass_w*(load_s(:,1)-load_s(:,2))...
+            - MATRIX.l_mass*(load_w(:,1)-load_w(:,2));
 
-        mass_mat=lumped.mass_w*lumped.mass_w-time_step*gamma*lumped.mass*C...
-            -lumped.mass*lumped.mass_wn;
+        mass_mat=MATRIX.l_mass_w*MATRIX.l_mass_w-time_step*gamma*...
+            MATRIX.l_mass*MATRIX.l_damp - MATRIX.l_mass*MATRIX.l_mass_wn;
 
         for i=1:nodes
             for j=1:sp
                 if (boundary(i*df+1-j)~=0)
                     mass_mat(i*sp+1-j,i*sp+1-j)=1;
                     Inv(i*sp+1-j,i*sp+1-j)=1;
-                    residual(i*sp+1-j,1)=(vw(i*sp+1-j,1)-vw(i*sp+1-j,2))/time_step;
+                    residual(i*sp+1-j,1)=...
+                        (vw(i*sp+1-j,1)-vw(i*sp+1-j,2))/time_step;
                 else
                     Inv(i*sp+1-j,i*sp+1-j)=1/mass_mat(i*sp+1-j,i*sp+1-j);
                 end
@@ -73,7 +74,7 @@ function [Disp_field]=explicit_corrector...
         aw(:,1)=aw(:,2)+daw;
 
          residual=(int_Fs(:,1)-int_Fs(:,2))-(int_Fw(:,1)-int_Fw(:,2))-...
-             lumped.mass_w*daw+(load_s(:,1)-load_s(:,2));
+             MATRIX.l_mass_w*daw+(load_s(:,1)-load_s(:,2));
         
     else
         residual=-(int_Fs(:,1)-int_Fs(:,2))+(load_s(:,1)-load_s(:,2));
@@ -89,7 +90,7 @@ function [Disp_field]=explicit_corrector...
                     vs((i-1)*sp+j,2))/time_step-as((i-1)*sp+j,2);
             else
                 Inv((i-1)*sp+j,(i-1)*sp+j)=...
-                    1/lumped.mass((i-1)*sp+j,(i-1)*sp+j);
+                    1/MATRIX.l_mass((i-1)*sp+j,(i-1)*sp+j);
             end
         end
     end

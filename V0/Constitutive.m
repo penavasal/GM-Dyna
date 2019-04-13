@@ -3,40 +3,41 @@ function [stiff_mtx,Int_var,Mat_state,FAIL]=...
  
     global GEOMETRY SOLVER MATERIAL
     
-    sp=GEOMETRY.sp;
     df=GEOMETRY.df;
+    dimf=GEOMETRY.f_dim;
+    dims=GEOMETRY.s_dim;
     
     Mat=MATERIAL.e;
     MODEL=MATERIAL.MODEL;
     MAT=MATERIAL.MAT;
     
-    f_v       = zeros(sp*sp+1,1);
-    f_old     = zeros(sp*sp+1,1);
+    f_v       = zeros(dimf,1);
+    f_old     = zeros(dimf,1);
     if SOLVER.UW
-        f_v_w     = zeros(sp*sp+1,1);
+        f_v_w     = zeros(dimf,1);
     end
-    be        = zeros(sp*sp+1,1); 
-    stiff_mtx = zeros(df*GEOMETRY.nodes,df*GEOMETRY.nodes);
+    be        = zeros(dimf,1); 
+    stiff_mtx = zeros(df*GEOMETRY.nodes);
 
     if FAIL==0
         for e=1:GEOMETRY.mat_points
                         
             if SOLVER.UW
-                for i=1:5
-                    f_v_w(i,1)=Mat_state.Fw((e-1)*5 + i,1);
+                for i=1:dimf
+                    f_v_w(i,1)=Mat_state.Fw((e-1)*dimf + i,1);
                 end           
-                [F_w]=AUX.v2m(f_v_w,sp);
+                [F_w]=AUX.v2m(f_v_w);
             end
                 
             %Vector F, Fp to Matrixes
-            for i=1:5
-                f_v(i,1)=Mat_state.F((e-1)*5 + i,1);
-                f_old(i,1)=Mat_state.F((e-1)*5 + i,2);
-                be(i,1)=Mat_state.Be((e-1)*5 + i,2);
+            for i=1:dimf
+                f_v(i,1)=Mat_state.F((e-1)*dimf + i,1);
+                f_old(i,1)=Mat_state.F((e-1)*dimf + i,2);
+                be(i,1)=Mat_state.Be((e-1)*dimf + i,2);
             end           
-            [F]=AUX.v2m(f_v,sp);
-            [Fold]=AUX.v2m(f_old,sp);
-            [Be]=AUX.v2m(be,sp);
+            [F]=AUX.v2m(f_v);
+            [Fold]=AUX.v2m(f_old);
+            [Be]=AUX.v2m(be);
             
             if MODEL(Mat(e))<2
                 if MODEL(Mat(e))==0
@@ -91,12 +92,12 @@ function [stiff_mtx,Int_var,Mat_state,FAIL]=...
                 break;
             else
                 [sig]=AUX.E2e(T);
-                [be]=AUX.m2v(Be,sp);
-                for i=1:5
-                    Mat_state.Be((e-1)*5+i,1)=be(i,1);
+                [be]=AUX.m2v(Be);
+                for i=1:dimf
+                    Mat_state.Be((e-1)*dimf+i,1)=be(i,1);
                 end 
-                for i=1:4
-                    Mat_state.Sigma((e-1)*4+i,1)=sig(i,1);
+                for i=1:dims
+                    Mat_state.Sigma((e-1)*dims+i,1)=sig(i,1);
                 end
                 
                 % ----------------------------

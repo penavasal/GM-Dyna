@@ -5,6 +5,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
     
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
+    dimf=GEOMETRY.f_dim;
     
     [aa,bb]=size(GEOMETRY.patch_con);
     area_p_n=zeros(aa,1);
@@ -13,9 +14,9 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
     logJ_w=zeros(aa,1);
 
         
-    m_I=[1 0 0 1 1];
-    f_v=zeros(sp*sp+1,1);
-    f_v_w=zeros(sp*sp+1,1);
+    m_I=AUX.m2v(eye(3));
+    f_v=zeros(dimf,1);
+    f_v_w=zeros(dimf,1);
 
     jacobians=zeros(GEOMETRY.mat_points,1);
         
@@ -67,16 +68,16 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
             dF_=bs*us;                % Incremental F
 
             if SOLVER.AXI==0
-                dF_(sp*sp+1)=dF_(1);
+                dF_(dimf)=dF_(1);
             end
-            dF_=dF_+m_I';
+            dF_=dF_+m_I;
 
             %Vector F to Matrix F
             for i=1:5
                 f_v(i,1)=Mat_state.F((e-1)*5 + i,2);
             end           
-            [F]=AUX.v2m(f_v,sp);            
-            [dF]=AUX.v2m(dF_,sp);
+            [F]=AUX.v2m(f_v);            
+            [dF]=AUX.v2m(dF_);
             F=dF*F;           
             jacobians(e)=det(F);
             
@@ -92,16 +93,16 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
 
                 dF_w=bw*uw;
                 if SOLVER.AXI==0
-                    dF_w(sp*sp+1)=0;
+                    dF_w(dimf)=0;
                 end
-                dF_w=dF_w+m_I';
+                dF_w=dF_w+m_I;
 
                 %Vector F to Matrix F
-                for i=1:5
-                    f_v_w(i,1)=Mat_state.Fw((e-1)*5 + i,2);
+                for i=1:dimf
+                    f_v_w(i,1)=Mat_state.Fw((e-1)*dimf + i,2);
                 end           
-                [F_w]=AUX.v2m(f_v_w,sp);
-                [dFw]=AUX.v2m(dF_w,sp);
+                [F_w]=AUX.v2m(f_v_w);
+                [dFw]=AUX.v2m(dF_w);
                 F_w=dFw*F_w;
                 
             end
@@ -117,9 +118,9 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 MAT_POINT(e).J=jacobians(e);
                 
                 %Storage of vector F
-                [f]=AUX.m2v(F,sp);
-                for i=1:5
-                    Mat_state.F(e*5+1-i,1)=f(6-i);
+                [f]=AUX.m2v(F);
+                for i=1:dimf
+                    Mat_state.F(e*dimf+1-i,1)=f(dimf+1-i);
                 end
 
                 if isnan(F)
@@ -142,9 +143,9 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                     logJ_w(j)=logJ_w(j) + GEOMETRY.Area(e)*det(F_w)*log(det(F_w));
                 else
                     %Storage of vector F
-                    [f_w]=AUX.m2v(F_w,sp);
-                    for i=1:5
-                        Mat_state.Fw(e*5+1-i,1)=f_w(6-i);
+                    [f_w]=AUX.m2v(F_w);
+                    for i=1:dimf
+                        Mat_state.Fw(e*dimf+1-i,1)=f_w(dimf+1-i);
                     end
                 end
             end
@@ -169,9 +170,9 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 MAT_POINT(e).J=jacobians(e);
                 
                 %Storage of vector F
-                [f]=AUX.m2v(F_,sp);
-                for i=1:5
-                    Mat_state.F(e*5+1-i,1)=f(6-i);
+                [f]=AUX.m2v(F_);
+                for i=1:dimf
+                    Mat_state.F(e*dimf+1-i,1)=f(dimf+1-i);
                 end
                 
                 if SOLVER.REMAPPING
@@ -202,9 +203,9 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                     %F_w_=(J_bar/det(F_w))^(1/3)*F_w;
 
                     %Storage of vector F
-                    [f_w]=AUX.m2v(F_w_,sp);
-                    for i=1:5
-                        Mat_state.Fw(e*5+1-i,1)=f_w(6-i);
+                    [f_w]=AUX.m2v(F_w_);
+                    for i=1:dimf
+                        Mat_state.Fw(e*dimf+1-i,1)=f_w(dimf+1-i);
                     end
                 end
             end

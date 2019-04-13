@@ -13,12 +13,12 @@ function Explicit_solver(MAT_POINT)
     %----------------------------------------------------------------------
     
     [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
-        ~,load_s]=init(MAT_POINT);
+        ~,load_s,MATRIX]=init(MAT_POINT);
     
     save(OUTPUT.name, 'GEOMETRY','VARIABLE','SOLVER');
     
-    %[lumped]   = lumped_mass(MAT_POINT);
-    %[lumped_C] = lumped_damp(MAT_POINT,Mat_state);
+    %[MATRIX]   = MATRIX.lumped_mass(MAT_POINT,MATRIX);
+    %[MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % LOOP
@@ -29,7 +29,7 @@ function Explicit_solver(MAT_POINT)
         % 1. Forces
         load_s(:,2)=load_s(:,1);
         [load_s(:,1),OUTPUT]=calculate_forces...
-            (ste,MAT_POINT,Disp_field,OUTPUT);
+            (ste,MAT_POINT,Disp_field,OUTPUT,MATRIX);
 
         % --------------------------------------------------------
         % 2. Predictor         
@@ -38,8 +38,8 @@ function Explicit_solver(MAT_POINT)
         
 
         % 3. Recompute mass and damping matrices
-        [lumped]   = lumped_mass(MAT_POINT);
-        [lumped_C] = lumped_damp(MAT_POINT,Mat_state);
+        [MATRIX] = MATRIX.lumped_mass(MAT_POINT,MATRIX);
+        [MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
 
         % 4. Constitutive &/O Stiffness_mat
         [~,Int_var,Mat_state,~]=...
@@ -50,7 +50,7 @@ function Explicit_solver(MAT_POINT)
         %  5. Final conditions: corrector
         
         [Disp_field]=explicit_corrector...
-            (ste,lumped,lumped_C,Disp_field,load_s,Mat_state.fint);
+            (ste,MATRIX,Disp_field,load_s,Mat_state.fint);
 
         % 6. Storage
         if rem(ste,SOLVER.SAVE_I)==0
@@ -74,6 +74,8 @@ function Explicit_solver(MAT_POINT)
             GLOBAL.dgamma(:,ste_p)  = Int_var.dgamma(:,1);
             GLOBAL.Sy(:,ste_p)      = Int_var.Sy(:,1);
             GLOBAL.Sy_r(:,ste_p)    = Int_var.Sy_r(:,1);
+            
+            GLOBAL.xg(:,ste_p)      = AUX.reshape_S2list(MAT_POINT,'xg');
 
             [GLOBAL.gamma_nds(:,ste_p)]=AUX.Ep2Ep_n...
                 (GLOBAL.gamma,MAT_POINT,ste_p);

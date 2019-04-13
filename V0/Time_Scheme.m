@@ -7,6 +7,8 @@ classdef Time_Scheme
         alpha=0;
         theta=1;
         gamma=0;
+        tp;
+        t;
     end
     methods
         function obj=Time_Scheme(TIS,af,am,delta,alpha,theta)
@@ -122,13 +124,13 @@ classdef Time_Scheme
              
         function [GT]=calculation(d1,a1,v1,Fint,Mm,Cm,load,load1,ste)
             
-            global TI_scheme TIME
+            global TIME
 
-            af=TI_scheme.af;
-            am=TI_scheme.am;
-            delta=TI_scheme.delta;
-            alpha=TI_scheme.alpha;
-            theta=TI_scheme.theta;
+            af=TIME.af;
+            am=TIME.am;
+            delta=TIME.delta;
+            alpha=TIME.alpha;
+            theta=TIME.theta;
 
             if ste==1
                 delta_t=TIME.t(ste+1)-TIME.t(ste);
@@ -165,13 +167,13 @@ classdef Time_Scheme
         
         function [matrix]=matrix(mass_mtx,stiff_mtx,damp_mtx,ste)
             
-            global TI_scheme TIME
+            global TIME
 
-            af=TI_scheme.af;
-            am=TI_scheme.am;
-            delta=TI_scheme.delta;
-            alpha=TI_scheme.alpha;
-            theta=TI_scheme.theta;
+            af=TIME.af;
+            am=TIME.am;
+            delta=TIME.delta;
+            alpha=TIME.alpha;
+            theta=TIME.theta;
 
 
             if ste==1
@@ -195,10 +197,10 @@ classdef Time_Scheme
         
         function [incr_d]=solver_1(InvK,FT,a1,v1,ste)
             
-            global TI_scheme TIME
+            global TIME
 
-            alpha=TI_scheme.alpha;
-            theta=TI_scheme.theta;
+            alpha=TIME.alpha;
+            theta=TIME.theta;
 
 
             if ste==1
@@ -230,13 +232,13 @@ classdef Time_Scheme
         
         function [a1,v1]=solver_2(d1,a1,v1,ste)
             
-            global TI_scheme TIME
+            global TIME
 
-            af=TI_scheme.af;
-            am=TI_scheme.am;
-            delta=TI_scheme.delta;
-            alpha=TI_scheme.alpha;
-            theta=TI_scheme.theta;
+            af=TIME.af;
+            am=TIME.am;
+            delta=TIME.delta;
+            alpha=TIME.alpha;
+            theta=TIME.theta;
 
 
             du=d1(:,1)-d1(:,2);
