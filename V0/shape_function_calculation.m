@@ -3,19 +3,12 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
 
     global GEOMETRY SOLVER
     
-                %volume=GEOMETRY.Area.*jacobians;
-            %jacobians=Mat_state.J;
-
-            %x_a=Disp_field.x_a;
-
-            %h=GEOMETRY.h_ini.*sqrt(jacobians);
-            
-            
-    
+    REM_T=0;
+              
     % INITIAL CALCULATION
     
-    if INITIAL==0
-        
+    if INITIAL==1
+
         % Measurement of remapping
         for i=1:GEOMETRY.mat_points
             for j=1:3
@@ -30,16 +23,15 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
             MAT_POINT=LME.initialize(MAT_POINT);
             
             for i=1:GEOMETRY.mat_points
-                %if wrap(i)==1
-                [MAT_POINT]=LME.near(i,GEOMETRY.x_0,GEOMETRY.xg_0,...
+                xg=GEOMETRY.xg_0(i,:);
+                [MAT_POINT]=LME.near(i,GEOMETRY.x_0,xg,...
                     GEOMETRY.h_ini,MAT_POINT); 
                 [MAT_POINT,FAIL]=LME.shapef...
-                    (i,GEOMETRY.x_0,GEOMETRY.h_ini,GEOMETRY.xg_0,MAT_POINT);
+                    (i,GEOMETRY.x_0,GEOMETRY.h_ini,xg,MAT_POINT);
                 if FAIL
                     fprintf('FAIL in the initial calculation of Shape function \n');
                     stop;
                 end
-                %end
             end
             
         else
@@ -68,28 +60,60 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
             
         end
         
-%         if SOLVER.TYPE{1}==0 %OTM 
-%         elseif SOLVER.TYPE{1}==1 %MPM
-%         end
-
-        wrap=ones(GEOMETRY.mat_points,1);
-        % MAKE Bbar - Patch
-        if SOLVER.B_BAR==1
-
-            [MAT_POINT]=bbar_matrix...
-                (GEOMETRY.patch_con,GEOMETRY.patch_el,GEOMETRY.mat_points,...
-                MAT_POINT,GEOMETRY.Area,wrap,SOLVER.B_BAR);
-        else
-            [MAT_POINT]=b_m(GEOMETRY.mat_points,...
-                GEOMETRY.sp,wrap,MAT_POINT);
-        end
-
     else
         
         if strcmp(SOLVER.TYPE{2},'LME')
-            disp('Falta por hacer')
+            if SOLVER.TYPE{1}==0 || SOLVER.TYPE{1}==1 %OTM %MPM
+                for i=1:GEOMETRY.mat_points            
+                    [MAT_POINT,REMAP]=REMAPPING(MAT_POINT,i);
+                    REM_T=max(REM_T,REMAP);  
+                    if REMAP
+                        if SOLVER.TYPE{1}==0 %OTM
+                            x=Disp_field.x_a;
+                            jacobians=MAT_POINT(i).J;
+                            h=GEOMETRY.h_ini.*sqrt(jacobians);
+                            xg = getfield(MAT_POINT(i),'xg');
+                        elseif SOLVER.TYPE{1}==1 %MPM
+                            x=GEOMETRY.x_0;
+                            xg=GEOMETRY.xg_0(i,:);
+                            h=GEOMETRY.h_ini;
+                        end
+                        
+                        [MAT_POINT]=LME.near(i,x,xg,h,MAT_POINT); 
+                        [MAT_POINT,FAIL]=LME.shapef(i,x,h,xg,MAT_POINT);
+                        if FAIL
+                            fprintf('FAIL in the initial calculation of Shape function \n');
+                            stop;
+                        end
+                    end
+                end
+            else %FEM
+                disp('FEM does not make remapping')
+            end
         else
-            if SOLVER.TYPE{1}==1 %MPM
+            if SOLVER.TYPE{1}==0 %OTM
+                for i=1:GEOMETRY.mat_points
+                    
+                    el=MAT_POINT(i).element;
+                    elem=GEOMETRY.elem(el,:);
+                    
+                    % Discover isoparametric coordinates
+                    coord=zeros(length(elem),GEOMETRY.sp);
+                    for j=1:length(elem)
+                        coord(j,:)=Disp_field.x_a(elem(j),:);
+                    end
+                    [~,coord_xi] = ...
+                        FEM.integrationpoints(GEOMETRY.sp,length(elem),1);
+                    [xilist]=FEM.search_xilist_NR(coord,MAT_POINT(i).xg,...
+                        MAT_POINT(i).xi,coord_xi);
+
+                    MAT_POINT(i).xi=xilist;
+
+                    % Calculate initial shape function
+                    [MAT_POINT]=FEM.shapef(i,coord,xilist,MAT_POINT);
+                    
+                end
+            elseif SOLVER.TYPE{1}==1 %MPM
                 
                 for i=1:GEOMETRY.mat_points
 
@@ -99,11 +123,13 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
                     
                     
                     if I==0 || el==0
-                        e=0;
+                        el_near=GEOMETRY.element_near{e};
+                        j=0;
                         while I==0
-                            e=e+1;
-                            if e>GEOMETRY.elements
-                                disp('out of the limits of the grid')
+                            j=j+1;
+                            e=el_near(j);
+                            if j>length(el_near)
+                                disp('Please, reduce tim step, mp_s jump 2 grid elements')
                                 stop
                             end
                             if e~=el
@@ -142,13 +168,30 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
                     % Calculate initial shape function
                     [MAT_POINT]=FEM.shapef(i,coord,xilist,MAT_POINT);
                 end
-                
+               
+            else %FEM
+                disp('FEM does not make remapping')
             end
         end
-    
     end
-
-
+    
+    if REM_T || INITIAL
+        if SOLVER.TYPE{1}==0 %OTM
+            [jacobians]=AUX.S2list(MAT_POINT,'J');
+            volume=GEOMETRY.Area.*jacobians;
+        elseif SOLVER.TYPE{1}==1 || INITIAL %MPM || 
+            volume=GEOMETRY.Area;
+        end
+        
+        % MAKE Bbar - Patch
+        if SOLVER.B_BAR==1
+            [MAT_POINT]=bbar_matrix(GEOMETRY.patch_con,GEOMETRY.patch_el,...
+                GEOMETRY.mat_points,MAT_POINT,volume,SOLVER.B_BAR);
+        else
+            [MAT_POINT]=b_m(GEOMETRY.mat_points,GEOMETRY.sp,MAT_POINT);
+        end
+    end
+    
 end
 
 
@@ -156,46 +199,42 @@ end
 % B and B-bar matrix construction functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [MAT_POINT]=b_m(elements,sp,wrap,MAT_POINT)
+function [MAT_POINT]=b_m(elements,sp,MAT_POINT)
 
     global SOLVER
     
     if SOLVER.AXI
         for i=1:elements
-            if wrap(i)==1
-                r=MAT_POINT(i).xg(1);
-                nb=MAT_POINT(i).near;
-                sh=MAT_POINT(i).B;
-                pp=MAT_POINT(i).N;
-                n=length(nb);
-                b2=zeros(4,sp*n);
-                for j=1:n
-                    b2(1,sp*j-1)=sh(j,1);
-                    b2(2,sp*j)  =sh(j,2);
-                    b2(4,sp*j-1)=pp(j)/r;
-                    b2(3,sp*j-1)=sh(j,2);
-                    b2(3,sp*j)  =sh(j,1);
-                end
-                MAT_POINT(i).B=b2;
-                clear b2;
+            r=MAT_POINT(i).xg(1);
+            nb=MAT_POINT(i).near;
+            sh=MAT_POINT(i).B;
+            pp=MAT_POINT(i).N;
+            n=length(nb);
+            b2=zeros(4,sp*n);
+            for j=1:n
+                b2(1,sp*j-1)=sh(j,1);
+                b2(2,sp*j)  =sh(j,2);
+                b2(4,sp*j-1)=pp(j)/r;
+                b2(3,sp*j-1)=sh(j,2);
+                b2(3,sp*j)  =sh(j,1);
             end
+            MAT_POINT(i).B=b2;
+            clear b2;
         end
     else
         for i=1:elements
-            if wrap(i)==1
-                nb=MAT_POINT(i).near;
-                sh=MAT_POINT(i).B;
-                n=length(nb);
-                b=zeros(3,sp*n);
-                for j=1:n
-                    b(1,sp*j-1)=sh(j,1);
-                    b(2,sp*j)  =sh(j,2);
-                    b(3,sp*j-1)=sh(j,2);
-                    b(3,sp*j)  =sh(j,1);
-                end
-                MAT_POINT(i).B=b;
-                clear b;
+            nb=MAT_POINT(i).near;
+            sh=MAT_POINT(i).B;
+            n=length(nb);
+            b=zeros(3,sp*n);
+            for j=1:n
+                b(1,sp*j-1)=sh(j,1);
+                b(2,sp*j)  =sh(j,2);
+                b(3,sp*j-1)=sh(j,2);
+                b(3,sp*j)  =sh(j,1);
             end
+            MAT_POINT(i).B=b;
+            clear b;
         end
     end
 
@@ -205,7 +244,7 @@ end
 %   dp,p,Area,BBAR)
 
 function[MAT_POINT]=bbar_matrix...
-                (patch_con,patch_el,elements,MAT_POINT,Area,wrap,BBAR)
+                (patch_con,patch_el,elements,MAT_POINT,Area,BBAR)
 
     global SOLVER
             
@@ -416,6 +455,7 @@ function [MAT_POINT]=bbm_axi(patch_con,patch_el,MAT_POINT,Area,BBAR)
     
     df=GEOMETRY.df;
     sp=GEOMETRY.sp;
+    bdim=GEOMETRY.b_dim;
     
     sp1=sp+1;
     if SOLVER.UW==0
@@ -425,7 +465,7 @@ function [MAT_POINT]=bbm_axi(patch_con,patch_el,MAT_POINT,Area,BBAR)
             sh = MAT_POINT(i).B;
             pp = MAT_POINT(i).N;
             n=length(nb);
-            b=zeros(3,sp*n);
+            b=zeros(bdim,sp*n);
             t=zeros(1,n*sp);
             for j=1:n
                 for k=1:sp

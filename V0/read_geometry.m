@@ -253,7 +253,7 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
             GEOMETRY.f_dim=9;
         end  
     elseif AXI==1
-        GEOMETRY.b_dim=3;
+        GEOMETRY.b_dim=4;
         GEOMETRY.s_dim=4;
         GEOMETRY.f_dim=5;
     else 

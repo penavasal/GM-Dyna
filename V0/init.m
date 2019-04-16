@@ -156,7 +156,7 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
 
     else
         Disp_field.x_a=GEOMETRY.x_0;
-        GLOBAL.xg=GEOMETRY.xg_0;
+        GLOBAL.xg(:,1)=reshape(GEOMETRY.xg_0,[GEOMETRY.sp*GEOMETRY.mat_points,1]);
         
         [Mat_state]=ini_F(Mat_state,l1,elements,GEOMETRY.sp,SOLVER.UW);
         

@@ -325,7 +325,7 @@ function MAT_POINT=read_problem
     % Add shape function parameters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    [MAT_POINT]=shape_function_calculation(0,MAT_POINT);
+    [MAT_POINT]=shape_function_calculation(1,MAT_POINT);
    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%SOLVER

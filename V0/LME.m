@@ -7,7 +7,7 @@
         % Date:
         %   Version 2.0   10.04.2019
 
-        function [MAT_POINT]=near(i,x_a,x_sample,h,MAT_POINT)
+        function [MAT_POINT]=near(i,x_a,x,h,MAT_POINT)
 
             global GEOMETRY LME_param MATERIAL
 
@@ -52,14 +52,7 @@
                 disp('Error, not defined so many neighborhood ranges')
                 stop
             end
-            
-            % Material point position
-            if (ndim==1)
-                x=x_sample(i);
-            else
-                x=x_sample(i,:);
-            end
-            
+                        
             % Coordinates of the possible nodes
             x_find=zeros(length(nds_search),ndim);
             for j=1:length(nds_search)
@@ -85,8 +78,7 @@
             MAT_POINT(i).near=near_;
         end
 
-        function [MAT_POINT,FAIL]=shapef...
-            (i,x_a,h,x_sample,MAT_POINT)
+        function [MAT_POINT,FAIL]=shapef(i,x_a,h,x,MAT_POINT)
         
     % Calculation of the local maximum-entropy shape functions with Newton's
     % method as described in section 4.2 of [1]
@@ -123,11 +115,6 @@
     
             FAIL=0;
 
-            if (ndim==1)
-                x=x_sample(i);
-            else
-                x=x_sample(i,:);
-            end
             gamma_=MAT_POINT(i).w;
             beta=gamma_/h(i)^2;
             near= MAT_POINT(i).near;
@@ -146,7 +133,7 @@
                   ,i,tol);
             end
 
-            MAT_POINT(i).w=lam;
+            MAT_POINT(i).xi=lam;
             MAT_POINT(i).N=p_a; 
 
             dp=zeros(length(near),ndim);
@@ -628,16 +615,11 @@
             end   
         end
          
-        function [MAT_POINT,REMAP,wrap]=REMAPPING(MAT_POINT,wrap)
+        function [MAT_POINT,REMAP]=REMAPPING(MAT_POINT,i)
 
-            global GEOMETRY LME_param
+            global LME_param
 
-
-            % As described in [1], gamma measures the degree of locality, the larger,
-            % the closer to Delaunay finite elements
-            
-            %gamma_lme = LME_param(1);
-            %gamma_=gamma_lme*ones(GEOMETRY.mat_points,1);
+            REMAP=0;
 
             %Tolerance to make new re-mapping or not and proportion to do it
             tol_search = LME_param(5);
@@ -645,36 +627,25 @@
             %Minimum gamma
             gamma_top=LME_param(7);
 
-            % WRAP or not?
-
             dis(3)=0;
-            for i=1:GEOMETRY.mat_points
-                if wrap(i)==1
-                    REMAP=1;
-                else
-                    Ep=MAT_POINT(i).EP;
-                    num=min(Ep(:,1),Ep(:,2));
-                    for j=1:3
-                        dis(j)=(Ep(j,1)-Ep(j,2))/num(j);
-                    end
-                    Dis=max(abs(dis));
-                    if Dis>tol_search
-                        m_dis=max(dis);
-                        for j=1:3
-                            MAT_POINT(i).EP(j,2)=MAT_POINT(i).EP(j,1);
-                        end
-                        wrap(i)=1;
-                        %plot_nb(i, near, x_a, xg, elem_0)
-                        REMAP=1;
-                        if m_dis>0
-                            gamma_(i)=max(gamma_(i)-m_dis/prop,gamma_top);
-                        end
-                    end 
-                end
-                MAT_POINT(i).w=gamma_(i);
+            gamma_=MAT_POINT(i).w;
+            Ep=MAT_POINT(i).EP;
+            num=min(Ep(:,1),Ep(:,2));
+            for j=1:3
+                dis(j)=(Ep(j,1)-Ep(j,2))/num(j);
             end
-
-
+            Dis=max(abs(dis));
+            if Dis>tol_search
+                m_dis=max(dis);
+                for j=1:3
+                    MAT_POINT(i).EP(j,2)=MAT_POINT(i).EP(j,1);
+                end
+                REMAP=1;
+                if m_dis>0
+                    gamma_=max(gamma_-m_dis/prop,gamma_top);
+                end
+            end 
+            MAT_POINT(i).w=gamma_;
 
         end
         
