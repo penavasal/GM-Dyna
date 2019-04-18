@@ -11,6 +11,8 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
     % Initial checks
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    
+    
     grid=0;
     
     if DIM==1
@@ -23,11 +25,25 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
             stop
     else
         if not(strcmp(filegrid,filename))
-            if not(strcmp(filegrid,''))
+            if isempty(filegrid)
                 filegrid=filename;
-                if strcmp(GRID,'') 
-                    fprintf('Error, Undefined grid type!!\n')
-                    stop
+                if isempty(GRID) 
+                    if SOLVER.TYPE{1}==1
+                        fprintf('Error, Undefined grid type!!\n')
+                        stop
+                    else
+                        if strcmp(ELEMENT,'T3') || strcmp(ELEMENT,'T3-inverse')...
+                                || strcmp(ELEMENT,'T3-diamond')
+                            GRID='T3';
+                        elseif strcmp(ELEMENT,'Q4') || strcmp(ELEMENT,'Q4-4')
+                            GRID='Q4';
+                        elseif strcmp(ELEMENT,'L1')
+                            GRID='L1';
+                        else
+                        	fprintf('Error, Undefined grid type!!\n')
+                            stop
+                        end
+                    end
                 elseif strcmp(GRID,'Q4')
                     if strcmp(ELEMENT,'T3') || strcmp(ELEMENT,'L1') ||...
                     strcmp(ELEMENT,'T3-inverse')|| strcmp(ELEMENT,'T3-diamond')
