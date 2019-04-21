@@ -54,10 +54,6 @@ function Explicit_solver(MAT_POINT)
 
         % 6. Storage
         if rem(ste,SOLVER.SAVE_I)==0
-            
-            if ste_p==50
-                ste_p;
-            end
 
             ste_p=ste_p+1;
             fprintf('ste_p %i \n',ste_p);

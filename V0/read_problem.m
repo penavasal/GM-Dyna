@@ -129,6 +129,9 @@ function MAT_POINT=read_problem
                 elseif strcmp(b2{t},'AXISYMMETRIC')
                     SOLVER.AXI=1;
                     SOLVER.thickness=1;
+                else
+                    disp('Configuration not implemented')
+                    stop
                 end
                 continue
             case 'THICKNESS'
