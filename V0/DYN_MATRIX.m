@@ -117,7 +117,7 @@ classdef DYN_MATRIX
 
         function [mass_mtx]=mass_lin_uw(MAT_POINT,d)
 
-            global GEOMETRY VARIABLE MATERIAL
+            global GEOMETRY VARIABLE MATERIAL SOLVER
 
             sp=GEOMETRY.sp;
             df=GEOMETRY.df;
@@ -128,6 +128,12 @@ classdef DYN_MATRIX
             for i=1:GEOMETRY.mat_points
 
                 volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
+                
+                if SOLVER.AXI
+                    t=2*pi*MAT_POINT(i).xg(1)*volume;
+                else
+                    t=volume;
+                end
                 n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/MAT_POINT(i).J;
 
                 nd = MAT_POINT(i).near;
@@ -156,9 +162,9 @@ classdef DYN_MATRIX
                 U=N*u;
                 W=N*w;
 
-                MAT1=volume*rho_w*N'*(U+W)*T;
-                MAT2=volume*rho_w*N'*U*T;
-                MAT3=volume*rho_w*(2*n-1)/n^2*N'*W*T;
+                MAT1=t*rho_w*N'*(U+W)*T;
+                MAT2=t*rho_w*N'*U*T;
+                MAT3=t*rho_w*(2*n-1)/n^2*N'*W*T;
                 MAT3=MAT2+MAT3;
 
                 mat=zeros(m*df,m*df);
@@ -197,7 +203,7 @@ classdef DYN_MATRIX
 
         function [damp_mtx]=damp_lin_uw(MAT_POINT,Mat_state,d)
 
-            global GEOMETRY MATERIAL
+            global GEOMETRY MATERIAL SOLVER
 
             sp=GEOMETRY.sp;
             df=GEOMETRY.df;
@@ -208,6 +214,12 @@ classdef DYN_MATRIX
 
                 volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
                 n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/MAT_POINT(i).J;
+                
+                if SOLVER.AXI
+                    t=2*pi*MAT_POINT(i).xg(1)*volume;
+                else
+                    t=volume;
+                end
 
                 nd = MAT_POINT(i).near;
                 m  = length(nd);
@@ -233,7 +245,7 @@ classdef DYN_MATRIX
 
                 W=N*w;
 
-                MAT3=volume/Mat_state.k(i)*N'*W*(1-(1-n)/perm(i)*dk)*T;        
+                MAT3=t/Mat_state.k(i)*N'*W*(1-(1-n)/perm(i)*dk)*T;        
                 mat=zeros(m*df,m*df);
                 for j=1:m
                     for r=1:m
@@ -278,6 +290,12 @@ classdef DYN_MATRIX
                 % Lumped Damp **********************
                 for i=1:GEOMETRY.mat_points
                     volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
+                    
+                    if SOLVER.AXI
+                        t=2*pi*MAT_POINT(i).xg(1)*volume;
+                    else
+                        t=volume;
+                    end
                     nd = MAT_POINT(i).near;
                     m  = length(nd);
                     sh = MAT_POINT(i).N;
@@ -285,7 +303,7 @@ classdef DYN_MATRIX
                         for k=1:sp
                             C(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                             C(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
-                                +volume*sh(t1)/Mat_state.k(i);
+                                +t*sh(t1)/Mat_state.k(i);
                         end
                     end
                 end
@@ -321,6 +339,12 @@ classdef DYN_MATRIX
                 else
                     dens=MAT(3,Material(i))/MAT_POINT(i).J;
                 end
+                
+                if SOLVER.AXI
+                    t=2*pi*MAT_POINT(i).xg(1)*volume;
+                else
+                    t=volume;
+                end
 
                 nd = MAT_POINT(i).near;
                 m  = length(nd);
@@ -329,16 +353,16 @@ classdef DYN_MATRIX
                     for k=1:sp
                         mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                         mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
-                            +dens*volume*sh(t1);
+                            +dens*t*sh(t1);
 
                         if SOLVER.UW
                             mass_w(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                             mass_w(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
-                                +VARIABLE.rho_w*volume*sh(t1);
+                                +VARIABLE.rho_w*t*sh(t1);
                             if SOLVER.IMPLICIT==0
                                 mass_wn(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                                 mass_wn(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
-                                    +VARIABLE.rho_w/n*volume*sh(t1);
+                                    +VARIABLE.rho_w/n*t*sh(t1);
                             end
                         end
                     end
