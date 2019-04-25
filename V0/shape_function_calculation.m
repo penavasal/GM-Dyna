@@ -65,7 +65,7 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
         if strcmp(SOLVER.TYPE{2},'LME')
             if SOLVER.TYPE{1}==0 || SOLVER.TYPE{1}==1 %OTM %MPM
                 for i=1:GEOMETRY.mat_points            
-                    [MAT_POINT,REMAP]=REMAPPING(MAT_POINT,i);
+                    [MAT_POINT,REMAP]=LME.REMAPPING(MAT_POINT,i);
                     REM_T=max(REM_T,REMAP);  
                     if REMAP
                         if SOLVER.TYPE{1}==0 %OTM

@@ -1,4 +1,3 @@
-
 classdef Time_Scheme
     properties      
         af=0;

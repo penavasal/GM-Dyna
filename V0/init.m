@@ -125,9 +125,9 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         Mat_state.F(:,1)=GLOBAL.F(:,ste_p);          %DEFORMATION GRADIENT
         Mat_state.Be(:,2)=GLOBAL.Be(:,ste_p);              %LEFT CAUCHY GREEN 
         
-        [MAT_POINT]=list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
+        [MAT_POINT]=AUX.list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
         
-        [MAT_POINT]=list2S(MAT_POINT,'xg',...
+        [MAT_POINT]=AUX.list2S(MAT_POINT,'xg',...
             reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
         
         if SOLVER.UW==1
@@ -139,21 +139,20 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         [OUTPUT_2]=read_output;     
         OUTPUT=together_outputs(OUTPUT,OUTPUT_2,dim);
         
-        disp('revisar funcion de forma')
         
-        %[Shape_function]=LME_EP(Mat_state,Disp_field,0);
-        
-        MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field);
+        MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
         
         [stiff_mtx,Int_var,Mat_state,~]=...
         Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,0);
         [load_s(:,1),~]=calculate_forces...
-            (ste,MAT_POINT,Disp_field,OUTPUT);
+            (ste,MAT_POINT,Disp_field,OUTPUT,MATRIX);
         SOLVER.INIT_file=0;
         
-        Mat_state.pw(:,3)=Mat_state.pw(:,2)-Mat_state.pw(:,1);
+        Mat_state.fint(:,2)=Mat_state.fint(:,1);
+        if SOLVER.UW
+            Mat_state.pw(:,3)=Mat_state.pw(:,2)-Mat_state.pw(:,1);            
+        end
         
-
     else
         Disp_field.x_a=GEOMETRY.x_0;
         GLOBAL.xg(:,1)=reshape(GEOMETRY.xg_0,[GEOMETRY.sp*GEOMETRY.mat_points,1]);
