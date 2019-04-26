@@ -11,9 +11,9 @@ function PLOT(driver,PLT,varargin)
     if strcmp(driver,'VTK')
         vtk_driver(str_in,str_out,steps,ampl,freq,folder)
     elseif strcmp(driver,'GRID')
-        plot_ep(str_in,folder,steps,freq,varargin)
+        plot_ep(str_in,folder,steps,freq,varargin{:})
     elseif strcmp(driver,'DEFORMED') || strcmp(driver,'DISTRIBUTION')
-        plot_f(driver,str_in,folder,steps,ampl,freq,varargin)
+        plot_f(driver,str_in,folder,steps,ampl,freq,varargin{:})
     end
     
 end

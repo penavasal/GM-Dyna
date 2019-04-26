@@ -161,8 +161,8 @@ function [A,Sc,gamma,dgamma,sy,Be]=...
             %--------------END----CLASSIC----ITERATOR-----------------------
             gamma=gm(iter);
             dgamma=dgm(iter);
-            d1=1-2*G*dgamma(e,1)/snorm;
-            dEp=dgamma(e,1)*alfm*I+dgamma(e,1)*s/snorm;
+            d1=1-2*G*dgamma/snorm;
+            dEp=dgamma*alfm*I+dgamma*s/snorm;
         else
             t=-1;
             error=1e32;

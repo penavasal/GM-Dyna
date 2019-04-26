@@ -79,7 +79,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
         [Fold]=AUX.v2m(f_old);
         jacobians=det(F);
         
-        if MODEL(Mat(e))>2
+        if MODEL(Mat(e))>=2
             Sy=min(Int_var.Sy(e,2),OCR*press);
             Sy_r=Sy;
             Gamma=Int_var.gamma(e,2);
