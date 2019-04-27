@@ -1,5 +1,5 @@
 
-function [Mat_state,stiff_mtx,Int_var]=...
+function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
     initial_constitutive(MAT_POINT,Mat_state,Int_var)
 
     global GEOMETRY SOLVER VARIABLE MATERIAL
@@ -114,7 +114,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
             end
             
             if SOLVER.AXI
-                [sig]=AUX.E2e(T);
+                [sig]=AUX.E2e_in(T);
                 ds=sig-sig_0;
                 
                 D=A;
@@ -124,11 +124,11 @@ function [Mat_state,stiff_mtx,Int_var]=...
                 else
                     ee(:,iter)=ee(:,iter-1)-A\ds;
                 end
-                [E]=AUX.e2E(ee(:,iter));
+                [E]=AUX.e2E_in(ee(:,iter));
             else
                 D=A(1:3,1:3);
 
-                [sig]=AUX.E2e(T);
+                [sig]=AUX.E2e_in(T);
                 ds=sig(1:3)-sig_0(1:3);
 
                 if iter==1
@@ -136,7 +136,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
                 else
                     ee(1:3,iter)=ee(1:3,iter-1)-D\ds;
                 end
-                [E]=AUX.e2E(ee(:,iter));
+                [E]=AUX.e2E_in(ee(:,iter));
             end
 
             for i=1:3
@@ -163,10 +163,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
         
         
         %% Store vectors
-        T_vec(1,1)=T(1,1);
-        T_vec(2,1)=T(2,2);
-        T_vec(3,1)=T(3,3);
-        T_vec(4,1)=T(1,2);
+        [T_vec]=AUX.E2e(T);
         for i=1:dims
             Mat_state.Sigma((e-1)*dims+i,1)=T_vec(i,1);
         end
@@ -184,7 +181,7 @@ function [Mat_state,stiff_mtx,Int_var]=...
             Mat_state.Be((e-1)*dimf+i,2)=be(i,1);
             Mat_state.F((e-1)*dimf+i,2)=f(i,1);
         end 
-        
+
 %         if UW==1
 %             [f_w]=AUX.m2v(F_w);
 %             for i=1:dimf

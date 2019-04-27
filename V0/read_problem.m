@@ -121,7 +121,7 @@ function MAT_POINT=read_problem
                 pathgeo=b2{t};
                 continue
             case 'CONFIGURATION'
-                if strcmp(b2{t},'PLAIN_STRAIN')
+                if strcmp(b2{t},'PLANE_STRAIN')
                     SOLVER.AXI=0;
                     if SOLVER.thickness==0
                         SOLVER.thickness=1;

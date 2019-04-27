@@ -72,6 +72,56 @@
                 	e(5)=E(1,3);
                     e(6)=E(2,3);
                 end
+            end              
+        end
+        
+        % STRESS - STRAIN vector to tensor
+        function [E]=e2E_in(e)
+
+            global GEOMETRY 
+            
+            if GEOMETRY.sp==1
+                E=e(1);
+            else
+                E=zeros(3,3);
+                %Build matrix
+                if GEOMETRY.sp==2
+                    E(1,1)=e(1);
+                    E(2,2)=e(2);
+                    E(1,2)=e(3);
+                    E(2,1)=e(3);
+                    E(3,3)=e(4);
+                else
+                    E(1,1)=e(1);
+                    E(2,2)=e(2);
+                    E(1,2)=e(3);
+                    E(2,1)=e(3);
+                    E(1,3)=e(5);
+                    E(3,1)=e(5);
+                    E(2,3)=e(6);
+                    E(3,2)=e(6);
+                    E(3,3)=e(4);
+                end
+            end
+        end
+        
+        % STRESS - STRAIN tensor to vector
+        function [e]=E2e_in(E)
+            
+            global GEOMETRY
+            
+            e=zeros(GEOMETRY.s_dim,1);
+            
+            %Build vector
+            e(1)=E(1,1);
+            if GEOMETRY.sp>1
+                e(2)=E(2,2);
+                e(3)=E(1,2);
+                e(4)=E(3,3);
+                if GEOMETRY.sp>2
+                	e(5)=E(1,3);
+                    e(6)=E(2,3);
+                end
             end
                     
         end
