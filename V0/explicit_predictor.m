@@ -1,7 +1,7 @@
 % Hay que arreglar la parte de contacto
 
-function [Disp_field,Mat_state,MAT_POINT,FAIL]=explicit_predictor...
-            (ste,Disp_field,MAT_POINT,Mat_state,FAIL)
+function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
+            (ste,Disp_field,MAT_POINT,Mat_state)
 
     global GEOMETRY TIME
     sp=GEOMETRY.sp;

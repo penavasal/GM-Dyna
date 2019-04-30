@@ -23,7 +23,6 @@ function Explicit_solver(MAT_POINT)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % LOOP
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FAIL=0;
     for ste=ste+1:SOLVER.step_final
 
         % 1. Forces
@@ -33,8 +32,8 @@ function Explicit_solver(MAT_POINT)
 
         % --------------------------------------------------------
         % 2. Predictor         
-        [Disp_field,Mat_state,MAT_POINT,FAIL]=explicit_predictor...
-            (ste,Disp_field,MAT_POINT,Mat_state,FAIL);
+        [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
+            (ste,Disp_field,MAT_POINT,Mat_state);
         
 
         % 3. Recompute mass and damping matrices
@@ -42,8 +41,8 @@ function Explicit_solver(MAT_POINT)
         [MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
 
         % 4. Constitutive &/O Stiffness_mat
-        [~,Int_var,Mat_state,~]=...
-            Constitutive(3,ste,Int_var,Mat_state,MAT_POINT,FAIL);
+        [~,Int_var,Mat_state]=...
+            Constitutive(3,ste,Int_var,Mat_state,MAT_POINT);
 
         [OUTPUT]=AUX.reaction(Mat_state.fint,OUTPUT);
 
@@ -97,7 +96,7 @@ function Explicit_solver(MAT_POINT)
 
         % 7. Save info
         if ((rem(ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) ...
-                || (ste==SOLVER.step_final) || (FAIL==1))
+                || (ste==SOLVER.step_final) || (SOLVER.FAIL==1))
             save(OUTPUT.name,'ste','ste_p','TIME','MAT_POINT',...
                 'GLOBAL','OUTPUT','-append')
         end

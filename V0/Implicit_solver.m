@@ -30,7 +30,6 @@ function Implicit_solver(MAT_POINT)
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      % LOOP
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FAIL=0;
     for ste=ste+1:SOLVER.step_final
 
         % 1. Forces
@@ -45,9 +44,9 @@ function Implicit_solver(MAT_POINT)
 
         % --------------------------------------------------------
         % 2. Predictor      
-        [Disp_field,Mat_state,MAT_POINT,FAIL]=implicit_predictor...
+        [Disp_field,Mat_state,MAT_POINT]=implicit_predictor...
             (ste,GT,InvK,MATRIX.mass,MATRIX.damp,load_s,Disp_field,...
-            MAT_POINT,Mat_state,Int_var,FAIL);
+            MAT_POINT,Mat_state,Int_var);
     
         % --------------------------------------------------------
 
@@ -55,8 +54,8 @@ function Implicit_solver(MAT_POINT)
         [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX);
 
         % 4. Constitutive & Stiffness_mat
-        [stiff_mtx,Int_var,Mat_state,~]=...
-                Constitutive(2,ste,Int_var,Mat_state,MAT_POINT,FAIL);
+        [stiff_mtx,Int_var,Mat_state]=...
+                Constitutive(2,ste,Int_var,Mat_state,MAT_POINT);
         
         [OUTPUT]=AUX.reaction(Mat_state.fint,OUTPUT);
         
@@ -109,7 +108,7 @@ function Implicit_solver(MAT_POINT)
 
         % 7. Save info
         if ((rem(ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) ...
-                || (ste==SOLVER.step_final) || (FAIL==1))
+                || (ste==SOLVER.step_final) || (SOLVER.FAIL==1))
             save(OUTPUT.name,'ste','ste_p','TIME','MAT_POINT',...
                 'GLOBAL','OUTPUT','-append')
         end

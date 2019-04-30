@@ -47,6 +47,8 @@ function MAT_POINT=read_problem
     
     SOLVER.thickness=1;
     
+    SOLVER.FAIL = 0;
+    
     % VARIABLES
     VARIABLE.rho_w=0;
     VARIABLE.g=0;

@@ -1,7 +1,7 @@
 
-function [Disp_field,Mat_state,MAT_POINT,FAIL]=...
+function [Disp_field,Mat_state,MAT_POINT]=...
             Newton_Raphson_solver(ste,GT,InvK,mass_mtx,damp_mtx,load_s,...
-            MAT_POINT,Disp_field,Int_var,Mat_state,FAIL)
+            MAT_POINT,Disp_field,Int_var,Mat_state)
         
     global SOLVER GEOMETRY
     
@@ -51,15 +51,15 @@ function [Disp_field,Mat_state,MAT_POINT,FAIL]=...
         else
             if rem(iter,NR1)==0
 
-                [stiff_mtx,Int_var,Mat_state,FAIL]=...
-                    Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,FAIL);
+                [stiff_mtx,Int_var,Mat_state]=...
+                    Constitutive(1,ste,Int_var,Mat_state,MAT_POINT);
 
                 [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
 
                 [InvK,~]=apply_conditions(0,ste,matrix,0);
             else           
-                [~,Int_var,Mat_state,FAIL]=...
-                    Constitutive(0,ste,Int_var,Mat_state,MAT_POINT,FAIL);
+                [~,Int_var,Mat_state]=...
+                    Constitutive(0,ste,Int_var,Mat_state,MAT_POINT);
             end
         end
 

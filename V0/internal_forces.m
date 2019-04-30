@@ -56,7 +56,7 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
                 sh2(1,:)=sh2(1,:)+sh(3,:);
             end
             int_forces_2=sh2*Mat_state.pw(e,1)*vol;
-            if SOLVER.IMPLICIT==0
+            if SOLVER.IMPLICIT==0 && SOLVER.step0==0
                 for i=1:nn
                    nod=nd(i);
                    for j=1:sp

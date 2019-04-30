@@ -1,5 +1,5 @@
-function [stiff_mtx,Int_var,Mat_state,FAIL]=...
-    Constitutive(Kt,ste,Int_var,Mat_state,MAT_POINT,FAIL)
+function [stiff_mtx,Int_var,Mat_state]=...
+    Constitutive(Kt,ste,Int_var,Mat_state,MAT_POINT)
  
     global GEOMETRY SOLVER MATERIAL
     
@@ -19,7 +19,7 @@ function [stiff_mtx,Int_var,Mat_state,FAIL]=...
     be        = zeros(dimf,1); 
     stiff_mtx = zeros(df*GEOMETRY.nodes);
 
-    if FAIL==0
+    if SOLVER.FAIL==0
         for e=1:GEOMETRY.mat_points
                         
             if SOLVER.UW
@@ -88,7 +88,7 @@ function [stiff_mtx,Int_var,Mat_state,FAIL]=...
 
             AA=isreal(T);
             if  AA(1)==0
-                FAIL=1;
+                SOLVER.FAIL=1;
                 break;
             else
                 [sig]=AUX.E2e(T);

@@ -51,7 +51,7 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
     GLOBAL.gamma        = zeros(elements,dim);
     GLOBAL.gamma_nds    = zeros(nodes,dim);
     GLOBAL.Sy           = zeros(elements,dim);
-    GLOBAL.Sy_r          = zeros(elements,dim);
+    GLOBAL.Sy_r         = zeros(elements,dim);
     
     GLOBAL.Ps           = zeros(elements,dim);
     GLOBAL.Qs           = zeros(elements,dim);
@@ -90,7 +90,8 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         
         time_aux=TIME.t;     
         
-        s=strcat('load("',SOLVER.INIT_file,'.mat")');
+        s=strcat('load("',SOLVER.INIT_file,...
+            '.mat","GLOBAL","TIME","ste","ste_p","OUTPUT")');
         eval(s);
         
 
@@ -142,8 +143,8 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         
         MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
         
-        [stiff_mtx,Int_var,Mat_state,~]=...
-        Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,0);
+        [stiff_mtx,Int_var,Mat_state]=...
+        Constitutive(1,ste,Int_var,Mat_state,MAT_POINT);
         [load_s(:,1),~]=calculate_forces...
             (ste,MAT_POINT,Disp_field,OUTPUT,MATRIX);
         SOLVER.INIT_file=0;
@@ -303,33 +304,41 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
 
     global GEOMETRY SOLVER
     
-    % 1. Stress and deformation gradient
+    % A. Stress and deformation gradient
     [Mat_state,matrix,Int_var,MAT_POINT]=initial_constitutive...
         (MAT_POINT,Mat_state,Int_var);
     
-    % 2. Calculate forces
+    % B. External forces
     load_s=zeros(GEOMETRY.nodes*GEOMETRY.df,2);
-    
-    [Mat_state]=internal_forces(MAT_POINT,Mat_state);
     [load_s(:,1),OUTPUT]=...
-            calculate_forces(1,MAT_POINT,Disp_field,OUTPUT,MATRIX);
+        calculate_forces(1,MAT_POINT,Disp_field,OUTPUT,MATRIX);
     
-    GT= load_s(:,1)-Mat_state.fint(:,1);
-    [InvK,GT]=apply_conditions(3,1,matrix,GT);
-    
-    % 3. Newton-Raphson
-    [Disp_field,Mat_state,MAT_POINT,FAIL]=Newton_Raphson_solver...
-        (1,GT,InvK,0,0,load_s,MAT_POINT,Disp_field,Int_var,Mat_state,0);
+    % C. Initial calculation if required
+    if SOLVER.step0==1 || any(load_s(:,1))
+        % 1. Calculate forces
+        [Mat_state]=internal_forces(MAT_POINT,Mat_state);
 
+        GT= load_s(:,1)-Mat_state.fint(:,1);
+        [InvK,GT]=apply_conditions(3,1,matrix,GT);
+
+        % 2. Newton-Raphson
+        [Disp_field,Mat_state,MAT_POINT]=Newton_Raphson_solver...
+            (1,GT,InvK,0,0,load_s,MAT_POINT,Disp_field,Int_var,Mat_state);
+
+        % 3. Calculate initial update of F   
+        [Mat_state,MAT_POINT]=...
+            update_F(Disp_field.d,Mat_state,MAT_POINT);
+    end
     
-    % 4. Calculate initial stiffness matrix    
+    SOLVER.step0=0;
+    % D. Calculate initial stiffness matrix    
     [Mat_state,MAT_POINT]=...
         update_F(Disp_field.d,Mat_state,MAT_POINT);
 
-    [stiff_mtx,Int_var,Mat_state,~]=...
-                Constitutive(2,1,Int_var,Mat_state,MAT_POINT,FAIL);
+    [stiff_mtx,Int_var,Mat_state]=...
+                Constitutive(2,1,Int_var,Mat_state,MAT_POINT);
      
-     % 5. Save information
+     % E. Save information
      for e=1:GEOMETRY.mat_points
          [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=AUX.invar(Mat_state.Sigma(:,1),e);   
      end         %PRESSURE
@@ -350,10 +359,10 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
          GLOBAL.pw(:,1)=Mat_state.pw(:,1)+Mat_state.pw(:,3);
      end
      
-     % 6. Plot initial state
+     % F. Plot initial state
      plot_initial_state(GLOBAL.Ps(:,1),Disp_field.d(:,1));
      
-     % 7. Displacement?
+     % G. Displacement?
      if SOLVER.INITIAL_d==0
         Disp_field.d=zeros(GEOMETRY.nodes*GEOMETRY.df,2);
      else

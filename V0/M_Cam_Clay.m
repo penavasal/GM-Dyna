@@ -19,7 +19,9 @@ function [A,Sc,gamma,dgamma,Pcd,Pcs,Be]=...
     end
     Ee_tr = logm(BeTr)/2;
     if isnan(Ee_tr)
-        fprintf('Error in small strain tensor of elem e %i \n',e);
+        error('Error in small strain tensor of elem e %i \n',e);
+    elseif isreal(Ee_tr)==0
+        error('Complex in small strain tensor of elem e %i \n',e);
     end
 
     % Compute principal Kirchhoff tension 
@@ -83,7 +85,7 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
     I = eye(3);
 
     imax = 100;
-    toll = 10e-3;
+    toll = 1e-3;
 
     % Set isotropic elasto-plastic parameter
     mu0  = Ge(2);  
@@ -93,6 +95,8 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
     M = Ge(6);
     %P0 = Ge(7);
     epsev0 = Ge(9);
+    
+    OMEGA = 1/(lambda-kappa);
 
 
     % Compute volumetric trial strain
@@ -110,7 +114,10 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
     % Check for plasticity    
     Ftr = (Qtr/M)^2+Ptr*(Ptr-Pcn);
 
-    a=0.95;
+    a=1.1;
+    amin=0.01;
+    emax=1e5;
+    
     iter=0;
     if Ftr > toll % PLASTIC STEP    
        % Solve NR system
@@ -124,38 +131,52 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
         P = Ptr;
         Q = Qtr;
 
+        normr0=0;
         while iter<imax
             
             iter = iter+1;
-            reini=0;
-            a1 = a*(1+ (1-a)*iter/a/imax);
             
             % evaluate residual            
-            r = [x(1,1) - epsevTR + x(3,1)*(2*P-Pc);
-                 x(2,1) - epsesTR + x(3,1)*(2*Q/M^2);
+            r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
+                 x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
                  (Q/M)^2 + P*(P-Pc)];
 
-            if iter == 1
-                r0 = r;
+            if normr0==0
+                normr0=norm(r);
             end
 
-            NORMErec(iter,1) = norm(r)/norm(r0);  
-            if isreal(r)==0   || NORMErec(iter,1)>1e12
-                 a=a/2;
-                 NORMErec=zeros(iter,1);
-                 reini=1;
-                 iter=0;
-            end
+            NORMErec(iter,1) = norm(r)/normr0;  
             
-            if reini==0
-                [CONVER]=convergence(r,r0,NORMErec,toll,imax);
+            a1 = a-(NORMErec(iter)-toll)/(emax-toll)*(a-amin);
+            
+            if isreal(r)==0   || NORMErec(iter,1)>emax
+                a=a/2;
+                [~,mp]=min(NORMErec);
+                if isreal(r)==0                   
+                    NORMErec=[];
+                    iter=0;
+                    x(:,2:end)=[];
+                else
+                    x(:,iter+1) = x(:,mp);
+
+                    % Update 
+                    [P,Q]=PQ(x(1,1),x(2,1),P0,alfa,kappa,epsev0,mu0);
+                    Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,1)));
+
+                    if a<amin
+                        error('Convergence not achieved \n');
+                    end
+                end
+            else
+                
+                [CONVER]=convergence(r,normr0,NORMErec,toll,imax);
 
                 % check for convergence
                 if CONVER==1     
                     break
                 else
                     % evaluate tangent matrix for NR iteration
-                    A = Atang(x(1,1),x(2,1),x(3,1),P,Q,Pc,lambda,...
+                    A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
                         kappa,mu0,alfa,P0,epsev0,M);
 
                     if rcond(A)<1e-15
@@ -163,13 +184,11 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
                     end
                     % solve for displacement increment
                     dx = -a1*(A\r);
-                    x = x + dx;                 
+                    x(:,iter+1) = x(:,iter) + dx;                 
 
                     % Update 
-                    [P,Q]=PQ(x(1,1),x(2,1),P0,alfa,kappa,epsev0,mu0);
-
-                    OMEGA = 1/(lambda-kappa);
-                    Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,1)));
+                    [P,Q]=PQ(x(1,iter+1),x(2,iter+1),P0,alfa,kappa,epsev0,mu0);
+                    Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter+1)));
 
                     if iter == imax
                         if std(norm(r0)*NORMErec(iter-10:iter-1))<toll*10
@@ -184,9 +203,9 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
         end
 
         %Update variable
-        epsev = x(1,1);
-        epses = x(2,1);
-        dgamma = x(3,1);
+        epsev = x(1,iter);
+        epses = x(2,iter);
+        dgamma = x(3,iter);
 
     else % ELASTIC STEP
         %Update variable
@@ -644,7 +663,7 @@ function [q]=s_j2(s)
     q= sqrt(q);
 end
 
-function [CONVER]=convergence(r,r0,NORMErec,toll,imax)
+function [CONVER]=convergence(r,normr0,NORMErec,toll,imax)
 
     [iter,~]=size(NORMErec);
     CONVER=0;
@@ -653,12 +672,12 @@ function [CONVER]=convergence(r,r0,NORMErec,toll,imax)
         CONVER=1;
     elseif iter>11 && iter < imax
         long=max(round(iter/2),10);
-        if std(norm(r0)*NORMErec(iter-long:iter))<toll*5
+        if std(normr0*NORMErec(iter-long:iter))<toll*5
             CONVER=1;
         elseif mean(NORMErec(iter-long:iter))<1e-11
             CONVER=1;
         else
-            list=norm(r0)*sort(NORMErec(iter+1-long:iter));
+            list=normr0*sort(NORMErec(iter+1-long:iter));
             if std(list(1:3))<toll && std(list(long-2:long))<toll
                 CONVER=1;
             elseif (std(list(1:3)) + std(list(long-2:long)))/2 < toll
@@ -667,12 +686,12 @@ function [CONVER]=convergence(r,r0,NORMErec,toll,imax)
         end
     elseif iter == imax
         long=max(round(iter/4),20);
-        if std(norm(r0)*NORMErec(iter-long:iter))<toll*20
+        if std(normr0*NORMErec(iter-long:iter))<toll*20
             CONVER=1;
         elseif mean(NORMErec(iter-long:iter))<1e-10
             CONVER=1;
         else
-            list=norm(r0)*sort(NORMErec(iter+1-long:iter));
+            list=normr0*sort(NORMErec(iter+1-long:iter));
             if std(list(1:3))<toll/2 && std(list(long-2:long))<toll/2
                 CONVER=1;
             elseif (std(list(1:3)) + std(list(long-2:long)))/4 < toll

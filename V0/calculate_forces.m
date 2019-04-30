@@ -35,7 +35,7 @@ function [load_s,OUTPUT]=...
                 t=1;
             end
             
-            if SOLVER.IMPLICIT==1 && SOLVER.UW==1
+            if SOLVER.UW==1 && (SOLVER.IMPLICIT==1 || SOLVER.step0==1) 
                 t=-t;
             end
                 
