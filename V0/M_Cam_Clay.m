@@ -84,7 +84,7 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 
     I = eye(3);
 
-    imax = 100;
+    imax = 200;
     toll = 1e-3;
 
     % Set isotropic elasto-plastic parameter
@@ -114,10 +114,8 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
     % Check for plasticity    
     Ftr = (Qtr/M)^2+Ptr*(Ptr-Pcn);
 
-    a=1.1;
-    amin=0.01;
-    emax=1e5;
-    
+    a=1.0;
+    emax=1e10;
     iter=0;
     if Ftr > toll % PLASTIC STEP    
        % Solve NR system
@@ -147,56 +145,48 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 
             NORMErec(iter,1) = norm(r)/normr0;  
             
-            a1 = a-(NORMErec(iter)-toll)/(emax-toll)*(a-amin);
             
-            if isreal(r)==0   || NORMErec(iter,1)>emax
-                a=a/2;
-                [~,mp]=min(NORMErec);
-                if isreal(r)==0                   
-                    NORMErec=[];
-                    iter=0;
-                    x(:,2:end)=[];
-                else
-                    x(:,iter+1) = x(:,mp);
-
-                    % Update 
-                    [P,Q]=PQ(x(1,1),x(2,1),P0,alfa,kappa,epsev0,mu0);
-                    Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,1)));
-
-                    if a<amin
-                        error('Convergence not achieved \n');
+            if isnan(r)   %|| NORMErec(iter,1)>emax
+                error('Fallo en el Modified Cam Clay \n');
+            else
+                if iter>1 
+                    % check for convergence
+                    [CONVER]=convergence(r,normr0,NORMErec,toll,imax);
+                    if CONVER==1     
+                        break
+                    end
+                    if NORMErec(iter)>NORMErec(iter-1)
+                        f1=NORMErec(iter-1);
+                        f2=NORMErec(iter);
+                        a=a*a*f1/2/(f2+f1*a-f1);
+                        iter = iter-1;
+                    else
+                        a=1;
                     end
                 end
-            else
+
+                % evaluate tangent matrix for NR iteration
+                A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
+                    kappa,mu0,alfa,P0,epsev0,M);
                 
-                [CONVER]=convergence(r,normr0,NORMErec,toll,imax);
+                    
+                if rcond(A)<1e-15
+                    %disp('Small jacobian matrix of Modified Cam Clay return mapping');
+                end
+                % solve for displacement increment
+                dx = -a*(A\r);
+                x(:,iter+1) = x(:,iter) + dx;                 
 
-                % check for convergence
-                if CONVER==1     
-                    break
-                else
-                    % evaluate tangent matrix for NR iteration
-                    A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
-                        kappa,mu0,alfa,P0,epsev0,M);
+                % Update 
+                [P,Q]=PQ(x(1,iter+1),x(2,iter+1),P0,alfa,kappa,epsev0,mu0);
+                Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter+1)));
 
-                    if rcond(A)<1e-15
-                        %disp('Small jacobian matrix of Modified Cam Clay return mapping');
-                    end
-                    % solve for displacement increment
-                    dx = -a1*(A\r);
-                    x(:,iter+1) = x(:,iter) + dx;                 
-
-                    % Update 
-                    [P,Q]=PQ(x(1,iter+1),x(2,iter+1),P0,alfa,kappa,epsev0,mu0);
-                    Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter+1)));
-
-                    if iter == imax
-                        if std(norm(r0)*NORMErec(iter-10:iter-1))<toll*10
-                            break;
-                        else
-                            fprintf('\n No convergence RM \n')
-                            stop;
-                        end
+                if iter == imax
+                    if std(norm(r0)*NORMErec(iter-10:iter-1))<toll*10
+                        break;
+                    else
+                        fprintf('\n No convergence RM \n')
+                        stop;
                     end
                 end
             end
