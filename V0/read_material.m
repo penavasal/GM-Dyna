@@ -41,7 +41,7 @@ function read_material
         l=l+1;
         mats=str2double(bb{l});
     end
-    MATERIAL.MAT=zeros(31,mats);   % Numero máximo de propiedades reconocidas
+    MATERIAL.MAT=zeros(40,mats);   % Numero máximo de propiedades reconocidas
     MATERIAL.MODEL=zeros(mats,1);
     RANGE=zeros(sp,2*mats); % Range of for materials
 
@@ -95,6 +95,15 @@ function read_material
                     continue
                 case 'MODIFIED_CAM_CLAY_VISCO'
                     MATERIAL.MODEL(M)=3.1;
+                    continue
+                case 'PZ_FORWARD'
+                    MATERIAL.MODEL(M)=4.2;
+                    continue
+                case 'PZ_MODIFIEDEULER'
+                    MATERIAL.MODEL(M)=4.3;
+                    continue
+                case 'PZ_BACKWARD'
+                    MATERIAL.MODEL(M)=4.1;
                     continue
                 otherwise
                     disp('Error, no such material model!')
@@ -175,10 +184,16 @@ function read_material
             case 'SHEAR_MODULUS'
                 MATERIAL.MAT(4,M)=str2double(bb{t});
                 continue
+            case 'GHAR'
+                MATERIAL.MAT(4,M)=str2double(bb{t});
+                continue
             case 'LAME_CONSTANT'
                 MATERIAL.MAT(5,M)=str2double(bb{t});
                 continue
             case 'BULK_MODULUS'
+                MATERIAL.MAT(29,M)=str2double(bb{t});
+                continue
+            case 'KHAR'
                 MATERIAL.MAT(29,M)=str2double(bb{t});
                 continue
             case 'CONSTRAINED_MODULUS'
@@ -199,6 +214,9 @@ function read_material
             case 'INITIAL_PRESSURE'
                 MATERIAL.MAT(25,M)=str2double(bb{t});    % Initial pressure
                 continue
+            case 'P0'
+                MATERIAL.MAT(25,M)=str2double(bb{t});    % Initial pressure
+                continue
             case 'HARDENING'
                 MATERIAL.MAT(8,M)=str2double(bb{t});
                 continue
@@ -217,7 +235,13 @@ function read_material
             case 'VISCOSITY'
                 MATERIAL.MAT(13,M)=str2double(bb{t});
                 continue
+            case 'GAMMA0'
+                MATERIAL.MAT(13,M)=str2double(bb{t});
+                continue
             case 'VISCOSITY_EXPONENT'
+                MATERIAL.MAT(14,M)=str2double(bb{t});
+                continue
+            case 'N'
                 MATERIAL.MAT(14,M)=str2double(bb{t});
                 continue
             case 'PERMEABILITY'
@@ -230,6 +254,9 @@ function read_material
                 MATERIAL.MAT(18,M)=str2double(bb{t});
                 continue
             case 'CRITICAL_STATE_LINE'
+                MATERIAL.MAT(19,M)=str2double(bb{t});
+                continue
+            case 'MF'
                 MATERIAL.MAT(19,M)=str2double(bb{t});
                 continue
             case 'ALPHA_PARAMETER'
@@ -262,6 +289,33 @@ function read_material
                 continue
             case 'REFERENCE_TIME'
                 MATERIAL.MAT(31,M)=str2double(bb{t});
+                continue
+            case 'MG'
+                MATERIAL.MAT(32,M)=str2double(bb{t});
+                continue
+            case 'ALPHA_F'
+                MATERIAL.MAT(33,M)=str2double(bb{t});
+                continue
+            case 'ALPHA_G'
+                MATERIAL.MAT(34,M)=str2double(bb{t});
+                continue
+            case 'BETA0'
+                MATERIAL.MAT(35,M)=str2double(bb{t});
+                continue
+            case 'BETA1'
+                MATERIAL.MAT(36,M)=str2double(bb{t});
+                continue
+            case 'H0'
+                MATERIAL.MAT(37,M)=str2double(bb{t});
+                continue
+            case 'GAMMA_HDM'
+                MATERIAL.MAT(38,M)=str2double(bb{t});
+                continue
+            case 'HU0'
+                MATERIAL.MAT(39,M)=str2double(bb{t});
+                continue
+            case 'GAMMA_U'
+                MATERIAL.MAT(40,M)=str2double(bb{t});
                 continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)
@@ -311,6 +365,8 @@ function read_material
             MATERIAL.MAT(:,i)=dp_tools(MATERIAL.MAT(:,i));
         elseif MATERIAL.MODEL(i)<4 && MATERIAL.MODEL(i)>=3
             MATERIAL.MAT(:,i)=mcc_tools(MATERIAL.MAT(:,i),K0);
+        elseif MATERIAL.MODEL(i)<5 && MATERIAL.MODEL(i)>=4
+            MATERIAL.MAT(:,i)=pz_tools(MATERIAL.MAT(:,i),K0);
         end
         
     end
@@ -381,6 +437,102 @@ function Mat=dp_tools(Mat)
 
 end
 
+function Mat=pz_tools(Mat,K0)
+
+    global SOLVER
+
+    % Mf
+    if Mat(19)==0 && Mat(11)==0
+        disp('Error, no critical state line!')
+        stop
+    elseif Mat(19)==0
+        Mat(19)=6*sin(Mat(11))/(3-sin(Mat(11)));
+    elseif Mat(11)==0
+        Mat(11)=asin((3*Mat(19))/(6+Mat(19)));
+    end
+    
+    %Mg
+    if Mat(32)==0 && Mat(12)==0
+        disp('Error, no critical state line!')
+        stop
+    elseif Mat(32)==0
+        Mat(32)=6*sin(Mat(12))/(3-sin(Mat(12)));
+    elseif Mat(12)==0
+        Mat(12)=asin((3*Mat(32))/(6+Mat(32)));
+    end
+    
+    % OCR
+    if Mat(25) && Mat(7)
+        Mat(24) = Mat(7)/Mat(25);
+    elseif Mat(25) && Mat(24)
+        Mat(7) = Mat(25)*Mat(24);
+    elseif Mat(7) && Mat(24)
+        Mat(25) = Mat(7)/Mat(24);
+    elseif Mat(7)
+        Mat(25)=Mat(7);
+        Mat(24)=1;
+    elseif Mat(25)
+        Mat(7)=Mat(25);
+        Mat(24)=1;
+    elseif Mat(24)
+        disp('We need more PZ parameters!')
+        stop
+    end
+    
+    %H0
+    if Mat(37)==0
+        if Mat(21)==0 || Mat(22)==0
+            disp('We need more PZ parameters!')
+            stop
+        else
+            Mat(37)=1/(Mat(21)-Mat(22));
+        end
+    end
+    
+    %Hu0
+    if Mat(39)==0
+        if Mat(37)==0 && Mat(22)==0
+            disp('We need more PZ parameters!')
+            stop
+        else
+            if Mat(22)==0
+                Mat(39)=Mat(37);
+            else
+                Mat(39)=1/Mat(22);
+            end
+        end
+    end
+    
+    %Khar Ghar
+    Mat(29)=-Mat(29)/Mat(25);
+    Mat(4) =-Mat(4)/Mat(25);
+    
+    % Non zero
+    if Mat(33)==0
+        disp('We need more PZ parameters!')
+        stop
+    elseif Mat(34)==0
+        Mat(34)=Mat(33); % Alpha g = alpha f
+    end
+    
+    %%K0
+    if Mat(26)==0 && K0==0
+        Mat(26)=(1-sin(Mat(11)))*Mat(24)^(sin(Mat(11)));
+    end
+    
+    %%% E
+    Mat(1)=2*Mat(4)*(1+Mat(2)); 
+    % Wave velocity
+    Mat(17)=Mat(1)*(1-Mat(2))/((1+Mat(2))*(1-2*Mat(2)));
+    if SOLVER.UW
+        M=Mat(17)+Mat(18);
+    else
+        M=Mat(17);
+    end
+    Mat(6)=sqrt(M/Mat(3));     % cp
+    
+end
+
 function Mat=mcc_tools(Mat,K0)
 
     global SOLVER
@@ -396,7 +548,7 @@ function Mat=mcc_tools(Mat,K0)
     
     % OCR
     if Mat(25) && Mat(7)
-        Mat(24) = Mat(25)/Mat(7);
+        Mat(24) = Mat(7)/Mat(25);
     elseif Mat(25) && Mat(24)
         Mat(7) = Mat(25)*Mat(24);
     elseif Mat(7) && Mat(24)
@@ -435,7 +587,6 @@ function Mat=mcc_tools(Mat,K0)
     Mat(6)=sqrt(M/Mat(3));     % cp
     
 end
-
 
 function localization(R)
 

@@ -12,7 +12,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
     dimf=GEOMETRY.f_dim;
     dims=GEOMETRY.s_dim;
         
-    Kt=1;
+    Kt=4;
 
     stiff_mtx = zeros(df*GEOMETRY.nodes);
     
@@ -84,7 +84,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                 Sy=min(Int_var.Sy(e,2),OCR*press);
                 Sy_r=Sy;
                 Gamma=Int_var.gamma(e,2);
-                dgamma=Int_var.dgamma(e,2);  
+                dgamma=Int_var.dgamma(e,2); 
             end
 
             %% Calculate the deformation gradient state
@@ -108,6 +108,10 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                         [A,T,Gamma,dgamma,Sy,Sy_r,Be]=...
                             M_Cam_Clay(Kt,1,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,press);
                         Int_var.Sy_r(e,1) = Sy_r;
+                    elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
+                        H=MAT(37,Mat(e));
+                        [A,T,Gamma,dgamma,Sy,etaB,H,Be]=...
+                            PZ(Kt,1,e,Gamma,dgamma,Sy,0,H,F,Fold,Be,press);
                     end
                     Int_var.Sy(e,1)     = Sy;
                     Int_var.gamma(e,1)  = Gamma;
@@ -168,10 +172,16 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             end
             
             MAT_POINT(e).J    =   jacobians;
-            if MODEL(Mat(e))>2
+            if MODEL(Mat(e))>=2
                 Int_var.Sy(e,2)   =   Int_var.Sy(e,1);
                 Int_var.Sy_r(e,2) =   Int_var.Sy_r(e,1);
                 Int_var.P0(e,1)   =   press;
+                if MODEL(Mat(e))>=4
+                    Int_var.H(e,1) =   H;
+                    Int_var.H(e,2) =   H;
+                    Int_var.eta(e,1) = etaB;
+                    Int_var.eta(e,2) = etaB;
+                end
             end
         
         else

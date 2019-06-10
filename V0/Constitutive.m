@@ -55,10 +55,18 @@ function [stiff_mtx,Int_var,Mat_state]=...
                         Drucker_prager(Kt,e,Gamma,dgamma,Sy,F,Be,Fold);
                 elseif MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
                     P0      = Int_var.P0(e);
-                    Sy_r     = Int_var.Sy_r(e,2);
+                    Sy_r    = Int_var.Sy_r(e,2);
                     [A,T,Gamma,dgamma,Sy,Sy_r,Be]=...
                         M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,P0);
                     Int_var.Sy_r(e,1) = Sy_r;
+                elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
+                    P0      = Int_var.P0(e);
+                    H       = Int_var.H(e,2);
+                    etaB    = Int_var.eta(e,2);
+                    [A,T,Gamma,dgamma,Sy,etaB,H,Be]=...
+                            PZ(Kt,1,e,Gamma,dgamma,Sy,etaB,H,F,Fold,Be,P0);
+                    Int_var.H(e,1)   = H;
+                    Int_var.eta(e,1) = etaB;
                 end
                 Int_var.Sy(e,1)     = Sy;
                 Int_var.gamma(e,1)  = Gamma;

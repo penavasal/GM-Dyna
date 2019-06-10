@@ -25,6 +25,8 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
     Int_var.gamma  = zeros(elements,2);
     Int_var.Sy  = zeros(elements,2);
     Int_var.Sy_r= zeros(elements,2);
+    Int_var.H   = zeros(elements,2);
+    Int_var.eta = zeros(elements,2);
     Int_var.P0  = zeros(elements,1);
        
     Mat_state.title='Material state: material point information';
@@ -52,6 +54,8 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
     GLOBAL.gamma_nds    = zeros(nodes,dim);
     GLOBAL.Sy           = zeros(elements,dim);
     GLOBAL.Sy_r         = zeros(elements,dim);
+    GLOBAL.H            = zeros(elements,dim);
+    GLOBAL.eta          = zeros(elements,dim);
     
     GLOBAL.Ps           = zeros(elements,dim);
     GLOBAL.Qs           = zeros(elements,dim);
@@ -118,6 +122,8 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         Int_var.gamma(:,2)=GLOBAL.gamma(:,ste_p);
         Int_var.Sy(:,2)=GLOBAL.Sy(:,ste_p);
         Int_var.Sy_r(:,2)=GLOBAL.Sy_r(:,ste_p);
+        Int_var.eta(:,2)=GLOBAL.eta(:,ste_p);
+        Int_var.H(:,2)=GLOBAL.H(:,ste_p);
         Int_var.dgamma(:,2)=GLOBAL.dgamma(:,ste_p);
         Int_var.P0(:,1)=GLOBAL.Ps(:,1);
         

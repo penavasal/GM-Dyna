@@ -51,9 +51,13 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         else
             if rem(iter,NR1)==0
 
-                [stiff_mtx,Int_var,Mat_state]=...
+                if ste==1
+                    [stiff_mtx,Int_var,Mat_state]=...
+                    Constitutive(4,ste,Int_var,Mat_state,MAT_POINT);
+                else
+                    [stiff_mtx,Int_var,Mat_state]=...
                     Constitutive(1,ste,Int_var,Mat_state,MAT_POINT);
-
+                end
                 [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
 
                 [InvK,~]=apply_conditions(0,ste,matrix,0);
