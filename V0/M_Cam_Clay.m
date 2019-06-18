@@ -404,7 +404,7 @@ function [aep]=aep_calculation(Kt,epsev,epsesTR,epses,dgamma,dgamma_,P,Q,Pcs,n,.
     global SOLVER
     
     % Compute algorithmic stress-strain in principal direction
-    if Kt==1 || Kt==2
+    if Kt==1 || Kt==2 || Kt==4
         
         if SOLVER.INIT_file==0 
             dg=dgamma;

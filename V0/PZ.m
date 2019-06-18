@@ -20,10 +20,11 @@ function [A,Sc,gamma,dgamma,zetamax,etaB,H,Be]=...
     if isnan(BeTr)
         fprintf('Error in Green-Lagrange tensor of elem e %i \n',e);
     end
+    %Ee_0  = logm(Be)/2;
     Ee_tr  = logm(BeTr)/2;
-    Ee_tot = logm(F*F')/2;
-    Ee_0   = logm(Fold*Fold')/2;
-    deps =  Ee_tot- Ee_0;
+    E_tot = logm(F*F')/2;
+    E_0   = logm(Fold*Fold')/2;
+    deps =  E_tot- E_0;
 
     if isnan(Ee_tr)
         error('Error in small strain tensor of elem e %i \n',e);
@@ -288,7 +289,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
   
   % D elastoplastic, Stress and Strain
  [aep,TTe,Ee]=aep_calculation(Kt,Ge,p,q,eev0,ees0,epsedev,eestrial,...
-     incrlanda,dgamma_,H,Mg,Mf);
+     incrlanda,dgamma_,H,Mg,Mf,De);
   
 end
 
@@ -450,9 +451,9 @@ function [De,p,q,eta]=Delast(Ge,ees,eev)
     q=-p0*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
     eta=abs(q/p);
 
-    K=khar*abs(p);
-    J=khar*abs(q);
-    G=ghar*abs(p)+(khar*(q^2)/(3*abs(p)));
+    K=-khar*p;
+    J=-khar*q;
+    G=-(ghar*p+(khar*(q^2)/(3*p)));
     De=[K J;J 3*G];
 
 end
@@ -693,7 +694,7 @@ function [p,q,theta,rj2,sn,devs,rj3]=invar(s,type)
     
     if strcmp(type,'STRAIN')
         q=sqrt(2/3)*sn;
-        %p=p;
+        p=-p;
     else
         q=sqrt(3*rj2);
         p=-p/3;
@@ -719,18 +720,19 @@ function [BB]=rota_mat_theta(p,rj2,steff,devs,rj3)
     % * A1 *
     BB(1,1)=-1.0/3.0;
     BB(1,2)=-1.0/3.0;
-    BB(1,3)=-1.0/3.0;
-    BB(1,4)=0.;
+    BB(1,3)= 0.;
+    BB(1,4)=-1.0/3.0;
+
 
     BB=-BB;
 
     % * A2 *
 
     if (rj2r >tol) && (steff>tol/5)
-        BB(2,4)=2*devs(2,1)*root32/steff;
-        for i=1:3
-            BB(2,i)=devs(i,i)*root32/steff;
-        end
+        BB(2,3)=2*devs(2,1)*root32/steff;
+        BB(2,1)=devs(1,1)*root32/steff;
+        BB(2,2)=devs(2,2)*root32/steff;
+        BB(2,4)=devs(3,3)*root32/steff;
     else
         BB(2,:)=[-1 -1 -1 -1];
     end
@@ -738,9 +740,11 @@ function [BB]=rota_mat_theta(p,rj2,steff,devs,rj3)
     % dJ3/d
     A3(1)=devs(2,2)*devs(3,3)+rj2/3;
     A3(2)=devs(1,1)*devs(3,3)+rj2/3;
-    A3(3)=devs(1,1)*devs(2,2)-devs(1,2)*devs(1,2)+rj2/3;
-    A3(4)=-2*devs(1,2)*devs(3,3);
+    A3(3)=-2*devs(1,2)*devs(3,3);
+    A3(4)=devs(1,1)*devs(2,2)-devs(1,2)*devs(1,2)+rj2/3;
+    
 
+    
     % * A3 *
 
     if (rj2 >tol)
@@ -764,12 +768,13 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
     
     alpha = Ge(3);
     alphag= Ge(4);
+    p0    = Ge(7);
     
-    %[De,P,Q,eta]=Delast(Ge,epses,epsev);
+    [De2,P2,Q2]=Delast(Ge,epses,epsev);
     %[ng,dg]=build_vector(alphag,Mg,eta,Q);
     
 
-    dir_d =sqrt(2/3)* epsedev / n_epsedev; %Ver esto en el cam clay
+    dir_d =sqrt(2/3)* epsedev / n_epsedev;
     
     % Compute principal Kirchhoff tension
     T = P*I+ sqrt(2/3)*Q*dir_d;
@@ -777,7 +782,7 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
      %[p1,q1]=invar(T,'STRESS');
 
     % Compute principal elastic strain
-    E_elast = (1/3)*epsev*I + sqrt(3/2)*epses*dir_d;
+    E_elast = -(1/3)*epsev*I + sqrt(3/2)*epses*dir_d;
     
      [evol2,ees2]=invar(E_elast,'STRAIN');  
     
@@ -791,33 +796,60 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
         signq=sign(q);
         [ng,~]=build_vector(alphag,Mg,eta,q,signq);
         [n,~]=build_vector(alpha,Mf,eta,q,signq);
-        [BB]=rota_mat_theta(-p,rj2,steff,devs,rj3);
+        [BB]=rota_mat_theta(p,rj2,steff,devs,rj3);
         
         ngxyz=BB'*ng;
         nxyz=BB'*n;
         
-        [Delast]=assemble(De,dir_d);
+        [De_xyz]=assemble(De,dir_d,Ge,epsev,epses);
         if Kt==4
-            aep = Delast;
+            aep = De_xyz;
         else
-            Dpxyz=(Delast*ngxyz)*(nxyz'*Delast)/...
-                (norm(nxyz)*norm(ngxyz)*H+nxyz'*Delast*ngxyz);
+            Dpxyz=(De_xyz*ngxyz)*(nxyz'*De_xyz)/...
+                (norm(nxyz)*norm(ngxyz)*H+nxyz'*De_xyz*ngxyz);
         
-            aep = Delast - Dpxyz;
+            aep = De_xyz - Dpxyz;
         end
+        
+        [t_vec1]=AUX.E2e_in(T);
+        t_vec=t_vec1-[p0;p0;0;p0];
+        
+        [e_vec]=AUX.E2e_in(E_elast);
+        t_vec2=De_xyz*e_vec;
+
+        t_vec-t_vec2;
     else
         aep = zeros(4,4);
     end 
     
+    
 end
 
 
-function [A]=assemble(D,n)
+function [A]=assemble(D,n,Ge,eev,ees)
+
+
+        khar  = Ge(1);
+        ghar  = Ge(2);
+        p0    = Ge(7);
+          
+        v_exp=exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+        
+        K=-khar*p0*v_exp;
+        J=khar*3*ees*ghar*v_exp*p0;
+        G1=-2*ghar*p0*v_exp;
+        G2=-6*khar*v_exp*p0*ees*ees*ghar*ghar;
+        
+        GG=3/2*(G1+G2);
         
         r23=sqrt(2/3); 
         
         m=[1 1 0 1];
         [n_vec]=AUX.E2e(n);
+        
+        aux=n_vec(4);
+        n_vec(4)=n_vec(3);
+        n_vec(3)=aux;
         
         I4=eye(4);
         I1=m'*m;
@@ -828,7 +860,18 @@ function [A]=assemble(D,n)
         
         M1=I4-1/3*I1;
               
-        A = D(1,1)*I1 + r23*D(1,2)*M2 + r23*D(2,1)*M3 + ...
-            2/3*D(2,2)*M4 + 2/3*D(2,2)*(M1-M4);
+        A2 = D(1,1)*I1 + r23*D(1,2)*M2 + r23*D(2,1)*M3 + ...
+            (2/3*D(2,2)-G1)*M4 + G1*M1;
+        
+        %A = D(1,1)*I1 - r23*D(1,2)*M2 - r23*D(2,1)*M3 + ...
+        %    2/3*D(2,2)*M1;
+        
+        %A = D(1,1)*I1 + r23*D(1,2)*M2 + r23*D(2,1)*M3 + ...
+        %    2/3*D(2,2)*I4;
 
+        A = K*I1 + r23*J*(M2+M3) + ...
+            G2*M4 + G1*M1;
+        
+        p0;
+        
 end

@@ -266,6 +266,7 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
 
     for m=1:loads
         
+        dt=SOLVER.time_step;
         % Direction and nodes
         V=VECTOR(:,m)';
         nv=norm(V);

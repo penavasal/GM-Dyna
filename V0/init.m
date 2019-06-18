@@ -38,7 +38,7 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
     
     if SOLVER.UW==1
         Mat_state.k=zeros(elements,1);
-        Mat_state.pw=zeros(elements,3);
+        Mat_state.pw=zeros(elements,2);
         Mat_state.Fw=zeros(l1*elements,2);
     elseif SOLVER.UW==2
         Mat_state.k=zeros(elements,1);
@@ -360,9 +360,7 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
      GLOBAL.F(:,1)      = Mat_state.F(:,1);
      
      if SOLVER.UW
-         Mat_state.pw(:,3)=SOLVER.INITIAL_COND(2)*...
-             ones(GEOMETRY.mat_points,1)-Mat_state.pw(:,1);
-         GLOBAL.pw(:,1)=Mat_state.pw(:,1)+Mat_state.pw(:,3);
+         GLOBAL.pw(:,1)=Mat_state.pw(:,1);
      end
      
      % F. Plot initial state

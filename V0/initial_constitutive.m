@@ -75,9 +75,15 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             
             SOLVER.step0=1;
 
-            sig_0(2)=3*press/(1+2*K0);
-            sig_0(1)=K0*sig_0(2);
-            sig_0(4)=K0*sig_0(2);
+            if SOLVER.AXI
+                sig_0(2)=3*press/(1+2*K0);
+                sig_0(1)=K0*sig_0(2);
+                sig_0(4)=K0*sig_0(2);
+            else
+                sig_0(2)=3*press/(1+2*K0)*3/2/(1+MAT(2,Mat(e)));
+                sig_0(1)=K0*sig_0(2);
+                sig_0(4)=MAT(2,Mat(e))*K0*(sig_0(2)+sig_0(1));
+            end
 
 
             if MODEL(Mat(e))>=2
@@ -118,12 +124,9 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     Int_var.dgamma(e,1) = dgamma;
                 end
 
+                [sig]=AUX.E2e_in(T);
+                ds=sig-sig_0;
                 if SOLVER.AXI
-                    [sig]=AUX.E2e_in(T);
-                    ds=sig-sig_0;
-
-                    D=A;
-
                     if iter==1
                         ee(:,iter)=-A\ds;
                     else
@@ -132,20 +135,16 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     [E]=AUX.e2E_in(ee(:,iter));
                 else
                     D=A(1:3,1:3);
-
-                    [sig]=AUX.E2e_in(T);
-                    ds=sig(1:3)-sig_0(1:3);
-
                     if iter==1
-                        ee(1:3,iter)=-D\ds;
+                        ee(1:3,iter)=-D\ds(1:3);
                     else
-                        ee(1:3,iter)=ee(1:3,iter-1)-D\ds;
+                        ee(1:3,iter)=ee(1:3,iter-1)-D\ds(1:3);
                     end
                     [E]=AUX.e2E_in(ee(:,iter));
                 end
 
                 for i=1:3
-                    F(i,i)=sqrt(exp(2*E(i,i)));
+                    F(i,i)=exp(E(i,i));
                 end
                 jacobians=det(F);
 
@@ -153,14 +152,8 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                 error(iter)=abs(norm(ds));
 
             end
-
-            %% DEFORMATION GRADIENT
-    %         e_fin=D\sig;  
-    %         [E]=AUX.e2E(e_fin);
-    %         for i=1:3
-    %             F(i,i)=1/sqrt(exp(2*E(i,i)));
-    %         end
-    %         jacobians=det(F);
+           
+            
 
             %% Stiffness matrix
             [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A);
@@ -183,9 +176,10 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     Int_var.eta(e,2) = etaB;
                 end
             end
+            
         
         else
-            
+            E=zeros(3);
             SOLVER.step0=0;
             
         end
@@ -197,13 +191,33 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             Mat_state.F((e-1)*dimf+i,2)=f(i,1);
         end 
 
-%         if UW==1
-%             [f_w]=AUX.m2v(F_w);
-%             for i=1:dimf
-%                 Mat_state.Fw((e-1)*dimf+i,2)=f_w(i,1);
-%             end 
-%         end
-             
+            if SOLVER.UW
+                Pw=SOLVER.INITIAL_COND(2);
+                Mat_state.pw(:,1)=Pw;
+                % Q calculation
+                n=1-(1-MAT(16,Mat(e)))/jacobians;
+                K_w=MAT(28,Mat(e));
+                K_s=MAT(27,Mat(e));
+                Q=1/(n/K_w+(1-n)/K_s);
+                tr_e=E(1,1)+E(2,2)+E(3,3);
+                tr_ew=-Pw/Q-tr_e;
+                F_w=eye(3);
+                if SOLVER.AXI
+                    for i=1:3
+                        F_w(i,i)=exp(tr_ew/3)^2;
+                    end
+                else
+                    for i=1:2
+                        F_w(i,i)=exp(tr_ew/2);
+                    end
+                end
+                [f_w]=AUX.m2v(F_w);
+                for i=1:dimf
+                    Mat_state.Fw((e-1)*dimf+i,2)=f_w(i,1);
+                end 
+            end
+
+
     end
 
 end

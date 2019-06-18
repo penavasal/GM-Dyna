@@ -98,7 +98,7 @@ function Implicit_solver(MAT_POINT)
             GLOBAL.F(:,ste_p)       = Mat_state.F(:,1);  %DEFORMATION GRADIENT
             GLOBAL.Be(:,ste_p)      = Mat_state.Be(:,1); %LEFT CAUCHY GREEN 
             if SOLVER.UW
-                GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1)+Mat_state.pw(:,3);
+                GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
                 GLOBAL.Fw(:,ste_p) = Mat_state.Fw(:,1);
             end
 

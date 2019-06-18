@@ -95,7 +95,7 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
         if strcmp(varargin{1},'PS')
             VAR=GLOBAL.Ps;
         elseif strcmp(varargin{1},'PW')
-            VAR=GLOBAL.Pw;
+            VAR=GLOBAL.pw;
         elseif strcmp(varargin{1},'GAMMA')
             VAR=GLOBAL.gamma;
         else

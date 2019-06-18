@@ -23,10 +23,12 @@ function [Disp_field,Mat_state,MAT_POINT]=...
 
     NR1=SOLVER.NR;
     
+    a=1;
     while error(iter) > TOL
 
-        % 2.1 Solver        
-        [du(:,iter)]=Time_Scheme.solver_1(InvK,GT,a0,v0,ste);
+        % 2.1 Solver
+        IK_s=a*InvK;
+        [du(:,iter)]=Time_Scheme.solver_1(IK_s,GT,a0,v0,ste);
         d0(:,1)=d0(:,1)+du(:,iter);
             
         for j=1:GEOMETRY.nodes
@@ -51,7 +53,10 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         else
             if rem(iter,NR1)==0
 
-                if ste==1
+                if ste==1 || a<1e-6
+                    if a<1e-6
+                        a=1;
+                    end
                     [stiff_mtx,Int_var,Mat_state]=...
                     Constitutive(4,ste,Int_var,Mat_state,MAT_POINT);
                 else
@@ -76,6 +81,20 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         % 2.5 Error
         iter=iter+1;
         error(iter)=norm(GT);
+        if iter>5
+            if error(iter)>error(iter-1)
+                f1=error(iter-1);
+                f2=error(iter);
+                a=a*a*f1/2/(f2+f1*a-f1);
+                iter = iter-1;
+                if a<1e-18
+                	fprintf('No convergence achieved in step %i \n',ste);
+                    stop
+                end
+            else
+                a=1;
+            end
+        end
         if error(iter)>TOL && iter>10
             if iter>SOLVER.NR_iterations/2
                 if std(error(iter-10:iter-1))<TOL*1000

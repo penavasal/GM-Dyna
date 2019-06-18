@@ -29,12 +29,12 @@ function [A,T,Be]=Saint_Venant(Kt,e,F)
             
     end
     
-%     E_vec(1,1)=Ee(1,1);
-%     E_vec(2,1)=Ee(2,2);
-%     E_vec(4,1)=Ee(3,3);
-%     E_vec(3,1)=Ee(2,1);
-%     T2=A*E_vec;
-%     e;
+%      E_vec(1,1)=Ee(1,1);
+%      E_vec(2,1)=Ee(2,2);
+%      E_vec(4,1)=Ee(3,3);
+%      E_vec(3,1)=Ee(2,1);
+%      T2=A*E_vec;
+%      e;
 
 
 

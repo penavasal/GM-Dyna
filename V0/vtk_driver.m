@@ -12,7 +12,7 @@ function vtk_driver(str,str2,steps,h,rt,folder)
 
     if NNE==4
         if SOLVER.UW==1
-            vtk_4DOF_quad(str,str2,steps,h);
+            vtk_4DOF_quad(str,str2,steps,h,rt);
         else
             vtk_2DOF_quad(root,str2,steps,h,rt);
         end
@@ -570,19 +570,30 @@ end
 end
 
 
-function vtk_4DOF_quad(str,str2,steps,sc)
+function vtk_4DOF_quad(str,str2,steps,sc,dd)
 
 %clear
-load(str,'-mat');
-[elements,NNE]=size(elem);
+load(str,'-mat','GLOBAL','GEOMETRY');
+[elements,NNE]=size(GEOMETRY.elem);
+x_a=GEOMETRY.x_0;
 [nodes,sp]=size(x_a);
 df=2*sp;
+%[ste_p,~]=size(tp);
 
-dd=round(ste_p/steps);
+elem=GEOMETRY.elem;
+Ss=GLOBAL.Sigma;
+Es=GLOBAL.Es;
+Pw=GLOBAL.pw;
+Ps=GLOBAL.Ps;
+Es_p=GLOBAL.Es_p;
+Sy_tot=GLOBAL.Sy;
+gamma_nds=GLOBAL.gamma_nds;
+gamma=GLOBAL.gamma;
+d=GLOBAL.d;
+a=GLOBAL.a;
+v=GLOBAL.v;
 
-x_a=x_0;
-
-for cont=1:dd:ste_p
+for cont=1:dd:steps
 
     %Output file name
     filename=(['VTK/' str2 '_' num2str(cont) '.vtk']);
@@ -645,7 +656,7 @@ for cont=1:dd:ste_p
      fprintf(fid, 'SCALARS Ep_nds float \n');
      fprintf(fid, 'LOOKUP_TABLE default\n');
      for i=1:nodes
-         fprintf(fid,[num2str(Gamma_nds(i,cont)) '\n']);
+         fprintf(fid,[num2str(gamma_nds(i,cont)) '\n']);
      end
 
     
@@ -666,7 +677,7 @@ for cont=1:dd:ste_p
      fprintf(fid,'SCALARS Ep float\n');
      fprintf(fid, 'LOOKUP_TABLE default\n');
      for i=1:elements
-         fprintf(fid,[num2str(Gamma_tot(i,cont)) '\n']);
+         fprintf(fid,[num2str(gamma(i,cont)) '\n']);
      end
     %Pore Pressure
     fprintf(fid,'SCALARS Pore_Pressure float\n');
