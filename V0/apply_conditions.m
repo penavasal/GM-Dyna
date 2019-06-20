@@ -3,6 +3,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
 
     global GEOMETRY
     
+    %%%% ONLY K MATRIX
     if type==0
         I=eye(GEOMETRY.df*GEOMETRY.nodes);
         [boundary,~,~]=calculate_boundaries(ste);
@@ -19,7 +20,8 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
             %fprintf('fail with K matrix in ste %i \n',ste);
         end
         InvK=matrix\I;
-        
+    
+    %%%% ONLY RESIDUUM VECTOR (FIRST ITER of NEWTON-RAPHSON)
     elseif type==1
     
         [boundary,i_disp,~]=calculate_boundaries(ste);
@@ -36,9 +38,9 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
             end
         end
         InvK=0;
-        
+    
+    %%%% ONLY RESIDUUM VECTOR (SECOND and MORE ITERS of NEWTON-RAPHSON)
     elseif type==2
-        
          [boundary,~,~]=calculate_boundaries(ste);
          for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)               
@@ -52,6 +54,8 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
             end
          end  
          InvK=0;
+         
+    %%%% K and GT MATRIX for the INITIAL STEP    
     elseif type==3
         I=eye(GEOMETRY.df*GEOMETRY.nodes);
         [boundary,~,~]=calculate_boundaries(1);
@@ -65,7 +69,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
                 matrix(i,i)=1;
             end
         end
-        if (abs(rcond(matrix)))<1e-12
+        if (abs(rcond(matrix)))<1e-14
             fprintf('fail with K matrix in ste %i \n',ste);
         end
         InvK=matrix\I;

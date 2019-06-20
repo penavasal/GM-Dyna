@@ -88,7 +88,7 @@ function read_material
                     MATERIAL.MODEL(M)=2.2;
                     continue
                 case 'DRUCKER_PRAGER_PS'
-                    MATERIAL.MATERIAL.MODEL(M)=2.3;
+                    MATERIAL.MODEL(M)=2.3;
                     continue
                 case 'MODIFIED_CAM_CLAY'
                     MATERIAL.MODEL(M)=3.0;

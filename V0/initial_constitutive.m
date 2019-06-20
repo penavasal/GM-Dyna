@@ -20,7 +20,6 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
     f_old     = zeros(dimf,1);
     sig_0     = zeros(dims,1);
     
-    TOL=1e-3;
     
     for e=1:GEOMETRY.mat_points
         
@@ -71,18 +70,26 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
         
         press=(1+2*K0)/3*tens_1+tens_2;
         
+        
         if abs(press)>0
             
             SOLVER.step0=1;
+            
+            if MODEL(Mat(e))>=3
+                nu=0.5;
+                %nu=poisson(press,MODEL(Mat(e)),MAT(:,Mat(e)));
+            else
+                nu=MAT(2,Mat(e));
+            end
 
             if SOLVER.AXI
                 sig_0(2)=3*press/(1+2*K0);
                 sig_0(1)=K0*sig_0(2);
                 sig_0(4)=K0*sig_0(2);
             else
-                sig_0(2)=3*press/(1+2*K0)*3/2/(1+MAT(2,Mat(e)));
+                sig_0(2)=3*press/(1+2*K0)*3/2/(1+nu);
                 sig_0(1)=K0*sig_0(2);
-                sig_0(4)=MAT(2,Mat(e))*K0*(sig_0(2)+sig_0(1));
+                sig_0(4)=nu*K0*(sig_0(2)+sig_0(1));
             end
 
 
@@ -94,12 +101,18 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             end
 
             %% Calculate the deformation gradient state
-            error(1)=1e32;
+            
             ee=zeros(dims,1);
-            e_fin=zeros(dims,1);
-            iter=1;
-            while error(iter) > TOL
+            %e_fin=zeros(dims,1);
+            iter=0;
+            TOL=1e-3;
+            imax=200;
+            a=1;
+            r0=abs(norm(sig_0));
+            error=0;
+            while iter <imax
 
+                iter=iter+1;
                 if MODEL(Mat(e))<2
                     if MODEL(Mat(e))==0
                         [A,T,Be]=Saint_Venant(Kt,e,F);
@@ -126,19 +139,23 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
 
                 [sig]=AUX.E2e_in(T);
                 ds=sig-sig_0;
+
+                [CONVER,error,a,iter]=...
+                    AUX.convergence(ds,r0,error,TOL,iter,imax,a);
+                
                 if SOLVER.AXI
                     if iter==1
-                        ee(:,iter)=-A\ds;
+                        ee(:,iter)=-a*A\ds;
                     else
-                        ee(:,iter)=ee(:,iter-1)-A\ds;
+                        ee(:,iter)=ee(:,iter-1)-a*A\ds;
                     end
                     [E]=AUX.e2E_in(ee(:,iter));
                 else
                     D=A(1:3,1:3);
                     if iter==1
-                        ee(1:3,iter)=-D\ds(1:3);
+                        ee(1:3,iter)=-a*D\ds(1:3);
                     else
-                        ee(1:3,iter)=ee(1:3,iter-1)-D\ds(1:3);
+                        ee(1:3,iter)=ee(1:3,iter-1)-a*D\ds(1:3);
                     end
                     [E]=AUX.e2E_in(ee(:,iter));
                 end
@@ -147,9 +164,10 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     F(i,i)=exp(E(i,i));
                 end
                 jacobians=det(F);
-
-                iter=iter+1;
-                error(iter)=abs(norm(ds));
+                
+                if CONVER==1     
+                    break
+                end
 
             end
            
@@ -221,3 +239,31 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
     end
 
 end
+
+function nu=poisson(p,MODEL,MAT)
+
+    if MODEL>=3 && MODEL<4 %CAMCLAY
+        
+        mu0   = MAT(4);   %mu0
+        alfa  = MAT(20);  %alfa
+        kappa = MAT(22);  %kappa
+        
+        K = -p/kappa;
+        G = mu0-alfa*p;
+        
+        
+    else %PZ
+
+        khar  = MAT(29);
+        ghar  = MAT(4);
+
+        K=-khar*p;
+        G=-ghar*p;
+        
+    end
+    
+    nu=(3*K-2*G)/2/(3*K+G);
+    nu=min(0.5,max(nu,0));
+end
+
+

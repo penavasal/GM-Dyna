@@ -22,10 +22,6 @@ function Implicit_solver(MAT_POINT)
     % Initial matrices
     %--------------------------------------------------------------------------
     [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX);
-    
-    [matrix]=Time_Scheme.matrix(MATRIX.mass,stiff_mtx,MATRIX.damp,ste);
-        
-    [InvK,~]=apply_conditions(0,ste,matrix,0);
          
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      % LOOP
@@ -36,16 +32,11 @@ function Implicit_solver(MAT_POINT)
         load_s(:,2)=load_s(:,1);
         [load_s(:,1),OUTPUT]=calculate_forces...
             (ste,MAT_POINT,Disp_field,OUTPUT,MATRIX);
-        
-        [GT]=Time_Scheme.calculation(Disp_field.d,Disp_field.a,Disp_field.v,...
-            Mat_state.fint,MATRIX.mass,MATRIX.damp,load_s(:,1),load_s(:,2),ste);  
-
-        [~,GT]=apply_conditions(1,ste,matrix,GT);
-
+       
         % --------------------------------------------------------
         % 2. Predictor      
         [Disp_field,Mat_state,MAT_POINT]=implicit_predictor...
-            (ste,GT,InvK,MATRIX.mass,MATRIX.damp,load_s,Disp_field,...
+            (ste,stiff_mtx,MATRIX.mass,MATRIX.damp,load_s,Disp_field,...
             MAT_POINT,Mat_state,Int_var);
     
         % --------------------------------------------------------
@@ -59,11 +50,7 @@ function Implicit_solver(MAT_POINT)
         
         [OUTPUT]=AUX.reaction(Mat_state.fint,OUTPUT);
         
-        %  5. Assemble time integration matrix and apply conditions
-        [matrix]=Time_Scheme.matrix(MATRIX.mass,stiff_mtx,MATRIX.damp,ste);
-        [InvK,~]=apply_conditions(0,ste,matrix,0);
- 
-        % 6. Storage
+        % 5. Storage
         if rem(ste,SOLVER.SAVE_I)==0
 
             ste_p=ste_p+1;
@@ -106,14 +93,17 @@ function Implicit_solver(MAT_POINT)
       
         end
 
-        % 7. Save info
+        % 6. Save info
         if ((rem(ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) ...
                 || (ste==SOLVER.step_final) || (SOLVER.FAIL==1))
             save(OUTPUT.name,'ste','ste_p','TIME','MAT_POINT',...
                 'GLOBAL','OUTPUT','-append')
+            if SOLVER.FAIL==1
+                stop
+            end
         end
         
-        % 8.. Update
+        % 7. Update
         Disp_field.d(:,2)=Disp_field.d(:,1);
         Disp_field.v(:,2)=Disp_field.v(:,1);
         Disp_field.a(:,2)=Disp_field.a(:,1);

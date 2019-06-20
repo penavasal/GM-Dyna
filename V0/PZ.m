@@ -102,103 +102,80 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         Hcalcu=0;
     end
      
-    % Newton Raphson initialization
+    % Solution initialization
     incrlanda = dgamma_;
     defplasdescalcu=defplasdes; 
     
     aa=[eevtrial;eestrial;H;incrlanda];
-    r1=aa(1)-eevtrial+incrlanda*ng(1);            
-    r2=aa(2)-eestrial+incrlanda*ng(2);
-    r3=H-Hcalcu;
-    r4=incrlanda*(H+n(1:2)'*De*ng(1:2))-discri;
-    r=[r1;r2;r3;r4];                         %Vector residuos
+
     
+    % Solve Newton Raphson
     imax=200;
     a=1;
-    TOL=1e-7;
+    TOL=1e-4;
     ite=0;
-    r0=norm(r);
-    ri=r0;
-       
-    while (ri/r0)>TOL && ite<imax
+    r0=0;
+    NORMErec=0; 
+    while ite<imax
           
         ite=ite+1;
-        
-        Dr=stimaDR(Ge,etaf,De,q,p,eta,d,dg,aa(4,ite),...
-            aa(3,ite),n,ng,defplasdescalcu,dev,des,zetamax0,Mg,discri,etaB,signq);
-    
-        da = a*Dr\r;
-        aa(:,ite+1)=aa(:,ite)-da;
-        
-        % p,q,K,G and De
-        [De,p,q,eta]=Delast(Ge,aa(2,ite+1),aa(1,ite+1));
 
-        % Vectors
-        [n,d]=build_vector(alpha,Mf,eta,q,signq);
-        [ng,dg]=build_vector(alphag,Mg,eta,q,signq);
+        % 1. Evaluate residual 
+        r1=aa(1,ite)-eevtrial+aa(4,ite)*ng(1);            
+        r2=aa(2,ite)-eestrial+aa(4,ite)*ng(2);
+        r3=aa(3,ite)-Hcalcu;
+        r4=aa(4,ite)*(aa(3,ite)+n(1:2)'*De*ng(1:2))-n(1:2)'*De*[dev;des];
+        r=[r1;r2;r3;r4];                         %Vector residuos
         
-        %discri=n(1:2)'*De*[dev;des];
-      
-        incredefplasdes=aa(4,ite+1)*ng(2);
-        defplasdescalcu=defplasdes+abs(incredefplasdes);
-        
-        % H calculations  
-        if discri>0
-            [Hcalcu,zetamax]=define_H(Ge,etaf,eta,p,defplasdescalcu,zetamax0,Mg);
-        elseif discri<0
-            ng(1)=-abs(ng(1));
-            [Hcalcu,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
-        end
-        
-        % Residual vector construction
-        r1=aa(1,ite+1)-eevtrial+aa(4,ite+1)*ng(1);            
-        r2=aa(2,ite+1)-eestrial+aa(4,ite+1)*ng(2);
-        r3=aa(3,ite+1)-Hcalcu;
-        r4=aa(4,ite+1)*(aa(3,ite+1)+n(1:2)'*De*ng(1:2))-n(1:2)'*De*[dev;des];
-
-        r=[r1;r2;r3;r4];                         %Vector residuos 
-      
-        ri=norm(r);
-        normr(ite)=ri;
-        
-        
-        if ite>5 && (ri/r0)>TOL
-            ri1=normr(ite-1);
-            if ri>ri1
-                if a<1e-10
-                    fprintf('\n No convergence RM \n')
-                    stop;
-                else             
-                    a=a*a*ri1/2/(ri+ri1*a-ri1);
-                    ite = ite-1;
-                    % p,q,K,G and De
-                    [De,p,q,eta]=Delast(Ge,aa(2,ite),aa(1,ite));
-
-                    % Vectors
-                    [n,d]=build_vector(alpha,Mf,eta,q,signq);
-                    [ng,dg]=build_vector(alphag,Mg,eta,q,signq);
-
-                    %discri=n(1:2)'*De*[dev;des];
-
-                    incredefplasdes=aa(4,ite)*ng(2);
-                    defplasdescalcu=defplasdes+abs(incredefplasdes);
-                    
-                    % Residual vector construction
-                    r1=aa(1,ite+1)-eevtrial+aa(4,ite+1)*ng(1);            
-                    r2=aa(2,ite+1)-eestrial+aa(4,ite+1)*ng(2);
-                    r3=aa(3,ite+1)-Hcalcu;
-                    r4=aa(4,ite+1)*(aa(3,ite+1)+n(1:2)'*De*ng(1:2))-n(1:2)'*De*[dev;des];
-
-                    r=[r1;r2;r3;r4];                         %Vector residuos 
-                end
+        if isnan(r)   %|| NORMErec(iter,1)>emax
+            error('Fallo en el PZ \n');
+        else
+            % 2. Check for convergence
+            if ite==1
+                r0=norm(r);
             else
-                a=1;
+                [CONVER,NORMErec,a,ite]=...
+                    AUX.convergence(r,r0,NORMErec,TOL,ite,imax,a);
+                if CONVER==1     
+                    break
+                end
             end
-        end
+            
+            % 3. Evaluate tangent matrix for NR iteration
+            Dr=stimaDR(Ge,etaf,De,q,p,eta,d,dg,aa(4,ite),...
+                aa(3,ite),n,ng,defplasdescalcu,dev,des,zetamax0,...
+                Mg,discri,etaB,signq);
+            
+            if rcond(Dr)<1e-16
+                disp('Small jacobian matrix of PZ return mapping');
+            end
+            
+            % 4. Solve for displacement increment
+            da = a*Dr\r;
+            aa(:,ite+1)=aa(:,ite)-da;
+            
+            % 5. Update 
         
-        if ite == imax
-            fprintf('\n No convergence RM \n')
-            stop;
+                % p,q,K,G and De
+            [De,p,q,eta]=Delast(Ge,aa(2,ite+1),aa(1,ite+1));
+
+                % Vectors
+            [n,d]=build_vector(alpha,Mf,eta,q,signq);
+            [ng,dg]=build_vector(alphag,Mg,eta,q,signq);
+        
+                %discri=n(1:2)'*De*[dev;des];
+      
+            incredefplasdes=aa(4,ite+1)*ng(2);
+            defplasdescalcu=defplasdes+abs(incredefplasdes);
+        
+                % H calculations  
+            if discri>0
+                [Hcalcu,zetamax]=define_H(Ge,etaf,eta,p,defplasdescalcu,zetamax0,Mg);
+            elseif discri<0
+                ng(1)=-abs(ng(1));
+                [Hcalcu,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
+            end
+        
         end
 
     end

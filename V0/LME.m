@@ -20,12 +20,12 @@
 
             target_zero= LME_param(2);
 
+            nbg=LME_param(8);
             % Range of search
-            range_aux=h(i)*sqrt(-1/MAT_POINT(i).w*log(target_zero));
-            range=max(range_aux, 2*h(i));
+            range_aux=h(i)*sqrt(-log(target_zero)/MAT_POINT(i).w);
+            range=max(range_aux, nbg*h(i));
                        
             % Nodes where seeking
-            nbg=LME_param(8);
             nds_search = MAT_POINT(i).near;
             if nbg==1
                 el_near=GEOMETRY.element_near{e};
@@ -116,7 +116,7 @@
             FAIL=0;
 
             gamma_=MAT_POINT(i).w;
-            beta=gamma_/h(i)^2;
+            beta=gamma_/(h(i))^2;
             near= MAT_POINT(i).near;
             lam = MAT_POINT(i).xi;
 
@@ -125,7 +125,7 @@
             if Nelder
               [p_a,J,cnt,lam,tol]=LME.Nelder_mead(x,x_a,beta,near,TolLag,lam,ndim);
             else
-              [p_a,J,~]=LME.Newton_raphson(x,x_a,beta,near,TolLag,lam,ndim);
+              [p_a,J,cnt]=LME.Newton_raphson(x,x_a,beta,near,TolLag,lam,ndim);
             end
 
             if cnt>=250
@@ -179,6 +179,21 @@
             lam=A\B;
 
             lambda=lam';
+            
+%             N0=[0.3333333; 0.3333333];
+%             L=[0 0];
+%             R=N0;
+%             rtol=1e-4;
+%             while (norm(R)>rtol)
+%                 [~,~,~,N]=LME.Gamma_(sp,x_a,x,beta,L,elem);
+%                 R=N(1:2)-N0;
+%                 J=[N(1)*y(1,1) N(1)*y(1,2);
+%                    N(2)*y(2,1) N(2)*y(2,2)];
+%                 dL=J\R;
+%                 L=L-dL';
+%             end
+%             
+%             lambda=L';
 
         end
 
@@ -190,21 +205,17 @@
           I=eye(ndim);
 
           %Newton iteration
-          iflag=0;
-          dlam=10*ones(1,ndim);
           while (norm(R)>TolLag)
             [gam,R,J,p_a]=LME.Gamma_(ndim,x_a,x,beta,lam,near);
             if (abs(rcond(J)))<1e-8
               iflag=1;
               disp('Newton Failed, near to singular matrix')
             end
-            inv=-J\I;
-            dlam=-J\R';
+            dlam=-J\R;
             lam=lam+dlam';
             niter=niter+1;
             if (niter>100) 
               i, niter
-              iflag=1;
               disp('Newton Failed 2, no convergence in 100 iterations')
             end
           end
@@ -604,10 +615,11 @@
             gamma_lme = LME_param(1);
             gamma_=gamma_lme*ones(GEOMETRY.mat_points,1);
 
+            n_sp=LME.nodalspacing(MAT_POINT);
             
             lam_LME=zeros(GEOMETRY.mat_points,GEOMETRY.sp);
             for i=1:GEOMETRY.mat_points
-                beta_=gamma_(i)/GEOMETRY.h_ini(i)^2;
+                beta_=gamma_(i)/n_sp(i)^2;
                 [lam_LME(i,:)]=LME.first_lambda(i,MAT_POINT(i).near,...
                     GEOMETRY.xg_0,GEOMETRY.x_0,beta_);%First lambda
                 MAT_POINT(i).w=gamma_(i);
@@ -649,6 +661,31 @@
 
         end
         
+        function h=nodalspacing(MAT_POINT)
+            global GEOMETRY
+            
+            h=zeros(GEOMETRY.mat_points,1);
+            
+            for i=1:GEOMETRY.mat_points
+                x0=MAT_POINT(i).xg;
+                e=MAT_POINT(i).element;
+                near=GEOMETRY.element_near{e};
+                d=zeros(length(near),1);
+                k=0;
+                for j=1:length(near)
+                    for n=1:GEOMETRY.mat_points
+                        if near(j)==MAT_POINT(n).element
+                            k=k+1;
+                            xj=MAT_POINT(n).xg;
+                            d(k)=sqrt((x0-xj)*(x0'-xj'));
+                        end
+                    end
+                end
+                h(i)=min(d);
+                clear d
+            end
+            
+        end
     end
  end
 

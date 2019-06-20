@@ -211,8 +211,15 @@
                 [Be]=AUX.v2m(be);
 
                 Btot = F*F';
-                Etot = logm(Btot)/2;
-                Ee   = logm(Be)/2;
+                
+                [~,R]=chol(Btot);
+                if R==0
+                    Etot = logm(Btot)/2;
+                    Ee   = logm(Be)/2;
+                else
+                    disp('Error in log of B matrx');
+                    pause
+                end
                 Ep   = Etot-Ee;
 
                 [ee]=AUX.E2e(Ee);
@@ -305,6 +312,53 @@
             list2=reshape(list,[a*b,1]);
         end
         
+        % Convergence and alpha scale (Line search)
+        function [CONVER,NORMErec,a,iter]=...
+            convergence(r,normr0,NORMErec,toll,iter,imax,a)
+        
+            NORMErec(iter,1) = norm(r)/normr0; 
+            CONVER=0;
+            if NORMErec(iter,1) < toll  ||  norm(r)< toll
+                CONVER=1;
+            else
+                if iter<imax
+                    if iter>imax/2
+                        fprintf('iter %i \n',iter);
+                        if std(NORMErec(iter-10:iter-1))<toll/100
+                            CONVER=1;
+                        end
+                    else
+                    
+                        if NORMErec(iter)>NORMErec(iter-1) && iter>4
+                            f1=NORMErec(iter-1);
+                            f2=NORMErec(iter);
+                            a=a*a*f1/2/(f2+f1*a-f1);
+                            iter = iter-1;
+                        else
+                            a=1;
+                        end
+                    end
+                    if a<1e-9
+                        fprintf('\n No convergence RM \n')
+                        stop;
+                    end
+                    
+                elseif iter == imax
+
+                    if NORMErec(iter,1)<toll*10
+                        CONVER=1;
+                    %elseif std(normr0*NORMErec(iter-10:iter-1))<toll/10
+                    elseif std(NORMErec(iter-10:iter-1))<toll/10
+                        CONVER=1;
+                    else
+                        fprintf('\n No convergence RM \n')
+                        stop;
+                    end
+                end         
+            end
+            
+        end
+
         
     end
  end

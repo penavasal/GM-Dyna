@@ -84,9 +84,6 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 
     I = eye(3);
 
-    imax = 200;
-    toll = 1e-3;
-
     % Set isotropic elasto-plastic parameter
     mu0  = Ge(2);  
     alfa = Ge(3);
@@ -98,7 +95,6 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
     
     OMEGA = 1/(lambda-kappa);
 
-
     % Compute volumetric trial strain
     epsevTR = defepr(1,1)+defepr(2,2)+defepr(3,3);
 
@@ -107,18 +103,14 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 
     epsesTR = sqrt(2/3)*s_j2(epsedev);
 
-
     % Compute trial stress invariants
     [Ptr,Qtr] = PQ( epsevTR, epsesTR, P0, alfa, kappa, epsev0, mu0);
 
     % Check for plasticity    
     Ftr = (Qtr/M)^2+Ptr*(Ptr-Pcn);
-
-    a=1.0;
-    emax=1e10;
-    iter=0;
+    toll = 1e-3;
     if Ftr > toll % PLASTIC STEP    
-       % Solve NR system
+       
         % Inizialize variables
         x = zeros(3,1);
         x(1,1) = epsevTR;   % epsev
@@ -129,66 +121,51 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
         P = Ptr;
         Q = Qtr;
 
+        % Solve NR system
+        iter=0;
         normr0=0;
+        imax = 200;
+        a=1.0;
+        NORMErec=0;
         while iter<imax
             
             iter = iter+1;
             
-            % evaluate residual            
+            % 1. Evaluate residual            
             r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
                  x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
-                 (Q/M)^2 + P*(P-Pc)];
-
-            if normr0==0
-                normr0=norm(r);
-            end
-
-            NORMErec(iter,1) = norm(r)/normr0;  
-            
+                 (Q/M)^2 + P*(P-Pc)];  
             
             if isnan(r)   %|| NORMErec(iter,1)>emax
                 error('Fallo en el Modified Cam Clay \n');
             else
-                if iter>1 
-                    % check for convergence
-                    [CONVER]=convergence(r,normr0,NORMErec,toll,imax);
+                % 2. Check for convergence
+                if iter==1
+                    normr0=norm(r);
+                else
+                    [CONVER,NORMErec,a,iter]=...
+                        AUX.convergence(r,normr0,NORMErec,toll,iter,imax,a);
                     if CONVER==1     
                         break
                     end
-                    if NORMErec(iter)>NORMErec(iter-1)
-                        f1=NORMErec(iter-1);
-                        f2=NORMErec(iter);
-                        a=a*a*f1/2/(f2+f1*a-f1);
-                        iter = iter-1;
-                    else
-                        a=1;
-                    end
                 end
 
-                % evaluate tangent matrix for NR iteration
+                % 3. Evaluate tangent matrix for NR iteration
                 A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
                     kappa,mu0,alfa,P0,epsev0,M);
-                
                     
-                if rcond(A)<1e-15
-                    %disp('Small jacobian matrix of Modified Cam Clay return mapping');
+                if rcond(A)<1e-16
+                    disp('Small jacobian matrix of Modified Cam Clay return mapping');
                 end
-                % solve for displacement increment
+                
+                % 4. Solve for displacement increment
                 dx = -a*(A\r);
                 x(:,iter+1) = x(:,iter) + dx;                 
 
-                % Update 
+                % 5. Update 
                 [P,Q]=PQ(x(1,iter+1),x(2,iter+1),P0,alfa,kappa,epsev0,mu0);
                 Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter+1)));
 
-                if iter == imax
-                    if std(norm(r0)*NORMErec(iter-10:iter-1))<toll*10
-                        break;
-                    else
-                        fprintf('\n No convergence RM \n')
-                        stop;
-                    end
-                end
             end
         end
 
@@ -418,7 +395,7 @@ function [aep]=aep_calculation(Kt,epsev,epsesTR,epses,dgamma,dgamma_,P,Q,Pcs,n,.
         % Compute matrix Dep (Eq. 3.50 - Borja & Tamagnini)
         Dep = DEPtens(epsev,epses,dg,P,Q,Pcs,lambda,kappa,mu0,alfa,P0,epsev0,M);
                
-        if Q==0
+        if Q<abs(P)*1e-6
             t1=0;
         else
             t1=2*Q/(3*epsesTR);
@@ -439,8 +416,10 @@ function [aep]=aep_calculation(Kt,epsev,epsesTR,epses,dgamma,dgamma_,P,Q,Pcs,n,.
         M1=I4-1/3*I1;
         %M1(3,3)=0.5*M1(3,3);              % Shear term
               
+        %aep = Dep(1,1)*I1 + r23*Dep(1,2)*M2 + r23*Dep(2,1)*M3 + ...
+        %    2/3*Dep(2,2)*M4 + t1*(M1-M4);
         aep = Dep(1,1)*I1 + r23*Dep(1,2)*M2 + r23*Dep(2,1)*M3 + ...
-            2/3*Dep(2,2)*M4 + t1*(M1-M4);
+            2/3*Dep(2,2)*M4 + 2/3*Dep(2,2)*(M1-M4);
     else
         aep = zeros(4,4);
     end 
@@ -652,48 +631,3 @@ function [q]=s_j2(s)
        s(2,3)^2 + s(3,2)^2;
     q= sqrt(q);
 end
-
-function [CONVER]=convergence(r,normr0,NORMErec,toll,imax)
-
-    [iter,~]=size(NORMErec);
-    CONVER=0;
-    
-    if norm(r) < toll 
-        CONVER=1;
-    elseif iter>11 && iter < imax
-        long=max(round(iter/2),10);
-        if std(normr0*NORMErec(iter-long:iter))<toll*5
-            CONVER=1;
-        elseif mean(NORMErec(iter-long:iter))<1e-11
-            CONVER=1;
-        else
-            list=normr0*sort(NORMErec(iter+1-long:iter));
-            if std(list(1:3))<toll && std(list(long-2:long))<toll
-                CONVER=1;
-            elseif (std(list(1:3)) + std(list(long-2:long)))/2 < toll
-                CONVER=1;
-            end
-        end
-    elseif iter == imax
-        long=max(round(iter/4),20);
-        if std(normr0*NORMErec(iter-long:iter))<toll*20
-            CONVER=1;
-        elseif mean(NORMErec(iter-long:iter))<1e-10
-            CONVER=1;
-        else
-            list=normr0*sort(NORMErec(iter+1-long:iter));
-            if std(list(1:3))<toll/2 && std(list(long-2:long))<toll/2
-                CONVER=1;
-            elseif (std(list(1:3)) + std(list(long-2:long)))/4 < toll
-                CONVER=1;
-            else
-                fprintf('\n No convergence RM \n')
-                stop;
-            end
-        end
-    end
-
-
-
-end
-

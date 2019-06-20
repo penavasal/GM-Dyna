@@ -24,10 +24,11 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
             
             for i=1:GEOMETRY.mat_points
                 xg=GEOMETRY.xg_0(i,:);
+                n_sp=LME.nodalspacing(MAT_POINT);
                 [MAT_POINT]=LME.near(i,GEOMETRY.x_0,xg,...
-                    GEOMETRY.h_ini,MAT_POINT); 
+                    n_sp,MAT_POINT); 
                 [MAT_POINT,SOLVER.FAIL]=LME.shapef...
-                    (i,GEOMETRY.x_0,GEOMETRY.h_ini,xg,MAT_POINT);
+                    (i,GEOMETRY.x_0,n_sp,xg,MAT_POINT);
                 if SOLVER.FAIL
                     fprintf('FAIL in the initial calculation of Shape function \n');
                     stop;

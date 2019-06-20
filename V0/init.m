@@ -324,12 +324,12 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
         % 1. Calculate forces
         [Mat_state]=internal_forces(MAT_POINT,Mat_state);
 
-        GT= load_s(:,1)-Mat_state.fint(:,1);
-        [InvK,GT]=apply_conditions(3,1,matrix,GT);
+        %GT= load_s(:,1)-Mat_state.fint(:,1);
+        %[InvK,GT]=apply_conditions(3,1,matrix,GT);
 
         % 2. Newton-Raphson
         [Disp_field,Mat_state,MAT_POINT]=Newton_Raphson_solver...
-            (1,GT,InvK,0,0,load_s,MAT_POINT,Disp_field,Int_var,Mat_state);
+            (1,matrix,0,0,load_s,MAT_POINT,Disp_field,Int_var,Mat_state);
 
         % 3. Calculate initial update of F   
         [Mat_state,MAT_POINT]=...
