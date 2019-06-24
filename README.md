@@ -1,1 +1,1 @@
-# GC-Dyna
+# GM-Dyna
