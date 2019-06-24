@@ -104,12 +104,12 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             
             ee=zeros(dims,1);
             %e_fin=zeros(dims,1);
-            iter=0;
+            iter=1;
             TOL=1e-3;
             imax=200;
             a=1;
             r0=abs(norm(sig_0));
-            error=0;
+            error=1;
             while iter <imax
 
                 iter=iter+1;
@@ -222,7 +222,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                 F_w=eye(3);
                 if SOLVER.AXI
                     for i=1:3
-                        F_w(i,i)=exp(tr_ew/3)^2;
+                        F_w(i,i)=exp(tr_ew/3);
                     end
                 else
                     for i=1:2

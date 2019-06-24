@@ -19,8 +19,8 @@ function [Disp_field,Mat_state,MAT_POINT]=...
 
     % Solve Newton Raphson
     TOL=SOLVER.rel_tolerance;
-    if ste<5
-        TOL=TOL*100;
+    if ste<3
+        TOL=TOL*1000;
     end
         
     NR1=SOLVER.NR;

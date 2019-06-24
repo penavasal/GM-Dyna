@@ -327,20 +327,23 @@
                         if std(NORMErec(iter-10:iter-1))<toll/100
                             CONVER=1;
                         end
+                    end
+                    if NORMErec(iter)>NORMErec(iter-1) && iter>4
+                        f1=NORMErec(iter-1);
+                        f2=NORMErec(iter);
+                        a=a*a*f1/2/(f2+f1*a-f1);
+                        iter = iter-1;
                     else
-                    
-                        if NORMErec(iter)>NORMErec(iter-1) && iter>4
-                            f1=NORMErec(iter-1);
-                            f2=NORMErec(iter);
-                            a=a*a*f1/2/(f2+f1*a-f1);
-                            iter = iter-1;
-                        else
-                            a=1;
-                        end
+                        a=1;
                     end
                     if a<1e-9
-                        fprintf('\n No convergence RM \n')
-                        stop;
+                        if std(NORMErec(iter-10:iter-1))<toll/10 ||...
+                           NORMErec(iter,1) < toll *100
+                           CONVER=1;
+                        else
+                            fprintf('\n No convergence RM \n')
+                            stop;
+                        end
                     end
                     
                 elseif iter == imax

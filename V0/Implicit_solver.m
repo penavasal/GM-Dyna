@@ -68,6 +68,9 @@ function Implicit_solver(MAT_POINT)
             GLOBAL.dgamma(:,ste_p)  = Int_var.dgamma(:,1);
             GLOBAL.Sy(:,ste_p)      = Int_var.Sy(:,1);
             GLOBAL.Sy_r(:,ste_p)    = Int_var.Sy_r(:,1);
+            GLOBAL.H(:,ste_p)       = Int_var.H(:,1);
+            GLOBAL.eta(:,ste_p)     = Int_var.eta(:,1);
+
             
             GLOBAL.xg(:,ste_p)      = AUX.reshape_S2list(MAT_POINT,'xg');
 
@@ -120,6 +123,8 @@ function Implicit_solver(MAT_POINT)
         Int_var.gamma(:,2)  = Int_var.gamma(:,1);
         Int_var.Sy(:,2)     = Int_var.Sy(:,1);
         Int_var.Sy_r(:,2)   = Int_var.Sy_r(:,1);
+        Int_var.H(:,2)      = Int_var.H(:,1);
+        Int_var.eta(:,2)    = Int_var.eta(:,1);
         Int_var.dgamma(:,2) = Int_var.dgamma(:,1);
 
      end
