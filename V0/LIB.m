@@ -337,7 +337,8 @@
                         a=1;
                     end
                     if a<1e-9
-                        if std(NORMErec(iter-10:iter-1))<toll/10 ||...
+                        b=min(iter-1,10);
+                        if std(NORMErec(iter-b:iter))<toll/10 ||...
                            NORMErec(iter,1) < toll *100
                            CONVER=1;
                         else
