@@ -49,9 +49,9 @@
                  %df=-dNdx'*coord;
                  xi=xi_0-a*f/df;
 
-                 [I]=AUX.IoO(xi,coord_xi,elem);
+                 [I]=LIB.IoO(xi,coord_xi,elem);
                  while I==0
-                     [I]=AUX.IoO(xi,coord_xi,elem);
+                     [I]=LIB.IoO(xi,coord_xi,elem);
                      if I==0
                         a=a/2;
                         xi=xi_0-a*f/df;
