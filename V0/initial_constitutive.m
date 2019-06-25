@@ -56,8 +56,8 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             f_v(i,1)=Mat_state.F((e-1)*dimf + i,1);
             f_old(i,1)=Mat_state.F((e-1)*dimf + i,2);
         end           
-        [F]=AUX.v2m(f_v);
-        [Fold]=AUX.v2m(f_old);
+        [F]=LIB.v2m(f_v);
+        [Fold]=LIB.v2m(f_old);
         jacobians=det(F);
         
         
@@ -137,11 +137,11 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     Int_var.dgamma(e,1) = dgamma;
                 end
 
-                [sig]=AUX.E2e_in(T);
+                [sig]=LIB.E2e_in(T);
                 ds=sig-sig_0;
 
                 [CONVER,error,a,iter]=...
-                    AUX.convergence(ds,r0,error,TOL,iter,imax,a);
+                    LIB.convergence(ds,r0,error,TOL,iter,imax,a);
                 
                 if SOLVER.AXI
                     if iter==1
@@ -149,7 +149,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     else
                         ee(:,iter)=ee(:,iter-1)-a*A\ds;
                     end
-                    [E]=AUX.e2E_in(ee(:,iter));
+                    [E]=LIB.e2E_in(ee(:,iter));
                 else
                     D=A(1:3,1:3);
                     if iter==1
@@ -157,7 +157,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     else
                         ee(1:3,iter)=ee(1:3,iter-1)-a*D\ds(1:3);
                     end
-                    [E]=AUX.e2E_in(ee(:,iter));
+                    [E]=LIB.e2E_in(ee(:,iter));
                 end
 
                 for i=1:3
@@ -177,7 +177,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A);
 
             %% Store vectors
-            [T_vec]=AUX.E2e(T);
+            [T_vec]=LIB.E2e(T);
             for i=1:dims
                 Mat_state.Sigma((e-1)*dims+i,1)=T_vec(i,1);
             end
@@ -202,8 +202,8 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             
         end
             
-        [be]=AUX.m2v(Be);
-        [f]=AUX.m2v(F);
+        [be]=LIB.m2v(Be);
+        [f]=LIB.m2v(F);
         for i=1:dimf
             Mat_state.Be((e-1)*dimf+i,2)=be(i,1);
             Mat_state.F((e-1)*dimf+i,2)=f(i,1);
@@ -229,7 +229,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                         F_w(i,i)=exp(tr_ew/2);
                     end
                 end
-                [f_w]=AUX.m2v(F_w);
+                [f_w]=LIB.m2v(F_w);
                 for i=1:dimf
                     Mat_state.Fw((e-1)*dimf+i,2)=f_w(i,1);
                 end 

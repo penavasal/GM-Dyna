@@ -132,9 +132,9 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         Mat_state.F(:,1)=GLOBAL.F(:,ste_p);          %DEFORMATION GRADIENT
         Mat_state.Be(:,2)=GLOBAL.Be(:,ste_p);              %LEFT CAUCHY GREEN 
         
-        [MAT_POINT]=AUX.list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
+        [MAT_POINT]=LIB.list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
         
-        [MAT_POINT]=AUX.list2S(MAT_POINT,'xg',...
+        [MAT_POINT]=LIB.list2S(MAT_POINT,'xg',...
             reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
         
         if SOLVER.UW==1
@@ -332,8 +332,8 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
             (1,matrix,0,0,load_s,MAT_POINT,Disp_field,Int_var,Mat_state);
 
         % 3. Calculate initial update of F   
-        [Mat_state,MAT_POINT]=...
-            update_F(Disp_field.d,Mat_state,MAT_POINT);
+        %[Mat_state,MAT_POINT]=...
+            %update_F(Disp_field.d,Mat_state,MAT_POINT);
     end
     
     SOLVER.step0=0;
@@ -346,7 +346,7 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
      
      % E. Save information
      for e=1:GEOMETRY.mat_points
-         [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=AUX.invar(Mat_state.Sigma(:,1),e);   
+         [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=LIB.invar(Mat_state.Sigma(:,1),e);   
      end         %PRESSURE
      
      Mat_state.Be(:,2)  = Mat_state.Be(:,1);

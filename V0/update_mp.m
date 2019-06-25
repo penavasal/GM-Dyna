@@ -6,7 +6,7 @@ function [MAT_POINT]=update_mp(d,MAT_POINT)
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     
-    [xg]=AUX.S2list(MAT_POINT,'xg');
+    [xg]=LIB.S2list(MAT_POINT,'xg');
     %% Update **********************
     for i=1:GEOMETRY.mat_points
         nd = MAT_POINT(i).near;
@@ -19,5 +19,5 @@ function [MAT_POINT]=update_mp(d,MAT_POINT)
             end
         end
     end
-    [MAT_POINT]=AUX.list2S(MAT_POINT,'xg',xg);
+    [MAT_POINT]=LIB.list2S(MAT_POINT,'xg',xg);
 end

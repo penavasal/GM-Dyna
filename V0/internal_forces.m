@@ -34,7 +34,7 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
             sig(i,1)=Mat_state.Sigma((e-1)*4+i,1);
         end
         
-        [T]=AUX.e2E(sig);
+        [T]=LIB.e2E(sig);
         
         % ----------------------------
         % Internal forces

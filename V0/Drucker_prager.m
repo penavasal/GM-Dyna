@@ -318,7 +318,7 @@ function [A,Sc,gamma,dgamma,sy,Be]=...
         % Matrixes
         I4=eye(4);
         m=[1 1 0 1];
-        [s_vec]=AUX.E2e(s);
+        [s_vec]=LIB.E2e(s);
         
         I1=m'*m;
         M1=I4-1/3*I1;

@@ -44,7 +44,7 @@ function Explicit_solver(MAT_POINT)
         [~,Int_var,Mat_state]=...
             Constitutive(3,ste,Int_var,Mat_state,MAT_POINT);
 
-        [OUTPUT]=AUX.reaction(Mat_state.fint,OUTPUT);
+        [OUTPUT]=LIB.reaction(Mat_state.fint,OUTPUT);
 
         %  5. Final conditions: corrector
         
@@ -70,18 +70,18 @@ function Explicit_solver(MAT_POINT)
             GLOBAL.Sy(:,ste_p)      = Int_var.Sy(:,1);
             GLOBAL.Sy_r(:,ste_p)    = Int_var.Sy_r(:,1);
             
-            GLOBAL.xg(:,ste_p)      = AUX.reshape_S2list(MAT_POINT,'xg');
+            GLOBAL.xg(:,ste_p)      = LIB.reshape_S2list(MAT_POINT,'xg');
 
-            [GLOBAL.gamma_nds(:,ste_p)]=AUX.Ep2Ep_n...
+            [GLOBAL.gamma_nds(:,ste_p)]=LIB.Ep2Ep_n...
                 (GLOBAL.gamma,MAT_POINT,ste_p);
 
             for e=1:GEOMETRY.mat_points
                 [GLOBAL.Ps(e,ste_p),GLOBAL.Qs(e,ste_p)]=...
-                    AUX.invar(Mat_state.Sigma(:,1),e);   %PRESSURE
+                    LIB.invar(Mat_state.Sigma(:,1),e);   %PRESSURE
             end         
             [GLOBAL.Es(:,ste_p),GLOBAL.Es_p(:,ste_p)]=...
-                AUX.strains(Mat_state.F,Mat_state.Be);
-            [GLOBAL.J(:,ste_p)]=AUX.S2list(MAT_POINT,'J'); %JACOBIAN
+                LIB.strains(Mat_state.F,Mat_state.Be);
+            [GLOBAL.J(:,ste_p)]=LIB.S2list(MAT_POINT,'J'); %JACOBIAN
             GLOBAL.Sigma(:,ste_p)   = Mat_state.Sigma(:,1);    %STRESS
             GLOBAL.F(:,ste_p)       = Mat_state.F(:,1);  %DEFORMATION GRADIENT
             GLOBAL.Be(:,ste_p)      = Mat_state.Be(:,1); %LEFT CAUCHY GREEN 

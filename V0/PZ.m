@@ -135,7 +135,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
                 r0=norm(r);
             else
                 [CONVER,NORMErec,a,ite]=...
-                    AUX.convergence(r,r0,NORMErec,TOL,ite,imax,a);
+                    LIB.convergence(r,r0,NORMErec,TOL,ite,imax,a);
                 if CONVER==1     
                     break
                 end
@@ -788,10 +788,10 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
             aep = De_xyz - Dpxyz;
         end
         
-        [t_vec1]=AUX.E2e_in(T);
+        [t_vec1]=LIB.E2e_in(T);
         t_vec=t_vec1-[p0;p0;0;p0];
         
-        [e_vec]=AUX.E2e_in(E_elast);
+        [e_vec]=LIB.E2e_in(E_elast);
         t_vec2=De_xyz*e_vec;
 
         t_vec-t_vec2;
@@ -822,7 +822,7 @@ function [A]=assemble(D,n,Ge,eev,ees)
         r23=sqrt(2/3); 
         
         m=[1 1 0 1];
-        [n_vec]=AUX.E2e(n);
+        [n_vec]=LIB.E2e(n);
         
         aux=n_vec(4);
         n_vec(4)=n_vec(3);

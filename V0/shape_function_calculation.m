@@ -178,7 +178,7 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
     
     if REM_T || INITIAL
         if SOLVER.TYPE{1}==0 %OTM
-            [jacobians]=AUX.S2list(MAT_POINT,'J');
+            [jacobians]=LIB.S2list(MAT_POINT,'J');
             volume=GEOMETRY.Area.*jacobians;
         elseif SOLVER.TYPE{1}==1 || INITIAL %MPM || 
             volume=GEOMETRY.Area;

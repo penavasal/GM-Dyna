@@ -1,6 +1,6 @@
 
 
- classdef AUX
+ classdef LIB
     methods(Static)
         
         % P & Q invariants
@@ -14,7 +14,7 @@
                 ss(dims+1-i)=Ss(e*dims+1-i);
             end
 
-            Sc=AUX.e2E(ss);
+            Sc=LIB.e2E(ss);
 
             P2=(Sc(1,1)+Sc(2,2)+Sc(3,3))/3;
             s=Sc-P2*eye(3);
@@ -207,8 +207,8 @@
                     f_v(i,1)=def_G((e-1)*dimf + i,1);
                     be(i,1)=b_e((e-1)*dimf + i,1);
                 end           
-                [F]=AUX.v2m(f_v);
-                [Be]=AUX.v2m(be);
+                [F]=LIB.v2m(f_v);
+                [Be]=LIB.v2m(be);
 
                 Btot = F*F';
                 
@@ -222,8 +222,8 @@
                 end
                 Ep   = Etot-Ee;
 
-                [ee]=AUX.E2e(Ee);
-                [ep]=AUX.E2e(Ep);
+                [ee]=LIB.E2e(Ee);
+                [ep]=LIB.E2e(Ep);
                 for i=1:dims
                     es((e-1)*dims+i,1)=ee(i,1);
                     es_p((e-1)*dims+i,1)=ep(i,1);
@@ -307,7 +307,7 @@
         
         % Reshape structure to save
         function [list2]=reshape_S2list(S,field)
-            [list]=AUX.S2list(S,field);
+            [list]=LIB.S2list(S,field);
             [a,b]=size(list);
             list2=reshape(list,[a*b,1]);
         end
