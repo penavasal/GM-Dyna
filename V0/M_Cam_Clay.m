@@ -144,7 +144,7 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
                     normr0=norm(r);
                 else
                     [CONVER,NORMErec,a,iter]=...
-                        AUX.convergence(r,normr0,NORMErec,toll,iter,imax,a);
+                        LIB.convergence(r,normr0,NORMErec,toll,iter,imax,a);
                     if CONVER==1     
                         break
                     end
@@ -404,7 +404,7 @@ function [aep]=aep_calculation(Kt,epsev,epsesTR,epses,dgamma,dgamma_,P,Q,Pcs,n,.
         r23=sqrt(2/3); 
         
         m=[1 1 0 1];
-        [n_vec]=AUX.E2e(n);
+        [n_vec]=LIB.E2e(n);
         
         I4=eye(4);
         I1=m'*m;

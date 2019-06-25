@@ -293,7 +293,7 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
                      'xi', zeros(GEOMETRY.sp,1)...
                  );
              
-    [MAT_POINT]=AUX.list2S(MAT_POINT,'xg',xg);
+    [MAT_POINT]=LIB.list2S(MAT_POINT,'xg',xg);
     
     %-----------------------------------------
     % NODE CONNECTIVITY
@@ -336,7 +336,7 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
                         disp('Error, out of the mesh');
                         stop
                     end
-                    [I]=AUX.IoO(getfield(S(mp),'xg'),...
+                    [I]=LIB.IoO(getfield(S(mp),'xg'),...
                             GEOMETRY.x_a,GEOMETRY.elem(e,:));  
                 end 
             end

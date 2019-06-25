@@ -26,7 +26,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
                 for i=1:dimf
                     f_v_w(i,1)=Mat_state.Fw((e-1)*dimf + i,1);
                 end           
-                [F_w]=AUX.v2m(f_v_w);
+                [F_w]=LIB.v2m(f_v_w);
             end
                 
             %Vector F, Fp to Matrixes
@@ -35,9 +35,9 @@ function [stiff_mtx,Int_var,Mat_state]=...
                 f_old(i,1)=Mat_state.F((e-1)*dimf + i,2);
                 be(i,1)=Mat_state.Be((e-1)*dimf + i,2);
             end           
-            [F]=AUX.v2m(f_v);
-            [Fold]=AUX.v2m(f_old);
-            [Be]=AUX.v2m(be);
+            [F]=LIB.v2m(f_v);
+            [Fold]=LIB.v2m(f_old);
+            [Be]=LIB.v2m(be);
             
             if MODEL(Mat(e))<2
                 if MODEL(Mat(e))==0
@@ -99,8 +99,8 @@ function [stiff_mtx,Int_var,Mat_state]=...
                 SOLVER.FAIL=1;
                 break;
             else
-                [sig]=AUX.E2e(T);
-                [be]=AUX.m2v(Be);
+                [sig]=LIB.E2e(T);
+                [be]=LIB.m2v(Be);
                 for i=1:dimf
                     Mat_state.Be((e-1)*dimf+i,1)=be(i,1);
                 end 

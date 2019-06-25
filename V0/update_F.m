@@ -14,7 +14,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
     logJ_w=zeros(aa,1);
 
         
-    m_I=AUX.m2v(eye(3));
+    m_I=LIB.m2v(eye(3));
     f_v=zeros(dimf,1);
     f_v_w=zeros(dimf,1);
 
@@ -76,8 +76,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
             for i=1:5
                 f_v(i,1)=Mat_state.F((e-1)*5 + i,2);
             end           
-            [F]=AUX.v2m(f_v);            
-            [dF]=AUX.v2m(dF_);
+            [F]=LIB.v2m(f_v);            
+            [dF]=LIB.v2m(dF_);
             F=dF*F;           
             jacobians(e)=det(F);
             
@@ -101,8 +101,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 for i=1:dimf
                     f_v_w(i,1)=Mat_state.Fw((e-1)*dimf + i,2);
                 end           
-                [F_w]=AUX.v2m(f_v_w);
-                [dFw]=AUX.v2m(dF_w);
+                [F_w]=LIB.v2m(f_v_w);
+                [dFw]=LIB.v2m(dF_w);
                 F_w=dFw*F_w;
                 
             end
@@ -118,7 +118,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 MAT_POINT(e).J=jacobians(e);
                 
                 %Storage of vector F
-                [f]=AUX.m2v(F);
+                [f]=LIB.m2v(F);
                 for i=1:dimf
                     Mat_state.F(e*dimf+1-i,1)=f(dimf+1-i);
                 end
@@ -143,7 +143,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                     logJ_w(j)=logJ_w(j) + GEOMETRY.Area(e)*det(F_w)*log(det(F_w));
                 else
                     %Storage of vector F
-                    [f_w]=AUX.m2v(F_w);
+                    [f_w]=LIB.m2v(F_w);
                     for i=1:dimf
                         Mat_state.Fw(e*dimf+1-i,1)=f_w(dimf+1-i);
                     end
@@ -170,7 +170,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 MAT_POINT(e).J=jacobians(e);
                 
                 %Storage of vector F
-                [f]=AUX.m2v(F_);
+                [f]=LIB.m2v(F_);
                 for i=1:dimf
                     Mat_state.F(e*dimf+1-i,1)=f(dimf+1-i);
                 end
@@ -203,7 +203,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                     %F_w_=(J_bar/det(F_w))^(1/3)*F_w;
 
                     %Storage of vector F
-                    [f_w]=AUX.m2v(F_w_);
+                    [f_w]=LIB.m2v(F_w_);
                     for i=1:dimf
                         Mat_state.Fw(e*dimf+1-i,1)=f_w(dimf+1-i);
                     end
