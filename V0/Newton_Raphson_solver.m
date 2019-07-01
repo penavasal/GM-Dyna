@@ -19,8 +19,11 @@ function [Disp_field,Mat_state,MAT_POINT]=...
 
     % Solve Newton Raphson
     TOL=SOLVER.rel_tolerance;
-    if ste<3
-        TOL=TOL*1000;
+    
+    if ste==1
+        TOL=TOL*10000;
+    elseif ste<3
+        TOL=TOL*100;
     end
         
     NR1=SOLVER.NR;
@@ -102,10 +105,10 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         % 5. Evaluate tangent matrix for NR iteration
         if rem(iter,NR1)==0
 
-            if ste==1 || a<1e-4
-                [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(4,ste,Int_var,Mat_state,MAT_POINT);
-            else
+             if ste==1 || a<1e-4
+                 [stiff_mtx,Int_var,Mat_state]=...
+                 Constitutive(4,ste,Int_var,Mat_state,MAT_POINT);
+             else
                 [stiff_mtx,Int_var,Mat_state]=...
                 Constitutive(1,ste,Int_var,Mat_state,MAT_POINT);
             end

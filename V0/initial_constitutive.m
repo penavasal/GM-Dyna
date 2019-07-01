@@ -43,10 +43,6 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
         end
         tens_2=MAT(25,Mat(e));
         
-%         if INITIAL_COND(3)~=0
-%             Mat_state.pw(e,1)=INITIAL_COND(3);
-%         end
-        
 
         % MATRIX B and F
         b1=exp(MAT(23,Mat(e))/3)^2;

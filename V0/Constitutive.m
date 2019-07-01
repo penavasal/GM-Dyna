@@ -64,7 +64,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
                     H       = Int_var.H(e,2);
                     etaB    = Int_var.eta(e,2);
                     [A,T,Gamma,dgamma,Sy,etaB,H,Be]=...
-                            PZ(Kt,1,e,Gamma,dgamma,Sy,etaB,H,F,Fold,Be,P0);
+                            PZ(Kt,ste,e,Gamma,dgamma,Sy,etaB,H,F,Fold,Be,P0);
                     Int_var.H(e,1)   = H;
                     Int_var.eta(e,1) = etaB;
                 end

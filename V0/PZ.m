@@ -340,10 +340,14 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         discri2=n2(1:2)'*De2*[dev_i;des_i];
         [ng2,~]=build_vector(alphag,Mg,eta2,q2,signq);
 
-        if discri2>=0
+        if sign(discri)~=sign(discri)
+            discri
+        end
+        
+        if discri>=0
             % H calculation   
             [H2,zetamax]=define_H(Ge,etaf,eta2,p2,defplasdes1,zetamax,Mg);
-        elseif discri2<0
+        elseif discri<0
             ng2(1)=-abs(ng(1));
             [H2,etaB]=define_H_u(Ge,p2,eta2,etaB,Mg);
         end
@@ -359,8 +363,8 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         incredefelass=des_i-incredefplass;
 
 
-        Error=0.5*(incredefplasdes2-incredefplasdes);  
-        relaerror=max([1e-16,abs(Error)/(2*abs(eestrial-incredefplass))]);
+        Error=0.5*(incredefplasdes-incredefplasdes2);  
+        relaerror=max([1e-16,abs(Error)/(2*abs(eestrial+incredefelass))]);
 
 
         if relaerror>STOL %Decrease the step
@@ -402,10 +406,14 @@ end
 
 function [n,d]=build_vector(alpha,Mf,eta,q,signq)
 
-        if signq>=0
-            ns  = 1;
+        if eta>0.5 
+            if signq>=0
+                ns  = 1;
+            else
+                ns  = -1;
+            end
         else
-            ns  = -1;
+            ns=0;
         end
         nv  = (1+alpha)*(Mf-eta); 
         d   = nv;

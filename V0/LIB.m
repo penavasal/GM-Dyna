@@ -323,12 +323,12 @@
             else
                 if iter<imax
                     if iter>imax/2
-                        fprintf('iter %i \n',iter);
+                        %fprintf('iter %i \n',iter);
                         if std(NORMErec(iter-10:iter-1))<toll/100
                             CONVER=1;
                         end
                     end
-                    if NORMErec(iter)>NORMErec(iter-1) && iter>4
+                    if (NORMErec(iter)-NORMErec(iter-1))>1e-5 && iter>4
                         f1=NORMErec(iter-1);
                         f2=NORMErec(iter);
                         a=a*a*f1/2/(f2+f1*a-f1);
@@ -352,7 +352,7 @@
                     if NORMErec(iter,1)<toll*10
                         CONVER=1;
                     %elseif std(normr0*NORMErec(iter-10:iter-1))<toll/10
-                    elseif std(NORMErec(iter-10:iter-1))<toll/10
+                    elseif std(NORMErec(iter-10:iter-1))<toll/2
                         CONVER=1;
                     else
                         fprintf('\n No convergence RM \n')
