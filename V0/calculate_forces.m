@@ -25,18 +25,18 @@ function [load_s,OUTPUT]=...
             vec2=MATRIX.l_mass_w*ext_acce(:,m);
         end
         for i=1:GEOMETRY.nodes 
-            if SOLVER.AXI
-                %if Disp_field.x_a(i,1)==0
-                %    t=2*pi*GEOMETRY.h_nds(i)/20;  
-                %else
-                    t=2*pi*Disp_field.x_a(i,1);
-                %end
-            else
-                t=1;
-            end
-            
+%             if SOLVER.AXI
+%                 %if Disp_field.x_a(i,1)==0
+%                 %    t=2*pi*GEOMETRY.h_nds(i)/20;  
+%                 %else
+%                     t=2*pi*Disp_field.x_a(i,1);
+%                 %end
+%             else
+%                 t=1;
+%             end
+            t=1;
             if SOLVER.UW==1 && (SOLVER.IMPLICIT==1 || SOLVER.step0==1) 
-                t=-t;
+                t=-1;
             end
                 
             if SOLVER.UW==1

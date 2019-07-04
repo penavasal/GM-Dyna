@@ -406,7 +406,7 @@ end
 
 function [n,d]=build_vector(alpha,Mf,eta,q,signq)
 
-        if eta>0.5 
+        if eta>0.1 
             if signq>=0
                 ns  = 1;
             else
@@ -748,14 +748,14 @@ end
 function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
     epsev,epses,epsedev,n_epsedev,dgamma,dgamma_,H,Mg,Mf,De)
         
-    global SOLVER
+    %global SOLVER
     I=eye(3);
     
     alpha = Ge(3);
     alphag= Ge(4);
-    p0    = Ge(7);
+    %p0    = Ge(7);
     
-    [De2,P2,Q2]=Delast(Ge,epses,epsev);
+    %[De2,P2,Q2]=Delast(Ge,epses,epsev);
     %[ng,dg]=build_vector(alphag,Mg,eta,Q);
     
 
@@ -769,7 +769,7 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
     % Compute principal elastic strain
     E_elast = -(1/3)*epsev*I + sqrt(3/2)*epses*dir_d;
     
-     [evol2,ees2]=invar(E_elast,'STRAIN');  
+     %[evol2,ees2]=invar(E_elast,'STRAIN');  
     
     
     % Compute algorithmic stress-strain in principal direction
@@ -796,13 +796,13 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
             aep = De_xyz - Dpxyz;
         end
         
-        [t_vec1]=LIB.E2e_in(T);
-        t_vec=t_vec1-[p0;p0;0;p0];
-        
-        [e_vec]=LIB.E2e_in(E_elast);
-        t_vec2=De_xyz*e_vec;
-
-        t_vec-t_vec2;
+%         [t_vec1]=LIB.E2e_in(T);
+%         t_vec=t_vec1-[p0;p0;0;p0];
+%         
+%         [e_vec]=LIB.E2e_in(E_elast);
+%         t_vec2=De_xyz*e_vec;
+% 
+%         t_vec-t_vec2;
     else
         aep = zeros(4,4);
     end 

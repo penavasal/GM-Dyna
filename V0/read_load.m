@@ -327,9 +327,9 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
             end
         elseif TYPE(m)==2
             if RANGE(1,m*2)-RANGE(1,m*2-1)==0
-                [LOAD.ext_forces_s(:,m)]=dist_f(nod_f,x_0,V);
+                [LOAD.ext_forces_s(:,m)]=dist_f(nod_f,x_0,V,SOLVER.AXI);
             elseif RANGE(2,m*2)-RANGE(2,m*2-1)==0
-                [LOAD.ext_forces_s(:,m)]=dist_f_x(nod_f,x_0,V);
+                [LOAD.ext_forces_s(:,m)]=dist_f_x(nod_f,x_0,V,SOLVER.AXI);
             else
                 disp('not yet implemented, sorry');
             end
@@ -360,7 +360,7 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
 end
 
 
-function [ext_forces]=dist_f_x(nod,x_a,V)
+function [ext_forces]=dist_f_x(nod,x_a,V,AXI)
 
     [nodes,sp]=size(x_a);
     [i,~]=size(nod);
@@ -377,13 +377,27 @@ function [ext_forces]=dist_f_x(nod,x_a,V)
          end
     end
     for j=1:i
-        [d1,d2]=dist(x_a,nod,j);
+        [d1,d2]=dist(x_a,nod,j,'X');
+        if AXI
+            rr=x_a(nod(j),1);
+        end
         if (maxy==1.0e-32)
             d=0;
         elseif (x_a(nod(j),1)==maxy) || (x_a(nod(j),1)==miny)
-            d=d1/2;
+            if AXI
+                r=rr+d1;
+                d=pi*r*abs(d1);
+            else
+                d=abs(d1)/2;
+            end
         else
-            d=d1/2+d2/2;
+            if AXI
+                r1=rr+d1;
+                r2=rr+d2;
+                d=pi*(r1*abs(d1)+r2*abs(d2));
+            else
+                d=abs(d1)/2+abs(d2)/2;
+            end
         end
         f=V*d;
         ext_forces(nod(j)*sp-1)=f(1);
@@ -391,7 +405,7 @@ function [ext_forces]=dist_f_x(nod,x_a,V)
     end
 end
 
-function [ext_forces]=dist_f(nod,x_a,V)
+function [ext_forces]=dist_f(nod,x_a,V,AXI)
 
     [nodes,sp]=size(x_a);
     [i,~]=size(nod);
@@ -408,7 +422,10 @@ function [ext_forces]=dist_f(nod,x_a,V)
          end
     end
     for j=1:i
-        [d1,d2]=dist(x_a,nod,j);
+        if AXI
+            rr=x_a(nod(j),1);
+        end
+        [d1,d2]=dist(x_a,nod,j,'Y');
         if (maxy==1.0e-32)
             d=0;
         elseif (x_a(nod(j),2)==maxy) || (x_a(nod(j),2)==miny)
@@ -416,34 +433,39 @@ function [ext_forces]=dist_f(nod,x_a,V)
         else
             d=d1/2+d2/2;
         end
-        f=V*d;
+        f=2*pi*rr*V*d;
         ext_forces(nod(j)*sp-1)=f(1);
         ext_forces(nod(j)*sp)=f(2);
     end
 end
 
-function [d1,d2]=dist(x_a,nd,j)
+function [d1,d2]=dist(x_a,nd,j,r)
     x1=x_a(nd(j),1);
     y1=x_a(nd(j),2);
     d=zeros(length(nd),1);
     for i=1:length(nd)
         if(i~=j)
             d(i)=sqrt((x_a(nd(i),1)-x1)^2+(x_a(nd(i),2)-y1)^2);
+            if strcmp(r,'X')
+                if (x_a(nd(i),1)-x1)<0
+                    d(i)=-d(i);
+                end
+            end
         else
             d(i)=1.0e32;
         end
     end
-    d1=min(d);
+    d1=min(abs(d));
     t=0;
     i=0;
     while t==0&&i<length(nd)
         i=i+1;
-        if d(i)==d1
+        if abs(d(i))==abs(d1)
             t=1;
             d(i)=1.0e32;
         end  
     end
-    d2=min(d);   
+    d2=min(abs(d));   
 end
 
 
