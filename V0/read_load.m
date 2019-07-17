@@ -433,7 +433,11 @@ function [ext_forces]=dist_f(nod,x_a,V,AXI)
         else
             d=d1/2+d2/2;
         end
-        f=2*pi*rr*V*d;
+        if AXI
+            f=2*pi*rr*V*d;
+        else
+            f=V*d;
+        end
         ext_forces(nod(j)*sp-1)=f(1);
         ext_forces(nod(j)*sp)=f(2);
     end

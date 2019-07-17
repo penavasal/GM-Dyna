@@ -61,7 +61,8 @@ function [A,Sc,gamma,dgamma,zetamax,etaB,H,Be]=...
     end
     
     Be = expm(2*Ee);
-    Sc = TTe/det(F);
+    %Sc = TTe/det(F);
+    Sc = TTe;%/det(F);
 
 end
 
@@ -237,10 +238,10 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         [ng,~]=build_vector(alphag,Mg,eta,q,signq);
         
         
-        if discri>0
+        if discri>abs(p)*1e-5
             % H calculation   
             [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,zetamax,Mg);
-        elseif discri<0
+        else %if discri<0
             ng(1)=-abs(ng(1));
             [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
         end
@@ -340,7 +341,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         discri2=n2(1:2)'*De2*[dev_i;des_i];
         [ng2,~]=build_vector(alphag,Mg,eta2,q2,signq);
 
-        if sign(discri)~=sign(discri)
+        if sign(discri2)~=sign(discri)
             discri
         end
         
@@ -406,15 +407,15 @@ end
 
 function [n,d]=build_vector(alpha,Mf,eta,q,signq)
 
-        if eta>0.1 
+%         if eta>0.1 
             if signq>=0
                 ns  = 1;
             else
                 ns  = -1;
             end
-        else
-            ns=0;
-        end
+%         else
+%             ns=0;
+%         end
         nv  = (1+alpha)*(Mf-eta); 
         d   = nv;
         
@@ -437,7 +438,7 @@ function [De,p,q,eta]=Delast(Ge,ees,eev)
     eta=abs(q/p);
 
     K=-khar*p;
-    J=-khar*q;
+    J=khar*q;
     G=-(ghar*p+(khar*(q^2)/(3*p)));
     De=[K J;J 3*G];
 
@@ -787,14 +788,14 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
         nxyz=BB'*n;
         
         [De_xyz]=assemble(De,dir_d,Ge,epsev,epses);
-        if Kt==4
+%         if Kt==4
             aep = De_xyz;
-        else
-            Dpxyz=(De_xyz*ngxyz)*(nxyz'*De_xyz)/...
-                (norm(nxyz)*norm(ngxyz)*H+nxyz'*De_xyz*ngxyz);
-        
-            aep = De_xyz - Dpxyz;
-        end
+%         else
+%             Dpxyz=(De_xyz*ngxyz)*(nxyz'*De_xyz)/...
+%                 (norm(nxyz)*norm(ngxyz)*H+nxyz'*De_xyz*ngxyz);
+%         
+%             aep = De_xyz - Dpxyz;
+%         end
         
 %         [t_vec1]=LIB.E2e_in(T);
 %         t_vec=t_vec1-[p0;p0;0;p0];
@@ -845,18 +846,10 @@ function [A]=assemble(D,n,Ge,eev,ees)
         
         M1=I4-1/3*I1;
               
-        A2 = D(1,1)*I1 + r23*D(1,2)*M2 + r23*D(2,1)*M3 + ...
-            (2/3*D(2,2)-G1)*M4 + G1*M1;
-        
-        %A = D(1,1)*I1 - r23*D(1,2)*M2 - r23*D(2,1)*M3 + ...
-        %    2/3*D(2,2)*M1;
-        
-        %A = D(1,1)*I1 + r23*D(1,2)*M2 + r23*D(2,1)*M3 + ...
-        %    2/3*D(2,2)*I4;
+%         A2 = D(1,1)*I1 + r23*D(1,2)*M2 + r23*D(2,1)*M3 + ...
+%             (2/3*D(2,2)-G1)*M4 + G1*M1;
 
         A = K*I1 + r23*J*(M2+M3) + ...
             G2*M4 + G1*M1;
-        
-        p0;
         
 end

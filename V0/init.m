@@ -349,6 +349,7 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
          [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=LIB.invar(Mat_state.Sigma(:,1),e);   
      end         %PRESSURE
      
+     Mat_state.fint(:,2)= Mat_state.fint(:,1);
      Mat_state.Be(:,2)  = Mat_state.Be(:,1);
      GLOBAL.Be(:,1)     = Mat_state.Be(:,1);
      GLOBAL.Sigma(:,1)  = Mat_state.Sigma(:,1);                %STRESS
