@@ -349,9 +349,9 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
             end
         elseif TYPE(m)==5
             if RANGE(1,m*2)-RANGE(1,m*2-1)==0
-                [LOAD.ext_forces_w(:,m)]=dist_f(nod_f,x_0,V);
+                [LOAD.ext_forces_w(:,m)]=dist_f(nod_f,x_0,V,SOLVER.AXI);
             elseif RANGE(2,m*2)-RANGE(2,m*2-1)==0
-                [LOAD.ext_forces_w(:,m)]=dist_f_x(nod_f,x_0,V);
+                [LOAD.ext_forces_w(:,m)]=dist_f_x(nod_f,x_0,V,SOLVER.AXI);
             else
                 disp('not yet implemented, sorry');
             end
@@ -385,15 +385,15 @@ function [ext_forces]=dist_f_x(nod,x_a,V,AXI)
             d=0;
         elseif (x_a(nod(j),1)==maxy) || (x_a(nod(j),1)==miny)
             if AXI
-                r=rr+d1;
+                r=rr+d1/2;
                 d=pi*r*abs(d1);
             else
                 d=abs(d1)/2;
             end
         else
             if AXI
-                r1=rr+d1;
-                r2=rr+d2;
+                r1=rr+d1/2;
+                r2=rr+d2/2;
                 d=pi*(r1*abs(d1)+r2*abs(d2));
             else
                 d=abs(d1)/2+abs(d2)/2;
@@ -459,16 +459,9 @@ function [d1,d2]=dist(x_a,nd,j,r)
             d(i)=1.0e32;
         end
     end
-    d1=min(abs(d));
-    t=0;
-    i=0;
-    while t==0&&i<length(nd)
-        i=i+1;
-        if abs(d(i))==abs(d1)
-            t=1;
-            d(i)=1.0e32;
-        end  
-    end
+    [~,i]=min(abs(d));
+    d1=d(i);
+    d(i)=1.0e32;
     d2=min(abs(d));   
 end
 

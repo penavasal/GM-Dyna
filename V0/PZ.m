@@ -61,8 +61,8 @@ function [A,Sc,gamma,dgamma,zetamax,etaB,H,Be]=...
     end
     
     Be = expm(2*Ee);
-    %Sc = TTe/det(F);
-    Sc = TTe;%/det(F);
+    Sc = TTe/det(F);
+    %Sc = TTe;%/det(F);
 
 end
 
@@ -238,12 +238,12 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         [ng,~]=build_vector(alphag,Mg,eta,q,signq);
         
         
-        if discri>abs(p)*1e-5
-            % H calculation   
-            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,zetamax,Mg);
-        else %if discri<0
+        if discri<abs(p)*1e-5
             ng(1)=-abs(ng(1));
             [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
+        else %if discri<0
+            % H calculation   
+            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,zetamax,Mg);
         end
         % Plastic multiplier
         incrlanda = discri/(H+n(1:2)'*De*ng(1:2));
@@ -788,14 +788,14 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
         nxyz=BB'*n;
         
         [De_xyz]=assemble(De,dir_d,Ge,epsev,epses);
-%         if Kt==4
+         if Kt==4
             aep = De_xyz;
-%         else
-%             Dpxyz=(De_xyz*ngxyz)*(nxyz'*De_xyz)/...
-%                 (norm(nxyz)*norm(ngxyz)*H+nxyz'*De_xyz*ngxyz);
-%         
-%             aep = De_xyz - Dpxyz;
-%         end
+         else
+             Dpxyz=(De_xyz*ngxyz)*(nxyz'*De_xyz)/...
+                 (norm(nxyz)*norm(ngxyz)*H+nxyz'*De_xyz*ngxyz);
+         
+             aep = De_xyz - Dpxyz;
+         end
         
 %         [t_vec1]=LIB.E2e_in(T);
 %         t_vec=t_vec1-[p0;p0;0;p0];
