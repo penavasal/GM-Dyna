@@ -19,7 +19,11 @@ function [boundary,i_disp,velo]=calculate_boundaries(ste)
         else
             val=str2double(b_mult(ste,m));
             if ste>1
-                val2=str2double(b_mult(ste-1,m));
+                if b_mult(ste-1,m)=='NULL'
+                    val2=0;
+                else
+                    val2=str2double(b_mult(ste-1,m));
+                end
                 if val2
                     val=val-val2;
                 end
