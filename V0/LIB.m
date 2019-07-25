@@ -22,7 +22,33 @@
                s(2,1)^2 + s(1,2)^2 + ...
                s(3,1)^2 + s(1,3)^2 + ...
                s(2,3)^2 + s(3,2)^2;
+            rj2=Q2*0.5;
             Q2= sqrt(3/2*Q2);
+            
+                            %Sign
+            rj3=0;
+            rj3 = rj3 + 3*s(2,1)*s(2,1)*(s(1,1)+s(2,2));
+            for i=1:3
+                rj3 = rj3 + s(i,i)*s(i,i)*s(i,i);
+            end
+            rj3=rj3/3;
+
+            rj23=sqrt(rj2)^3;
+            if rj23<1.0e-15
+                sint3=0;
+            else
+                sint3 = -3 * sqrt(3) * rj3/2/rj23;
+            end
+            if sint3<-1
+                sint3=-1;
+            elseif sint3>1
+                sint3=1;
+            end
+            theta = 1/3*asin(sint3);
+            
+            if sint3<0
+                Q2=-Q2;
+            end
         end
         
         % STRESS - STRAIN vector to tensor
