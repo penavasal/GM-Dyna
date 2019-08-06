@@ -106,6 +106,10 @@ function Implicit_solver(MAT_POINT)
             if SOLVER.FAIL==1
                 stop
             end
+            
+%             if TIME.tp(ste_p)>0.1
+%                 stop
+%             end
         end
         
         % 7. Update
