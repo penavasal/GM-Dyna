@@ -65,6 +65,7 @@ function Implicit_solver(MAT_POINT)
             GLOBAL.v(:,ste_p)   = Disp_field.v(:,1);
             
             GLOBAL.gamma(:,ste_p)   = Int_var.gamma(:,1);
+            GLOBAL.epsv(:,ste_p)    = Int_var.epsv(:,1);
             GLOBAL.dgamma(:,ste_p)  = Int_var.dgamma(:,1);
             GLOBAL.H(:,ste_p)       = Int_var.H(:,1);
             GLOBAL.eta(:,ste_p)     = Int_var.eta(:,1);
@@ -127,6 +128,7 @@ function Implicit_solver(MAT_POINT)
         end
         
         Int_var.gamma(:,2)  = Int_var.gamma(:,1);
+        Int_var.epsv(:,2)   = Int_var.epsv(:,1);
         Int_var.H(:,2)      = Int_var.H(:,1);
         Int_var.eta(:,2)    = Int_var.eta(:,1);
         Int_var.Sy(:,2)     = Int_var.Sy(:,1);

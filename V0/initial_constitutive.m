@@ -125,8 +125,10 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                         Int_var.Sy_r(e,1) = Sy_r;
                     elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
                         H=MAT(37,Mat(e));
-                        [A,T,Gamma,dgamma,Sy,etaB,H,Be]=...
-                            PZ(Kt,1,e,Gamma,dgamma,Sy,0,H,F,Fold,Be,press);
+                        epsvol=0;
+                        [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
+                            PZ(Kt,1,e,Gamma,epsvol,dgamma,Sy,0,H,F,Fold,Be,press);
+                        Int_var.epsv(e,1)  = epsvol;
                     end
                     Int_var.Sy(e,1)     = Sy;
                     Int_var.gamma(e,1)  = Gamma;
@@ -188,6 +190,7 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     Int_var.H(e,2) =   H;
                     Int_var.eta(e,1) = etaB;
                     Int_var.eta(e,2) = etaB;
+                    Int_var.epsv(e,2)= epsvol;
                 end
             end
             

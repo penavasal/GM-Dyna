@@ -63,8 +63,10 @@ function [stiff_mtx,Int_var,Mat_state]=...
                     P0      = Int_var.P0(e);
                     H       = Int_var.H(e,2);
                     etaB    = Int_var.eta(e,2);
-                    [A,T,Gamma,dgamma,Sy,etaB,H,Be]=...
-                            PZ(Kt,ste,e,Gamma,dgamma,Sy,etaB,H,F,Fold,Be,P0);
+                    epsvol  = Int_var.epsv(e,2);
+                    [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
+                            PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,F,Fold,Be,P0);
+                    Int_var.epsv(e,1)= epsvol;
                     Int_var.H(e,1)   = H;
                     Int_var.eta(e,1) = etaB;
                 end

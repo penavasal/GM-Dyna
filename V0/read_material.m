@@ -41,7 +41,7 @@ function read_material
         l=l+1;
         mats=str2double(bb{l});
     end
-    MATERIAL.MAT=zeros(40,mats);   % Numero máximo de propiedades reconocidas
+    MATERIAL.MAT=zeros(41,mats);   % Numero máximo de propiedades reconocidas
     MATERIAL.MODEL=zeros(mats,1);
     RANGE=zeros(sp,2*mats); % Range of for materials
 
@@ -316,6 +316,9 @@ function read_material
                 continue
             case 'GAMMA_U'
                 MATERIAL.MAT(40,M)=str2double(bb{t});
+                continue
+            case 'GAMMA_VOL'
+                MATERIAL.MAT(41,M)=str2double(bb{t});
                 continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)

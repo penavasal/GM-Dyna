@@ -1,6 +1,6 @@
 
-function [A,Sc,gamma,dgamma,zetamax,etaB,H,Be]=...
-    PZ(Kt,ste,e,gamma,dgamma_,zetamax,etaB,H,F,Fold,Be,P0)
+function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
+    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,P0)
 
 
     global MATERIAL
@@ -47,17 +47,18 @@ function [A,Sc,gamma,dgamma,zetamax,etaB,H,Be]=...
     Ge(11)= MAT(38,Mat(e));%ganma;
     Ge(12)= MAT(39,Mat(e));%Hu0;
     Ge(13)= MAT(40,Mat(e));%ganmau;
+    Ge(14)= MAT(41,Mat(e));%ganma_vol;
     
     % Compute principal Kirchhoff tension 
     if MODEL==4.1
-        [TTe,Ee,H,A,dgamma,gamma,zetamax,etaB] = ...
-            PZ_backward_Euler(ste,Ge,Ee_tr,H,Kt,gamma,dgamma_,deps,zetamax,etaB);
+        [TTe,Ee,H,A,dgamma,epsvol,gamma,zetamax,etaB] = ...
+            PZ_backward_Euler(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
     elseif MODEL==4.2
-        [TTe,Ee,H,A,dgamma,gamma,zetamax,etaB]=...
-            PZ_forward_Euler(ste,Ge,Ee_tr,H,Kt,gamma,dgamma_,deps,zetamax,etaB);
+        [TTe,Ee,H,A,dgamma,epsvol,gamma,zetamax,etaB]=...
+            PZ_forward_Euler(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
     elseif MODEL==4.3
-        [TTe,Ee,H,A,dgamma,gamma,zetamax,etaB]=...
-            PZ_modified_Euler(ste,Ge,Ee_tr,H,Kt,gamma,dgamma_,deps,zetamax,etaB);
+        [TTe,Ee,H,A,dgamma,epsvol,gamma,zetamax,etaB]=...
+            PZ_modified_Euler(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
     end
     
     Be = expm(2*Ee);
@@ -66,8 +67,8 @@ function [A,Sc,gamma,dgamma,zetamax,etaB,H,Be]=...
 
 end
 
-function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
-            PZ_backward_Euler(ste,Ge,defepr,H,Kt,defplasdes,dgamma_,deps,zetamax0,etaB)
+function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
+            PZ_backward_Euler(ste,Ge,defepr,H,Kt,defplasdes,defplasvol,dgamma_,deps,zetamax0,etaB)
         
     alpha = Ge(3);
     alphag= Ge(4);
@@ -94,7 +95,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
      % H calculation    
     if discri>0
         etaB=0;  
-        [Hcalcu,zetamax]=define_H(Ge,etaf,eta,p,defplasdes,zetamax0,Mg);
+        [Hcalcu,zetamax]=define_H(Ge,etaf,eta,p,defplasdes,defplasvol,zetamax0,Mg);
     elseif discri<0
         ng(1)=-abs(ng(1));
         [Hcalcu,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
@@ -106,6 +107,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
     % Solution initialization
     incrlanda = dgamma_;
     defplasdescalcu=defplasdes; 
+    %defplasvolc=defplasvol;
     
     aa=[eevtrial;eestrial;H;incrlanda];
 
@@ -167,11 +169,13 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
                 %discri=n(1:2)'*De*[dev;des];
       
             incredefplasdes=aa(4,ite+1)*ng(2);
+            incredefplasvol=aa(4,ite+1)*ng(1);
             defplasdescalcu=defplasdes+abs(incredefplasdes);
+            defplasvolc=defplasvol+incredefplasvol;
         
                 % H calculations  
             if discri>0
-                [Hcalcu,zetamax]=define_H(Ge,etaf,eta,p,defplasdescalcu,zetamax0,Mg);
+                [Hcalcu,zetamax]=define_H(Ge,etaf,eta,p,defplasdescalcu,defplasvolc,zetamax0,Mg);
             elseif discri<0
                 ng(1)=-abs(ng(1));
                 [Hcalcu,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
@@ -182,6 +186,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
     end
     
   defplasdes=defplasdescalcu; 
+  defplasvol=defplasdesvolc;
   eev=aa(1,ite);
   ees=aa(2,ite); 
   %es=es +des;
@@ -196,8 +201,8 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
   
 end
 
-function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
-            PZ_forward_Euler(ste,Ge,defepr,H,Kt,defplasdes,...
+function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
+            PZ_forward_Euler(ste,Ge,defepr,H,Kt,defplasdes,defplasvol,...
             dgamma_,deps,zetamax,etaB)
 
     ITER=50;
@@ -215,6 +220,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
     ees0=eestrial-des;
     eev0=eevtrial-dev;
     defplasdes_c=defplasdes;
+    defplasvolc=defplasvol;
     
     % Define Mg and Mf
     [Mg,Mf]=define_M(Ge,theta_e);
@@ -243,7 +249,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
             [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
         else %if discri<0
             % H calculation   
-            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,zetamax,Mg);
+            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvol,zetamax,Mg);
         end
         % Plastic multiplier
         incrlanda = discri/(H+n(1:2)'*De*ng(1:2));
@@ -254,6 +260,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         incredefplasdes=incrlanda*ng(2);
         
         defplasdes_c=defplasdes_c+abs(incredefplasdes);
+        defplasvolc=defplasvolc+incredefplasvol;
         
         % Elastic strain;
         eev0=eev_i-incredefplasvol;
@@ -262,6 +269,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
     
     
     defplasdes=defplasdes_c; 
+    defplasvol=defplasvolc;
     incrlanda=incrlandasum;
     
   
@@ -272,8 +280,8 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
 end
 
 
-function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
-            PZ_modified_Euler(ste,Ge,defepr,H,Kt,defplasdes,...
+function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
+            PZ_modified_Euler(ste,Ge,defepr,H,Kt,defplasdes,defplasvol,...
             dgamma_,deps,zetamax,etaB)
 
     STOL=1e-7;    
@@ -294,6 +302,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
     eev0=eevtrial-dev;
     
     defplasdes_c=defplasdes;
+    defplasvolc=defplasvol;
     
     % Define Mg and Mf
     [Mg,Mf]=define_M(Ge,theta_e);
@@ -317,7 +326,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
 
         if discri>=0
             % H calculation   
-            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,zetamax,Mg);
+            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvolc,zetamax,Mg);
         elseif discri<0
             ng(1)=-abs(ng(1));
             [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
@@ -329,6 +338,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         incredefplasvol=incrlanda*ng(1);
         incredefplasdes=incrlanda*ng(2);
         defplasdes1=defplasdes_c+abs(incredefplasdes);
+        defplasvol1=defplasvolc+abs(incredefplasvol);
 
         % Elastic strain;
         eev1=eev0+dev_i-incredefplasvol;
@@ -347,7 +357,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         
         if discri>=0
             % H calculation   
-            [H2,zetamax]=define_H(Ge,etaf,eta2,p2,defplasdes1,zetamax,Mg);
+            [H2,zetamax]=define_H(Ge,etaf,eta2,p2,defplasdes1,defplasvol1,zetamax,Mg);
         elseif discri<0
             ng2(1)=-abs(ng(1));
             [H2,etaB]=define_H_u(Ge,p2,eta2,etaB,Mg);
@@ -359,7 +369,9 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
         incredefplasvol2=incrlanda2*ng2(1);
         incredefplasdes2=incrlanda2*ng2(2);
 
-        incredefelasv=dev_i-0.5*(incredefplasvol+incredefplasvol2);
+        incredefplasv=0.5*(incredefplasvol+incredefplasvol2);
+        incredefelasv=dev_i-incredefplasv;
+        
         incredefplass=0.5*(incredefplasdes2+incredefplasdes);
         incredefelass=des_i-incredefplass;
 
@@ -379,6 +391,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
             eev0=eev0+incredefelasv;
             ees0=ees0+incredefelass;
             defplasdes_c=defplasdes_c+abs(incredefplass);
+            defplasvolc=defplasvolc+incredefplasv;
             
             s=s+hlocal;
             factor=min(0.9*sqrt(STOL/relaerror),1.1);
@@ -396,6 +409,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,zetamax,etaB]=...
     end
     
     defplasdes=defplasdes_c; 
+    defplasvol=defplasvolc;
     
   
   % D elastoplastic, Stress and Strain
@@ -444,13 +458,14 @@ function [De,p,q,eta]=Delast(Ge,ees,eev)
 
 end
 
-function [H,zetamax]=define_H(Ge,etaf,eta,p,defplas,zetamax,Mg)
+function [H,zetamax]=define_H(Ge,etaf,eta,p,defplas,defvolplas,zetamax,Mg)
 
     alpha = Ge(3);
     beta0 = Ge(8);
     beta1 = Ge(9);
     H0    = Ge(10);
     ganma = Ge(11);
+    ganma_vol = Ge(14);
     
     zetacalcu=-p*(1-(eta/etaf))^(-1/alpha);
     zetamax=max(zetamax,zetacalcu);
@@ -460,8 +475,9 @@ function [H,zetamax]=define_H(Ge,etaf,eta,p,defplas,zetamax,Mg)
     Hf=(1-(eta/etaf))^4;
     Hv=1-(eta/Mg);
     Hs=beta0*beta1*exp(-defplas*beta0);
+    Hd=exp(defvolplas*ganma_vol);
           
-    H=-H0*p*Hf*(Hv+Hs)*HDM;
+    H=-H0*p*Hf*(Hv+Hs)*HDM*Hd;
 
 end
 
