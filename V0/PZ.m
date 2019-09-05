@@ -244,9 +244,11 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
         [ng,~]=build_vector(alphag,Mg,eta,q,signq);
         
         
-        if discri<abs(p)*1e-5
-            ng(1)=-abs(ng(1));
+        if discri<abs(p)*1e-8    
             [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
+            if discri<0
+                ng(1)=-abs(ng(1));
+            end
         else %if discri<0
             % H calculation   
             [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvol,zetamax,Mg);
@@ -842,7 +844,7 @@ function [A]=assemble(D,n,Ge,eev,ees)
         G1=-2*ghar*p0*v_exp;
         G2=-6*khar*v_exp*p0*ees*ees*ghar*ghar;
         
-        GG=3/2*(G1+G2);
+        %GG=3/2*(G1+G2);
         
         r23=sqrt(2/3); 
         
