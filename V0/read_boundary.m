@@ -38,11 +38,14 @@ function read_boundary
         l=l+1;
         loads=str2double(bb{l});
     end
+    
     RANGE=zeros(sp,2*loads); % Range of loads
     VECTOR=zeros(sp,loads); % Directions of loads
-    VALUE = strings(loads);
+    VALUE = strings(loads,1);
+    TIED = strings(loads,1);
     INTERVAL=zeros(2,loads); % Intervals of loads
     TYPE=zeros(loads,1);
+    
 
     M=0;
     t=l;
@@ -72,6 +75,9 @@ function read_boundary
                         continue
                     case 'WATER_VELOCITY'
                         TYPE(M)=4;
+                        continue
+                    case 'TIED_NODES'
+                        TYPE(M)=5;
                         continue
                     otherwise
                         disp('Error, type of boundary not implemented yet!')
@@ -147,6 +153,9 @@ function read_boundary
             case 'VALUE'
                 VALUE(M)=bb{t};
                 continue
+            case 'TIED'
+                TIED(M)=bb{t};
+                continue
             case 'INTERVAL'
                 val=str2double(bb{t});
                 val2=str2double(c{t});
@@ -198,23 +207,56 @@ function read_boundary
     fclose(fid);
     
     [b_mult_ini]=interval(INTERVAL,loads);
-    [b_nds]=localization(RANGE,loads);
+    [b_nds]=localization(RANGE,loads,TIED,TYPE);
     
     calculate_boundaries(b_mult_ini,b_nds,VALUE,VECTOR,TYPE,loads);
 end
 
-function [Load_nds]=localization(R,mats)
+function [Load_nds]=localization(R,mats,TIED,TYPE)
 
     global GEOMETRY
     x_0=GEOMETRY.x_0;
     [nodes,~]=size(x_0);
     Load_nds=zeros(nodes,mats);
+    
     for m=1:mats
         for nodo=1:nodes
             tol=GEOMETRY.h_nds(nodo,1)/5;
             if (x_0(nodo,2)>=R(2,m*2-1)-tol) && (x_0(nodo,2)<=R(2,m*2)+tol) 
                 if (x_0(nodo,1)>=R(1,m*2-1)-tol) && (x_0(nodo,1)<=R(1,m*2)+tol)
-                    Load_nds(nodo,m)=1;
+                    if TYPE(m)~=5
+                        Load_nds(nodo,m)=1;
+                    else
+                        for k=1:mats
+                            if TYPE(k)==5 && k~=m
+                                if strcmp(TIED(m),'X')
+                                    D=R(1,k*2-1);
+                                elseif strcmp(TIED(m),'Y')
+                                    D=R(2,k*2-1);
+                                else
+                                    disp('no defined tied direction')
+                                    stop
+                                end 
+                            end
+                        end
+                        for j=1:nodes
+                            if strcmp(TIED(m),'X') && (nodo~=j)
+                                if (x_0(j,2)>=x_0(nodo,2)-tol) && (x_0(j,2)<=x_0(nodo,2)+tol)
+                                    if (x_0(j,1)>=D-tol) && (x_0(j,1)<=D+tol)
+                                        Load_nds(nodo,m)=j;
+                                        break;
+                                    end
+                                end
+                            elseif strcmp(TIED(m),'Y') && (nodo~=j)
+                                if (x_0(j,1)>=x_0(nodo,1)-tol) && (x_0(j,1)<=x_0(nodo,1)+tol)
+                                    if (x_0(j,2)>=D-tol) && (x_0(j,2)<=D+tol) 
+                                        Load_nds(nodo,m)=j;
+                                        break;
+                                    end
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -240,7 +282,8 @@ function [load_mult]=interval(INTERVAL,loads)
 
 end
 
-function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,loads)
+function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
+    loads)
     
     global GEOMETRY SOLVER TIME BOUNDARY
     
@@ -248,8 +291,10 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,loads)
     df=GEOMETRY.df;
     
     BOUNDARY.constrains = zeros(GEOMETRY.nodes*df,loads);
-    BOUNDARY.dad = zeros(GEOMETRY.nodes*df,loads);
-    BOUNDARY.vad = zeros(GEOMETRY.nodes*df,loads);
+    BOUNDARY.dad  = zeros(GEOMETRY.nodes*df,loads);
+    BOUNDARY.vad  = zeros(GEOMETRY.nodes*df,loads);
+    BOUNDARY.Type = TYPE;
+    BOUNDARY.tied = zeros(GEOMETRY.nodes*df,loads);
     b_mult = strings(size(load_mult_ini)); 
     
     BOUNDARY.size=loads;
@@ -296,6 +341,22 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,loads)
                         if V(sp+1-k)~=0
                             BOUNDARY.vad(i*df-sp+1-k,m)=V(sp+1-k);
                             BOUNDARY.constrains(i*df-sp+1-k,m)=2;
+                        end
+                    end
+                elseif TYPE(m)==5
+                    for k=1:sp
+                        if V(sp+1-k)~=0
+                            if SOLVER.UW==1
+                                BOUNDARY.dad(i*df-sp+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(i*df-sp+1-k,m)=3;
+                                BOUNDARY.tied(i*df-sp+1-k,m)=...
+                                    load_nds(i,m)*df-sp+1-k;
+                            else
+                                BOUNDARY.dad(i*df+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(i*df+1-k,m)=3;
+                                BOUNDARY.tied(i*df+1-k,m)=...
+                                    load_nds(i,m)*df+1-k;
+                            end
                         end
                     end
                 end

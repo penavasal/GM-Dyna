@@ -1,5 +1,5 @@
 
-function [boundary,i_disp,velo]=calculate_boundaries(ste)
+function [boundary,i_disp,velo,matrix]=calculate_boundaries(ste,matrix)
 
     global BOUNDARY
 
@@ -24,7 +24,7 @@ function [boundary,i_disp,velo]=calculate_boundaries(ste)
                 else
                     val2=str2double(b_mult(ste-1,m));
                 end
-                if val2
+                if val2 && BOUNDARY.Type(m)~=5
                     val=val-val2;
                 end
             end
@@ -49,6 +49,14 @@ function [boundary,i_disp,velo]=calculate_boundaries(ste)
                         end
                     else
                         velo(i)=val*vad(i,m);
+                    end
+                elseif constrains(i,m)==3
+                    if isscalar(matrix)
+                        break;
+                    else
+                        matrix(i,i)=matrix(i,i)+val*dad(i,m);
+                        matrix(i,BOUNDARY.tied(i,m))=...
+                            matrix(i,BOUNDARY.tied(i,m))-val*dad(i,m);
                     end
                 end
             end

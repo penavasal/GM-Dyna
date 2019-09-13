@@ -32,12 +32,12 @@ function [Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                 dens=MAT(3,Mat(e))/MAT_POINT(e).J;
             end
             
-            H=max(MAT_POINT(:).xg(2));
-            tens_1=dens*VARIABLE.g*(H-MAT_POINT(e).xg(2));
-            if SOLVER.UW==1
-                Mat_state.pw(e,1)=VARIABLE.rho_w*VARIABLE.g*...
-                    (H-MAT_POINT(e).xg(2));
-            end
+            H=GEOMETRY.H;
+            tens_1=-dens*VARIABLE.g*(H-MAT_POINT(e).xg(2));
+%             if SOLVER.UW==1
+%                 Mat_state.pw(e,1)=VARIABLE.rho_w*VARIABLE.g*...
+%                     (H-MAT_POINT(e).xg(2));
+%             end
         else
             tens_1=0;
         end

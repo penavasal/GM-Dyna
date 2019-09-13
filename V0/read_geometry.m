@@ -235,8 +235,9 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
     end 
     
     
-    GEOMETRY.x_0=x_a;
-    GEOMETRY.xg_0=xg;
+    GEOMETRY.x_0  = x_a;
+    GEOMETRY.xg_0 = xg;
+    GEOMETRY.H    = max(xg(:,2));
     
     [GEOMETRY.nodes,GEOMETRY.sp]=size(GEOMETRY.x_0);
     [GEOMETRY.elements,NNE_f]=size(GEOMETRY.elem);

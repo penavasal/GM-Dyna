@@ -179,7 +179,7 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         %--------------------------------------------------------------------------
         [OUTPUT]=read_output;
         
-        [~,GLOBAL.d(:,1),GLOBAL.v(:,1)]=calculate_boundaries(1);
+        [~,GLOBAL.d(:,1),GLOBAL.v(:,1),~]=calculate_boundaries(1,0);
         
         Disp_field.v(:,2)=GLOBAL.v(:,1);
         Disp_field.a(:,2)=GLOBAL.a(:,1);

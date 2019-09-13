@@ -42,7 +42,7 @@ function read_load
         
     RANGE=zeros(sp,2*loads); % Range of loads
     VECTOR=zeros(sp,loads); % Directions of loads
-    VALUE = strings(loads);
+    VALUE = strings(loads,1);
     INTERVAL=zeros(2,loads); % Intervals of loads
     TYPE=zeros(loads,1);
 
@@ -254,6 +254,7 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
     
     x_0=GEOMETRY.x_0;
     [nodes,sp]=size(x_0);
+    df=GEOMETRY.df;
     
     LOAD.ext_forces_s = zeros(nodes*sp,loads);
     if SOLVER.UW==1
@@ -279,9 +280,25 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
         % Values
         val=str2double(VALUE(m));
         if isnan(val)
+            if isfile(strcat(VALUE(m),'.txt'))
+                ff=strcat(VALUE(m),'.txt');
+                file_l=load_file(ff);
+                ff=1;
+            else
+                ff=0;
+            end
             for i=1:SOLVER.step_final
                 t=TIME.t(i);
-                val=eval(VALUE(m));
+                if ff
+                    if TYPE(m)==3
+                        d=g;
+                    else
+                        d=1;
+                    end
+                    val=interp1(file_l(:,1),file_l(:,2),t,'pchip','extrap')*d;      
+                else
+                    val=eval(VALUE(m));
+                end
                 load_mult_ini(i,m)=load_mult_ini(i,m)*val;
             end
         else
@@ -336,8 +353,15 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
         elseif TYPE(m)==3
             for j=1:i
                 nn=nod_f(j);
-                for k=1:sp
-                    LOAD.ext_acce(nn*sp+1-k,m)=V(sp+1-k);
+                if SOLVER.UW==0
+                    for k=1:sp
+                        LOAD.ext_acce(nn*sp+1-k,m)=V(sp+1-k);
+                    end
+                elseif SOLVER.UW==1
+                    for k=1:sp
+                        LOAD.ext_acce(nn*df+1-k,m)=V(sp+1-k);
+                        LOAD.ext_acce(nn*df-sp+1-k,m)=V(sp+1-k);
+                    end
                 end
             end
         elseif TYPE(m)==4
@@ -465,7 +489,14 @@ function [d1,d2]=dist(x_a,nd,j,r)
     d2=min(abs(d));   
 end
 
+function[list]=load_file(ff)
 
+    fid = fopen(ff, 'rt'); % opción rt para abrir en modo texto
+    formato = '%s %s'; % formato de cada línea 
+    data = textscan(fid, formato, 'HeaderLines', 1);
+    
+    list(:,1) = str2double(data{1});
+    list(:,2) = str2double(data{2});
 
-
+end
 

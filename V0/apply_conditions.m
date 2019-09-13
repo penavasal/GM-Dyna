@@ -6,7 +6,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
     %%%% ONLY K MATRIX
     if type==0
         I=eye(GEOMETRY.df*GEOMETRY.nodes);
-        [boundary,~,~]=calculate_boundaries(ste);
+        [boundary,~,~,matrix]=calculate_boundaries(ste,matrix);
         for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)
                 for j=1:GEOMETRY.nodes*GEOMETRY.df
@@ -24,7 +24,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
     %%%% ONLY RESIDUUM VECTOR (FIRST ITER of NEWTON-RAPHSON)
     elseif type==1
     
-        [boundary,i_disp,~]=calculate_boundaries(ste);
+        [boundary,i_disp,~,~]=calculate_boundaries(ste,0);
 
         for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)               
@@ -41,7 +41,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
     
     %%%% ONLY RESIDUUM VECTOR (SECOND and MORE ITERS of NEWTON-RAPHSON)
     elseif type==2
-         [boundary,~,~]=calculate_boundaries(ste);
+         [boundary,~,~,~]=calculate_boundaries(ste,0);
          for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)               
                 GT(i)=0;
@@ -58,7 +58,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
     %%%% K and GT MATRIX for the INITIAL STEP    
     elseif type==3
         I=eye(GEOMETRY.df*GEOMETRY.nodes);
-        [boundary,~,~]=calculate_boundaries(1);
+        [boundary,~,~,matrix]=calculate_boundaries(1,matrix);
         for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)
                 GT(i)=0;
