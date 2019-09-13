@@ -379,5 +379,56 @@ classdef DYN_MATRIX
             
         end
         
+        function [obj]=lumped_mass_bf(MAT_POINT,obj)
+
+            global MATERIAL GEOMETRY SOLVER VARIABLE
+
+            Material=MATERIAL.e;
+            MAT=MATERIAL.MAT;
+
+            sp=GEOMETRY.sp;
+            df=GEOMETRY.df;
+
+            mass=zeros(GEOMETRY.nodes*df,GEOMETRY.nodes*df);
+
+            % Lumped Mass **********************
+            for i=1:GEOMETRY.mat_points
+                volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
+                if SOLVER.UW
+                    n=1-(1-MAT(16,Material(i)))/MAT_POINT(i).J;
+                    dens=n*VARIABLE.rho_w+(1-n)*MAT(3,Material(i));
+                else
+                    dens=MAT(3,Material(i))/MAT_POINT(i).J;
+                end
+                
+                if SOLVER.AXI
+                    t=2*pi*MAT_POINT(i).xg(1)*volume;
+                else
+                    t=volume;
+                end
+
+                nd = MAT_POINT(i).near;
+                m  = length(nd);
+                sh = MAT_POINT(i).N;
+                for t1=1:m
+                    for k=1:sp
+                        if SOLVER.UW
+                            mass(nd(t1)*df-sp+1-k,nd(t1)*df-sp+1-k)=...
+                            mass(nd(t1)*df-sp+1-k,nd(t1)*df-sp+1-k)...
+                                +dens*t*sh(t1);
+                            mass(nd(t1)*df+1-k,nd(t1)*df+1-k)=...
+                            mass(nd(t1)*df+1-k,nd(t1)*df+1-k)...
+                                +VARIABLE.rho_w*t*sh(t1);
+                        else
+                            mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
+                                mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
+                                +dens*t*sh(t1);
+                        end
+                    end
+                end
+            end
+            obj.l_mass=mass;           
+        end
+        
     end
 end

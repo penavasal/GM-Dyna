@@ -14,16 +14,13 @@ function [load_s,OUTPUT]=...
     end
 
     
-    [MATRIX]=MATRIX.lumped_mass(MAT_POINT,MATRIX);
+    [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,MATRIX);
     
     load=zeros(GEOMETRY.nodes*df,LOAD.size);
     acce=zeros(GEOMETRY.nodes*df,LOAD.size);
     
     for m=1:LOAD.size
         vec=MATRIX.l_mass*ext_acce(:,m);
-        if SOLVER.UW==1
-            vec2=MATRIX.l_mass_w*ext_acce(:,m);
-        end
         for i=1:GEOMETRY.nodes 
 %             if SOLVER.AXI
 %                 %if Disp_field.x_a(i,1)==0
@@ -42,12 +39,10 @@ function [load_s,OUTPUT]=...
             if SOLVER.UW==1
             load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...
                 +t*ext_forces_s((i-1)*sp+1:i*sp,m)*load_mult(ste,m);
-            acce((i-1)*df+1:(i-1)*df+sp,m)=acce((i-1)*df+1:(i-1)*df+sp,m)...
-                +t*vec((i-1)*sp+1:i*sp,1)*load_mult(ste,m);
+            acce((i-1)*df+1:i*df,m)=acce((i-1)*df+1:i*df,m)...
+                +t*vec((i-1)*df+1:i*df,1)*load_mult(ste,m);
             load((i-1)*df+sp+1:i*df,m)=load((i-1)*df+sp+1:i*df,m)...
                 +t*ext_forces_w((i-1)*sp+1:i*sp,m)*load_mult(ste,m);
-            acce((i-1)*df+sp+1:i*df,m)=acce((i-1)*df+sp+1:i*df,m)...
-                +t*vec2((i-1)*sp+1:i*sp,1)*load_mult(ste,m);
             elseif SOLVER.UW==0
             load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...
                 +t*ext_forces_s((i-1)*sp+1:i*sp,m)*load_mult(ste,m);
