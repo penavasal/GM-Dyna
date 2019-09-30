@@ -28,6 +28,7 @@ function MAT_POINT=read_problem
     delta=0;
     alpha=0;
     theta=1;
+    rho=0;
     
     SOLVER.REMAPPING = 0;
     SOLVER.LIN = 0;
@@ -343,7 +344,7 @@ function MAT_POINT=read_problem
     %----------------------------------------------------------------------
     % Solver variables: Time Integration Scheme
     %----------------------------------------------------------------------
-    TIME=Time_Scheme(TIS,af,am,delta,alpha,theta);
+    TIME=Time_Scheme(TIS,af,am,delta,alpha,theta,rho);
     
     %----------------------------------------------------------------------
     % Time-related conditions

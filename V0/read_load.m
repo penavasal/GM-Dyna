@@ -260,7 +260,7 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
     if SOLVER.UW==1
         LOAD.ext_forces_w = zeros(nodes*sp,loads);
     end
-    LOAD.ext_acce = zeros(nodes*sp,loads);
+    LOAD.ext_acce = zeros(nodes*df,loads);
     LOAD.load_mult = zeros(size(load_mult_ini));
     
     LOAD.size=loads;

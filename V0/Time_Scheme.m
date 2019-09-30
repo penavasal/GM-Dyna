@@ -10,7 +10,7 @@ classdef Time_Scheme
         t;
     end
     methods
-        function obj=Time_Scheme(TIS,af,am,delta,alpha,theta)
+        function obj=Time_Scheme(TIS,af,am,delta,alpha,theta,rho)
             if TIS==1
                 alpha=0;
             elseif TIS==3 || TIS==4 || TIS==6
@@ -158,7 +158,7 @@ classdef Time_Scheme
 
             du=d1(:,1)-d1(:,2);
 
-            GT= G*(load-load1)+load1 - H*Fint(:,1)...
+            GT= G*(load-load1)+load1 - (H*(Fint(:,1)-Fint(:,2))+Fint(:,2))...
                     -Mm*(A*du-B*v1(:,2)-C*a1(:,2))...
                     -Cm*(D*du+E*v1(:,2)+F*a1(:,2));
 
