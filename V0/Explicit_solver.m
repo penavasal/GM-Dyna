@@ -28,7 +28,7 @@ function Explicit_solver(MAT_POINT)
         % 1. Forces
         load_s(:,2)=load_s(:,1);
         [load_s(:,1),OUTPUT]=calculate_forces...
-            (ste,MAT_POINT,Disp_field,OUTPUT,MATRIX);
+            (ste,MAT_POINT,Disp_field,Mat_state,OUTPUT,MATRIX);
 
         % --------------------------------------------------------
         % 2. Predictor         
@@ -88,7 +88,7 @@ function Explicit_solver(MAT_POINT)
             GLOBAL.Sigma(:,ste_p)   = Mat_state.Sigma(:,1);    %STRESS
             GLOBAL.F(:,ste_p)       = Mat_state.F(:,1);  %DEFORMATION GRADIENT
             GLOBAL.Be(:,ste_p)      = Mat_state.Be(:,1); %LEFT CAUCHY GREEN 
-            if SOLVER.UW
+            if SOLVER.UW==1
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
                 GLOBAL.Fw(:,ste_p) = Mat_state.Fw(:,1);
             end
@@ -113,7 +113,7 @@ function Explicit_solver(MAT_POINT)
         Mat_state.F(:,2)=Mat_state.F(:,1);
         Mat_state.Be(:,2)=Mat_state.Be(:,1);
         Mat_state.fint(:,2)=Mat_state.fint(:,1);
-        if SOLVER.UW
+        if SOLVER.UW==1
         	Mat_state.pw(:,2)=Mat_state.pw(:,1);
             Mat_state.Fw(:,2)=Mat_state.Fw(:,1);
         end

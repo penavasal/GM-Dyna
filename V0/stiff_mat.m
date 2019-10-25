@@ -11,26 +11,23 @@ function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A)
     b=MAT_POINT(e).B;
     n =length(nb);
     
-                
-
-    
     volume=GEOMETRY.Area(e)*MAT_POINT(e).J;
     if SOLVER.AXI
         dim=4;
-        if SOLVER.UW==0
+        if SOLVER.UW==0 || SOLVER.UW==2
             d2=dim;
             vol=-2*pi*MAT_POINT(e).xg(1)*volume; % Por que negativo??
-        else
+        elseif SOLVER.UW==1
             d2=7;
             vol=2*pi*MAT_POINT(e).xg(1)*volume;
         end
         
     else
         dim=3;
-        if SOLVER.UW==0
+        if SOLVER.UW==0 || SOLVER.UW==2
             d2=dim;
             vol=-volume;   % Por que negativo??
-        else
+        elseif SOLVER.UW==1
             d2=5;
             vol=volume;
         end 
@@ -41,23 +38,31 @@ function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A)
     % ----------------------------
     D=zeros(d2);
     D(1:dim,1:dim)=A(1:dim,1:dim);
-    if SOLVER.UW==0
+    if SOLVER.UW==0 || SOLVER.UW==2
         % Material
         K_mat=b'*D*b;    
         % Geometrical
         [K_geo]=Geo(b,T,n,sp);
+        
+        if SOLVER.UW==2
+            N = MAT_POINT(e).N;
+            [K]=Mat_UPw(b,n,N,K_mat+K_geo,Mat_state.k(e),sp,df);
+            K_el=K*vol;
+        else
+            K_el=vol*(K_mat+K_geo);
+        end
+        
     elseif SOLVER.UW==1
         % Material
         [K_mat]=Mat_UW(b,n,e,D,MAT_POINT(e).J,sp,df);
         % Geometrical
         [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df);
+        K_el=vol*(K_mat+K_geo);
     end
-    
-    
+     
     % ----------------------------
     % Assembling of K
     % ----------------------------
-    K_el=vol*(K_mat+K_geo);
     for j=1:n
         for l=1:n
             for k=1:df
@@ -109,6 +114,42 @@ function [K_mat]=Mat_UW(b,n,i,D,J,sp,df)
     % ----------------------------
     D=D+Q*(m'*m);
     K_mat=b2'*D*b2;
+
+end
+
+function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
+
+    global SOLVER
+
+    if SOLVER.AXI
+        m=[1 1 0 1];
+    else
+        m=[1 1 0];
+    end
+    
+    Q=b'*m*N;
+    
+    dN=zeros(2,n);
+    for j=1:n
+        dN(1,j)=b(1,(j-1)*sp+1);
+        dN(2,j)=b(2,(j-1)*sp+2);
+    end
+    
+    H=k*(dN'*dN);
+
+    % ----------------------------
+    % Material stiffness
+    % ----------------------------
+    K_mat=zeros(df*n);
+    for j=1:n
+        for k=1:n
+            K_mat((j-1)*df+1:j*df-sp,(k-1)*df+1:k*df-sp)=...
+                -K((j-1)*sp+1:j*sp,(k-1)*sp+1:k*sp);
+            K_mat((j-1)*df+1:j*df-sp,k*df)=...
+                -Q((j-1)*sp+1:j*sp,k);
+            K_mat(j*df,k*df)=-H(j,k);
+        end
+    end
 
 end
 

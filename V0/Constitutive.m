@@ -13,7 +13,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
     
     f_v       = zeros(dimf,1);
     f_old     = zeros(dimf,1);
-    if SOLVER.UW
+    if SOLVER.UW==1
         f_v_w     = zeros(dimf,1);
     end
     be        = zeros(dimf,1); 
@@ -22,7 +22,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
     if SOLVER.FAIL==0
         for e=1:GEOMETRY.mat_points
                         
-            if SOLVER.UW
+            if SOLVER.UW==1
                 for i=1:dimf
                     f_v_w(i,1)=Mat_state.Fw((e-1)*dimf + i,1);
                 end           
@@ -76,7 +76,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
             end
 
             
-            if SOLVER.UW
+            if SOLVER.UW==1
                 % Q calculation
                 n=1-(1-MAT(16,Mat(e)))/MAT_POINT(e).J;
                 K_w=MAT(28,Mat(e));

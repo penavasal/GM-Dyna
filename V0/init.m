@@ -43,6 +43,8 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         Mat_state.Fw=zeros(l1*elements,2);
     elseif SOLVER.UW==2
         Mat_state.k=zeros(elements,1);
+        Mat_state.pw=zeros(elements,2);
+        Mat_state.dpw=zeros(sp*elements,2);
     end
     
     GLOBAL.title='Variables to save';
@@ -155,11 +157,11 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
         [stiff_mtx,Int_var,Mat_state]=...
         Constitutive(1,ste,Int_var,Mat_state,MAT_POINT);
         [load_s(:,1),~]=calculate_forces...
-            (ste,MAT_POINT,Disp_field,OUTPUT,MATRIX);
+            (ste,MAT_POINT,Disp_field,Mat_state,OUTPUT,MATRIX);
         SOLVER.INIT_file=0;
         
         Mat_state.fint(:,2)=Mat_state.fint(:,1);
-        if SOLVER.UW
+        if SOLVER.UW==1
             Mat_state.pw(:,3)=Mat_state.pw(:,2)-Mat_state.pw(:,1);            
         end
         
@@ -320,7 +322,7 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
     % B. External forces
     load_s=zeros(GEOMETRY.nodes*GEOMETRY.df,2);
     [load_s(:,1),OUTPUT]=...
-        calculate_forces(1,MAT_POINT,Disp_field,OUTPUT,MATRIX);
+        calculate_forces(1,MAT_POINT,Disp_field,Mat_state,OUTPUT,MATRIX);
     
     % C. Initial calculation if required
     if SOLVER.step0==1 || any(load_s(:,1))
@@ -363,7 +365,7 @@ function [stiff_mtx,GLOBAL,Disp_field,Int_var,Mat_state,load_s,OUTPUT]=...
      Mat_state.F(:,2)   = Mat_state.F(:,1);
      GLOBAL.F(:,1)      = Mat_state.F(:,1);
      
-     if SOLVER.UW
+     if SOLVER.UW==1
          GLOBAL.pw(:,1)=Mat_state.pw(:,1);
      end
      

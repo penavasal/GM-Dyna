@@ -13,13 +13,13 @@ function vtk_driver(str,str2,steps,h,rt,folder)
     if NNE==4
         if SOLVER.UW==1
             vtk_4DOF_quad(str,str2,steps,h,rt);
-        else
+        elseif SOLVER.UW==0
             vtk_2DOF_quad(root,str2,steps,h,rt);
         end
     else
         if SOLVER.UW==1
             vtk_4DOF(str,str2,steps,h,rt);
-        else
+        elseif SOLVER.UW==0
             vtk_2DOF(str,str2,steps,h,rt);
         end
     end

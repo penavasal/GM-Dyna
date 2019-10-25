@@ -158,6 +158,9 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
                 if SOLVER.UW==1
                     x2(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-3,cont);
                     y2(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
+                elseif SOLVER.UW==2
+                    x2(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
+                    y2(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
                 else
                     x2(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
                     y2(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo,cont);
@@ -221,6 +224,9 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
                 if SOLVER.UW==1
                     x1(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-3,cont);
                     y1(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
+                elseif SOLVER.UW==2
+                    x1(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
+                    y1(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
                 else
                     x1(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
                     y1(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo,cont);

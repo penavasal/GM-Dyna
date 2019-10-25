@@ -50,8 +50,10 @@ classdef DYN_MATRIX
             mass_mtx=zeros(GEOMETRY.nodes*df);
             damp_mtx=zeros(GEOMETRY.nodes*df);
 
-            if alpha || SOLVER.UW==1 
+            if alpha || SOLVER.UW==1  || SOLVER.UW==2
                 for i=1:GEOMETRY.mat_points
+                    
+                    %Volume & density
                     volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
                     if SOLVER.UW
                         n=1-(1-MATERIAL.MAT(16,MATERIAL.e(i)))/MAT_POINT(i).J;
@@ -65,9 +67,27 @@ classdef DYN_MATRIX
                     else
                         t=volume;
                     end
+                    
+                    % Shape function
                     nd = MAT_POINT(i).near;
                     m  = length(nd);
                     sh = MAT_POINT(i).N;
+                    if SOLVER.UW==2
+                        b = MAT_POINT(i).B;
+                        if SOLVER.AXI
+                            mm=[1 1 0 1];
+                        else
+                            mm=[1 1 0];
+                        end
+                        Qt=(b'*mm*N)';
+
+                        K_w=MATERIAL.MAT(28,MATERIAL.e(i));
+                        K_s=MATERIAL.MAT(27,MATERIAL.e(i));
+
+                        Q=1/(n/K_w+(1-n)/K_s);
+                        
+                        [A]=A_mat(m,sh,b);
+                    end
 
                     for t1=1:m
                         for t2=1:m
@@ -76,6 +96,13 @@ classdef DYN_MATRIX
                                     damp_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)=...
                                         damp_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)-...
                                         t*sh(t1)*sh(t2)/Mat_state.k(i);
+                                elseif SOLVER.UW==2
+                                	damp_mtx(nd(t1)*df,nd(t2)*df-k)=...
+                                        damp_mtx(nd(t1)*df,nd(t2)*df-k)+...
+                                        t*Qt(t1,t2*sp+1-k);
+                                    damp_mtx(nd(t1)*df,nd(t2)*df)=...
+                                        damp_mtx(nd(t1)*df,nd(t2)*df)+...
+                                        t*sh(t1)*sh(t2)/Q;
                                 end
                                 if SOLVER.UW==1 && alpha
                                     mass_mtx(nd(t1)*df-1-k,nd(t2)*df-1-k)=...
@@ -90,6 +117,13 @@ classdef DYN_MATRIX
                                     mass_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)=...
                                         mass_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)-...
                                         t*sh(t1)*sh(t2)*rho_w/n;
+                                elseif SOLVER.UW==2 && alpha
+                                    mass_mtx(nd(t1)*df-k,nd(t2)*df-k)=...
+                                        mass_mtx(nd(t1)*df-k,nd(t2)*df-k)-...
+                                        t*sh(t1)*sh(t2)*dens;
+                                	mass_mtx(nd(t1)*df,nd(t2)*df-k)=...
+                                        mass_mtx(nd(t1)*df,nd(t2)*df-k)+...
+                                        t*A(t1,t2*sp+1-k)*rho_w*Mat_state.k(i);
                                 elseif alpha
                                     mass_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)=...
                                         mass_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)+...
@@ -379,7 +413,7 @@ classdef DYN_MATRIX
             
         end
         
-        function [obj]=lumped_mass_bf(MAT_POINT,obj)
+        function [obj]=lumped_mass_bf(MAT_POINT,Mat_state,obj)
 
             global MATERIAL GEOMETRY SOLVER VARIABLE
 
@@ -410,15 +444,33 @@ classdef DYN_MATRIX
                 nd = MAT_POINT(i).near;
                 m  = length(nd);
                 sh = MAT_POINT(i).N;
+                
+                if SOLVER.UW==2
+                    b = MAT_POINT(i).B;                  
+                    dN=zeros(2,m);
+                    for j=1:m
+                        dN(1,j)=b(1,(j-1)*sp+1);
+                        dN(2,j)=b(2,(j-1)*sp+2);
+                    end
+                end
+                
+ 
                 for t1=1:m
                     for k=1:sp
-                        if SOLVER.UW
+                        if SOLVER.UW==1
                             mass(nd(t1)*df-sp+1-k,nd(t1)*df-sp+1-k)=...
                             mass(nd(t1)*df-sp+1-k,nd(t1)*df-sp+1-k)...
                                 +dens*t*sh(t1);
                             mass(nd(t1)*df+1-k,nd(t1)*df+1-k)=...
                             mass(nd(t1)*df+1-k,nd(t1)*df+1-k)...
                                 +VARIABLE.rho_w*t*sh(t1);
+                        elseif SOLVER.UW==2
+                            mass(nd(t1)*df-k,nd(t1)*df-k)=...
+                            mass(nd(t1)*df-k,nd(t1)*df-k)...
+                                +dens*t*sh(t1);
+                            mass(nd(t1)*df,nd(t1)*df-k)=...
+                            mass(nd(t1)*df,nd(t1)*df-k)...
+                                +VARIABLE.rho_w*t*dN(1+sp-k,t1)*Mat_state.k(i);
                         else
                             mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                                 mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
@@ -428,6 +480,23 @@ classdef DYN_MATRIX
                 end
             end
             obj.l_mass=mass;           
+        end
+        
+        function [A]=A_mat(n,N,b)
+                   
+            sp=2;
+            
+            dN=zeros(2,n);
+            Nv=zeros(2,2*n);
+            for j=1:n
+                dN(1,j)=b(1,(j-1)*sp+1);
+                dN(2,j)=b(2,(j-1)*sp+2);
+
+                Nv(1,2*j-1)=N(1,j);
+                Nv(2,2*j)=N(1,j);
+            end
+
+            A=dN'*Nv;         
         end
         
     end

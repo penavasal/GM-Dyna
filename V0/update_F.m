@@ -105,6 +105,18 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 [dFw]=LIB.v2m(dF_w);
                 F_w=dFw*F_w;
                 
+            elseif SOLVER.UW==2
+                N=MAT_POINT(e).N;
+                dN=zeros(2,nn);
+                pwv=zeros(nn,1);     %Incremental displacements _ solid
+                for i=1:nn
+                    dN(1,i)=b(1,(i-1)*sp+1);
+                    dN(2,i)=b(2,(i-1)*sp+2);
+                    pwv(i,1)=d(nd(i)*df,1);
+                end
+                Mat_state.pw(e,1)=N*pwv;
+                dPw=dN*pwv;
+                Mat_state.dpw((e-1)*sp+1:e*sp,1)=dPw;
             end
             
             if SOLVER.F_BAR>0

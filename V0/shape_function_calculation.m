@@ -271,7 +271,7 @@ function [MAT_POINT]=bbm(patch_con,patch_el,MAT_POINT,Area,BBAR)
         nb = MAT_POINT(i).near;
         sh = MAT_POINT(i).B;
         n=length(nb);
-        if SOLVER.UW==0
+        if SOLVER.UW==0 || SOLVER.UW==2
             b=zeros(3,sp*n);
             t=zeros(1,n*df);
             for j=1:n
@@ -309,7 +309,7 @@ function [MAT_POINT]=bbm(patch_con,patch_el,MAT_POINT,Area,BBAR)
         end  
     end
 
-    if SOLVER.UW==0
+    if SOLVER.UW==0 || SOLVER.UW==2
         for i=1:patch
             t=T{patch_con(i,1)};
             l=length(t);
@@ -459,7 +459,7 @@ function [MAT_POINT]=bbm_axi(patch_con,patch_el,MAT_POINT,Area,BBAR)
     bdim=GEOMETRY.b_dim;
     
     sp1=sp+1;
-    if SOLVER.UW==0
+    if SOLVER.UW==0 || SOLVER.UW==2
         for i=1:elements
             r=MAT_POINT(i).xg(1);
             nb = MAT_POINT(i).near;

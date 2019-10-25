@@ -79,6 +79,9 @@ function read_boundary
                     case 'TIED_NODES'
                         TYPE(M)=5;
                         continue
+                    case 'PORE_PRESSURE'
+                        TYPE(M)=6;
+                        continue
                     otherwise
                         disp('Error, type of boundary not implemented yet!')
                         stop
@@ -315,6 +318,10 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
             if load_nds(i,m)
                 if SOLVER.UW==0 && (TYPE(m)==2 || TYPE(m)==4)
                     disp('error, take care of the water boundary conditions!!');
+                elseif SOLVER.UW==1 && TYPE(m)==6
+                    disp('error, take care of the water boundary conditions!!');
+                elseif SOLVER.UW==2 && (TYPE(m)==2 || TYPE(m)==4)
+                    disp('error, take care of the water boundary conditions!!');
                 elseif (TYPE(m)==2) || (TYPE(m)==1 && SOLVER.UW==0)
                     for k=1:sp
                         if V(sp+1-k)~=0
@@ -329,6 +336,13 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
                             BOUNDARY.constrains(i*df-sp+1-k,m)=1;
                         end
                     end
+                elseif TYPE(m)==1 && SOLVER.UW==2
+                    for k=1:sp
+                        if V(sp+1-k)~=0
+                            BOUNDARY.dad(i*df-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(i*df-k,m)=1;
+                        end
+                    end
                 elseif (TYPE(m)==4) || (TYPE(m)==3 && SOLVER.UW==0)
                     for k=1:sp
                         if V(sp+1-k)~=0
@@ -341,6 +355,13 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
                         if V(sp+1-k)~=0
                             BOUNDARY.vad(i*df-sp+1-k,m)=V(sp+1-k);
                             BOUNDARY.constrains(i*df-sp+1-k,m)=2;
+                        end
+                    end
+                elseif TYPE(m)==3 && SOLVER.UW==2
+                    for k=1:sp
+                        if V(sp+1-k)~=0
+                            BOUNDARY.vad(i*df-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(i*df-k,m)=2;
                         end
                     end
                 elseif TYPE(m)==5
@@ -359,6 +380,9 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
                             end
                         end
                     end
+                elseif TYPE(m)==6 && SOLVER.UW==2
+                    BOUNDARY.dad(i*df,m)=1;
+                    BOUNDARY.constrains(i*df,m)=1;
                 end
                 if SOLVER.UW==0 && sp~=df
                     % No water

@@ -362,6 +362,10 @@ function calculate_forces(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,RANGE,loads)
                         LOAD.ext_acce(nn*df+1-k,m)=V(sp+1-k);
                         LOAD.ext_acce(nn*df-sp+1-k,m)=V(sp+1-k);
                     end
+                elseif SOLVER.UW==2
+                    for k=1:sp
+                        LOAD.ext_acce(nn*df-k,m)=V(sp+1-k);
+                    end
                 end
             end
         elseif TYPE(m)==4

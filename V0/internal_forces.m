@@ -50,7 +50,7 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
         end
         int_forces_1=Tt*sh*vol;
 
-        if SOLVER.UW
+        if SOLVER.UW==1
             sh2=sh(1:2,:);
             if SOLVER.AXI
                 sh2(1,:)=sh2(1,:)+sh(3,:);
@@ -78,6 +78,32 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
                    end
                 end
             end            
+        elseif SOLVER.UW==2
+            if SOLVER.AXI
+                m=[1 1 0 1];
+            else
+                m=[1 1 0];
+            end
+            div=B_'*m;
+            dN=zeros(2,n);
+            for j=1:nn
+                dN(1,j)=B_(1,(j-1)*sp+1);
+                dN(2,j)=B_(2,(j-1)*sp+2);
+            end
+            int_forces_2=div*Mat_state.pw(e,1)*vol;
+            dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
+            int_forces_3=dN'*dPw*vol;
+            
+            for i=1:nn
+               nod=nd(i);
+               for j=1:sp
+                    Mat_state.fint(nod*df-j,1)=...
+                        Mat_state.fint(nod*df-j,1)-int_forces_1(3-j,i)+...
+                        int_forces_2(i*sp+1-j,1);
+               end
+               Mat_state.fint(nod*df,1)=...
+                        Mat_state.fint(nod*df,1)+int_forces_3(i,1);
+            end
         else
             for i=1:nn
                nod=nd(i);
