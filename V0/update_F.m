@@ -115,7 +115,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                     dN(2,i)=b(2,(i-1)*sp+2);
                     pwv(i,1)=d(nd(i)*df,1);
                 end
-                Mat_state.pw(e,1)=N*pwv;
+                Mat_state.pw(e,1)=N'*pwv;
                 dPw=dN*pwv;
                 Mat_state.dpw((e-1)*sp+1:e*sp,1)=dPw;
             end

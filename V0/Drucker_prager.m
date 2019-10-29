@@ -29,6 +29,7 @@ function [A,Sc,gamma,dgamma,sy,Be]=...
         fprintf('Error in small strain tensor of elem e %i \n',e);
     end
 
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                     RADIAL RETURN MAPPING                       %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
