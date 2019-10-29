@@ -7,6 +7,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
     df=GEOMETRY.df;
     dimf=GEOMETRY.f_dim;
     
+    
     [aa,bb]=size(GEOMETRY.patch_con);
     area_p_n=zeros(aa,1);
     area_p_w=zeros(aa,1);
