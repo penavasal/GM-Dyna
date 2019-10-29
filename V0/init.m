@@ -44,7 +44,7 @@ function [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
     elseif SOLVER.UW==2
         Mat_state.k=zeros(elements,1);
         Mat_state.pw=zeros(elements,2);
-        Mat_state.dpw=zeros(sp*elements,2);
+        Mat_state.dpw=zeros(GEOMETRY.sp*elements,2);
     end
     
     GLOBAL.title='Variables to save';

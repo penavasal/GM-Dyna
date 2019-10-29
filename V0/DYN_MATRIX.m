@@ -79,14 +79,14 @@ classdef DYN_MATRIX
                         else
                             mm=[1 1 0];
                         end
-                        Qt=(b'*mm*N)';
+                        Qt=(b'*mm'*sh')';
 
                         K_w=MATERIAL.MAT(28,MATERIAL.e(i));
                         K_s=MATERIAL.MAT(27,MATERIAL.e(i));
 
                         Q=1/(n/K_w+(1-n)/K_s);
                         
-                        [A]=A_mat(m,sh,b);
+                        [A]=DYN_MATRIX.A_mat(m,sh,b);
                     end
 
                     for t1=1:m
@@ -122,7 +122,7 @@ classdef DYN_MATRIX
                                         mass_mtx(nd(t1)*df-k,nd(t2)*df-k)-...
                                         t*sh(t1)*sh(t2)*dens;
                                 	mass_mtx(nd(t1)*df,nd(t2)*df-k)=...
-                                        mass_mtx(nd(t1)*df,nd(t2)*df-k)+...
+                                        mass_mtx(nd(t1)*df,nd(t2)*df-k)-...
                                         t*A(t1,t2*sp+1-k)*rho_w*Mat_state.k(i);
                                 elseif alpha
                                     mass_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)=...
@@ -492,8 +492,8 @@ classdef DYN_MATRIX
                 dN(1,j)=b(1,(j-1)*sp+1);
                 dN(2,j)=b(2,(j-1)*sp+2);
 
-                Nv(1,2*j-1)=N(1,j);
-                Nv(2,2*j)=N(1,j);
+                Nv(1,2*j-1)=N(j,1);
+                Nv(2,2*j)=N(j,1);
             end
 
             A=dN'*Nv;         

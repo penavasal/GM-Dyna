@@ -69,7 +69,7 @@ function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A)
                 for r=1:df
                     stiff_mtx(nb(j)*df+1-k,nb(l)*df+1-r)...
                     =stiff_mtx(nb(j)*df+1-k,nb(l)*df+1-r)...
-                    -K_el(j*df+1-k,l*df+1-r);
+                    - K_el(j*df+1-k,l*df+1-r);
                 end
             end
         end
@@ -127,7 +127,7 @@ function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
         m=[1 1 0];
     end
     
-    Q=b'*m*N;
+    Q=b'*m'*N';
     
     dN=zeros(2,n);
     for j=1:n
@@ -143,9 +143,9 @@ function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
     K_mat=zeros(df*n);
     for j=1:n
         for k=1:n
-            K_mat((j-1)*df+1:j*df-sp,(k-1)*df+1:k*df-sp)=...
-                -K((j-1)*sp+1:j*sp,(k-1)*sp+1:k*sp);
-            K_mat((j-1)*df+1:j*df-sp,k*df)=...
+            K_mat((j-1)*df+1:j*df-1,(k-1)*df+1:k*df-1)=...
+                +K((j-1)*sp+1:j*sp,(k-1)*sp+1:k*sp);
+            K_mat((j-1)*df+1:j*df-1,k*df)=...
                 -Q((j-1)*sp+1:j*sp,k);
             K_mat(j*df,k*df)=-H(j,k);
         end

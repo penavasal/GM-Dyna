@@ -308,7 +308,9 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
         V=VECTOR(:,m)';
         nv=norm(V);
         if nv==0
-            continue
+            if TYPE~=6
+                continue
+            end
         else
             V=V/norm(V);
         end

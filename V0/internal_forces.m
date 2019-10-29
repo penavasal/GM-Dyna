@@ -84,8 +84,8 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
             else
                 m=[1 1 0];
             end
-            div=B_'*m;
-            dN=zeros(2,n);
+            div=B_'*m';
+            dN=zeros(2,nn);
             for j=1:nn
                 dN(1,j)=B_(1,(j-1)*sp+1);
                 dN(2,j)=B_(2,(j-1)*sp+2);
