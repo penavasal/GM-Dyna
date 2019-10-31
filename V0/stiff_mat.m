@@ -144,9 +144,9 @@ function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
     for j=1:n
         for k=1:n
             K_mat((j-1)*df+1:j*df-1,(k-1)*df+1:k*df-1)=...
-                +K((j-1)*sp+1:j*sp,(k-1)*sp+1:k*sp);
+                -K((j-1)*sp+1:j*sp,(k-1)*sp+1:k*sp);
             K_mat((j-1)*df+1:j*df-1,k*df)=...
-                -Q((j-1)*sp+1:j*sp,k);
+                +Q((j-1)*sp+1:j*sp,k);
             K_mat(j*df,k*df)=-H(j,k);
         end
     end

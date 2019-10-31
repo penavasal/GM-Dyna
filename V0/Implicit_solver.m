@@ -93,6 +93,9 @@ function Implicit_solver(MAT_POINT)
             if SOLVER.UW==1
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
                 GLOBAL.Fw(:,ste_p) = Mat_state.Fw(:,1);
+            elseif SOLVER.UW==2
+                GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
+                GLOBAL.dpw(:,ste_p) = Mat_state.dpw(:,1);
             end
 
             TIME.tp(ste_p,1)=TIME.t(ste);
@@ -125,6 +128,9 @@ function Implicit_solver(MAT_POINT)
         if SOLVER.UW==1
         	Mat_state.pw(:,2)=Mat_state.pw(:,1);
             Mat_state.Fw(:,2)=Mat_state.Fw(:,1);
+        elseif SOLVER.UW==2
+            Mat_state.pw(:,2)=Mat_state.pw(:,1);
+            Mat_state.dpw(:,2)=Mat_state.dpw(:,1);
         end
         
         Int_var.gamma(:,2)  = Int_var.gamma(:,1);

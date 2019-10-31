@@ -35,6 +35,10 @@ function [load_s,OUTPUT]=...
             if SOLVER.UW==1 && (SOLVER.IMPLICIT==1 || SOLVER.step0==1) 
                 t=-1;
             end
+            
+            if SOLVER.UW==2 && (SOLVER.IMPLICIT==1 || SOLVER.step0==1) 
+                t=-1;
+            end
                 
             if SOLVER.UW==1
             load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...

@@ -92,7 +92,7 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
             end
             int_forces_2=div*Mat_state.pw(e,1)*vol;
             dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
-            int_forces_3=dN'*dPw*vol;
+            int_forces_3=Mat_state.k(e)*dN'*dPw*vol;
             
             for i=1:nn
                nod=nd(i);
@@ -102,7 +102,7 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
                         int_forces_2(i*sp+1-j,1);
                end
                Mat_state.fint(nod*df,1)=...
-                        Mat_state.fint(nod*df,1)+int_forces_3(i,1);
+                        Mat_state.fint(nod*df,1)-int_forces_3(i,1);
             end
         else
             for i=1:nn
