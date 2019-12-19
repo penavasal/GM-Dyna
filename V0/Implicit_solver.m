@@ -1,27 +1,17 @@
 
-function Implicit_solver(MAT_POINT)
+function Implicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
+                Mat_state,GLOBAL,stiff_mtx,MATRIX,load_s)
 
-    tic;
-    
+
     %--------------------------------------------------------------------------
     % Initialize variables
     %--------------------------------------------------------------------------
-    global GEOMETRY SOLVER TIME VARIABLE
-
-    %----------------------------------------------------------------------
-    % Initial state & initial shape functions and matrixes - Save
-    %----------------------------------------------------------------------
+    global GEOMETRY SOLVER TIME
     
-    [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
-        stiff_mtx,load_s,MATRIX]=init(MAT_POINT);
-    
-    
-    save(OUTPUT.name, 'GEOMETRY', 'VARIABLE', 'SOLVER');
-
     %--------------------------------------------------------------------------
     % Initial matrices
     %--------------------------------------------------------------------------
-    [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX);
+    [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX,BLCK);
          
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      % LOOP
@@ -30,36 +20,34 @@ function Implicit_solver(MAT_POINT)
 
         % 1. Forces
         load_s(:,2)=load_s(:,1);
-        [load_s(:,1),OUTPUT]=calculate_forces...
-            (ste,MAT_POINT,Disp_field,Mat_state,OUTPUT,MATRIX);
+        [load_s(:,1),out_list1]=calculate_forces...
+            (ste,MAT_POINT,Disp_field,Mat_state,MATRIX,BLCK);
        
         % --------------------------------------------------------
         % 2. Predictor      
         [Disp_field,Mat_state,MAT_POINT]=implicit_predictor...
             (ste,stiff_mtx,MATRIX.mass,MATRIX.damp,load_s,Disp_field,...
-            MAT_POINT,Mat_state,Int_var);
+            MAT_POINT,Mat_state,Int_var,BLCK);
     
         % --------------------------------------------------------
 
         % 3. Recompute mass and damping matrices
-        [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX);
+        [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX,BLCK);
 
         % 4. Constitutive & Stiffness_mat
         [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(2,ste,Int_var,Mat_state,MAT_POINT);
+                Constitutive(2,ste,Int_var,Mat_state,MAT_POINT,BLCK);
         
-        [OUTPUT]=LIB.reaction(Mat_state.fint,OUTPUT);
         
         % 5. Storage
         if rem(ste,SOLVER.SAVE_I)==0
 
             ste_p=ste_p+1;
             fprintf('ste_p %i \n',ste_p);
-
-            for i=1:OUTPUT.number
-                OUTPUT.list(ste_p,i)=OUTPUT.inst(i);
-            end
-    
+          
+            [out_list2]=LIB.reaction(Mat_state.fint);
+            GLOBAL.OutputList(ste_p,:)=out_list1+out_list2;
+               
             GLOBAL.d(:,ste_p)   = Disp_field.d(:,1);
             GLOBAL.a(:,ste_p)   = Disp_field.a(:,1);
             GLOBAL.v(:,ste_p)   = Disp_field.v(:,1);
@@ -98,22 +86,19 @@ function Implicit_solver(MAT_POINT)
                 GLOBAL.dpw(:,ste_p) = Mat_state.dpw(:,1);
             end
 
-            TIME.tp(ste_p,1)=TIME.t(ste);
+            GLOBAL.tp(ste_p,1)=TIME{BLCK}.t(ste);
+            GLOBAL.ste_p=ste_p;
       
         end
 
         % 6. Save info
         if ((rem(ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) ...
-                || (ste==SOLVER.step_final) || (SOLVER.FAIL==1))
-            save(OUTPUT.name,'ste','ste_p','TIME','MAT_POINT',...
-                'GLOBAL','OUTPUT','-append')
+                || (ste==SOLVER.step_final(BLCK)) || (SOLVER.FAIL==1))
+            save(SOLVER.Output(BLCK),'MAT_POINT','GLOBAL','-append')
             if SOLVER.FAIL==1
                 stop
             end
             
-%             if TIME.tp(ste_p)>0.1
-%                 stop
-%             end
         end
         
         % 7. Update
@@ -145,10 +130,5 @@ function Implicit_solver(MAT_POINT)
 
      end
      
-     tfin=toc;
-     
-     disp(tfin);
-
-
 end
 

@@ -1,4 +1,4 @@
-function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
+function [Mat_state]=internal_forces(MAT_POINT,Mat_state,BLCK)
 
     global GEOMETRY SOLVER
     
@@ -31,7 +31,7 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
 
         % Stress
         for i=1:4
-            sig(i,1)=Mat_state.Sigma((e-1)*4+i,1);
+            sig(i,1)=Mat_state.Sigma((e-1)*4+i,1)-Mat_state.Sigma((e-1)*4+i,3);
         end
         
         [T]=LIB.e2E(sig);
@@ -55,8 +55,8 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
             if SOLVER.AXI
                 sh2(1,:)=sh2(1,:)+sh(3,:);
             end
-            int_forces_2=sh2*Mat_state.pw(e,1)*vol;
-            if SOLVER.IMPLICIT==0 && SOLVER.step0==0
+            int_forces_2=sh2*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol;
+            if SOLVER.IMPLICIT(BLCK)==0
                 for i=1:nn
                    nod=nd(i);
                    for j=1:sp
@@ -90,7 +90,7 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state)
                 dN(1,j)=B_(1,(j-1)*sp+1);
                 dN(2,j)=B_(2,(j-1)*sp+2);
             end
-            int_forces_2=div*Mat_state.pw(e,1)*vol;
+            int_forces_2=div*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol;
             dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
             int_forces_3=Mat_state.k(e)*dN'*dPw*vol;
             

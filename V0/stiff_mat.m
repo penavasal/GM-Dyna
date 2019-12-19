@@ -1,5 +1,5 @@
 
-function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A)
+function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A,BLCK)
 
     global GEOMETRY SOLVER
 
@@ -54,9 +54,9 @@ function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A)
         
     elseif SOLVER.UW==1
         % Material
-        [K_mat]=Mat_UW(b,n,e,D,MAT_POINT(e).J,sp,df);
+        [K_mat]=Mat_UW(b,n,e,D,MAT_POINT(e).J,sp,df,BLCK);
         % Geometrical
-        [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df);
+        [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df,BLCK);
         K_el=vol*(K_mat+K_geo);
     end
      
@@ -78,12 +78,12 @@ function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A)
 
 end
 
-function [K_mat]=Mat_UW(b,n,i,D,J,sp,df)
+function [K_mat]=Mat_UW(b,n,i,D,J,sp,df,BLCK)
 
-    global SOLVER MATERIAL
+    global SOLVER MATERIAL GEOMETRY
     
-    Material=MATERIAL.e;
-    MAT=MATERIAL.MAT;
+    Material=GEOMETRY.material;
+    MAT=MATERIAL(BLCK).MAT;
     
     K_w=MAT(28,Material(i));
     K_s=MAT(27,Material(i));
@@ -153,12 +153,12 @@ function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
 
 end
 
-function [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df)
+function [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df,BLCK)
 
-    global SOLVER MATERIAL
+    global SOLVER MATERIAL GEOMETRY
     
-    Material=MATERIAL.e;
-    MAT=MATERIAL.MAT;
+    Material=GEOMETRY.material;
+    MAT=MATERIAL(BLCK).MAT;
     
     pw=Mat_state.pw(e,1);
     % ----------------------------

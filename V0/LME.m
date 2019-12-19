@@ -9,12 +9,9 @@
 
         function [MAT_POINT]=near(i,x_a,x,h,MAT_POINT)
 
-            global GEOMETRY LME_param MATERIAL
+            global GEOMETRY LME_param 
 
             e=MAT_POINT(i).element; %Element where is the material point
-            
-            Mat=MATERIAL.e;
-            Mat_nds=MATERIAL.n;
 
             ndim=GEOMETRY.sp;
 
@@ -69,9 +66,8 @@
             near_=GEOMETRY.elem(e,:);
             for j=1:length(nds_search)
               %if dist(j)<range(i)
-              if (Mat(i)==Mat_nds(nds_search(j))) && (dist(j)<range) ...
-                      && not(ismember(nds_search(j),near_))
-                  
+              if  (dist(j)<range) && not(ismember(nds_search(j),near_)) %...
+                      % &&(Mat(i)==Mat_nds(nds_search(j)))
                   near_=cat(2,nds_search(j),near_);
               end
             end

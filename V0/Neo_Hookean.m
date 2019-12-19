@@ -1,10 +1,10 @@
-function [A,T,b]=Neo_Hookean(Kt,e,F,J)
+function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
 
-    global MATERIAL
+    global MATERIAL GEOMETRY
     
-    MODEL=MATERIAL.MODEL;
-    Material=MATERIAL.e;
-    MAT=MATERIAL.MAT;
+    MODEL=MATERIAL(BLCK).MODEL;
+    Material=GEOMETRY.material;
+    MAT=MATERIAL(BLCK).MAT;
 
     if MODEL(Material(e))==1.0
 

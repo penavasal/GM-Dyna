@@ -1,20 +1,13 @@
 % Hay que arreglar la parte de contacto
 
 function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
-            (ste,Disp_field,MAT_POINT,Mat_state)
+            (ste,Disp_field,MAT_POINT,Mat_state,time_step,gamma)
 
-    global GEOMETRY TIME
+    global GEOMETRY
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
     
-    if ste==1
-        time_step=TIME.t(ste+1)-TIME.t(ste);
-    else
-        time_step=TIME.t(ste)-TIME.t(ste-1);
-    end  
-    
-    gamma=TIME.gamma;
     x_a = Disp_field.x_a;
     d0  = Disp_field.d;
     a0  = Disp_field.a;

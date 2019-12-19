@@ -1,5 +1,5 @@
 function [stiff_mtx,Int_var,Mat_state]=...
-    Constitutive(Kt,ste,Int_var,Mat_state,MAT_POINT)
+    Constitutive(Kt,ste,Int_var,Mat_state,MAT_POINT,BLCK)
  
     global GEOMETRY SOLVER MATERIAL
     
@@ -7,9 +7,9 @@ function [stiff_mtx,Int_var,Mat_state]=...
     dimf=GEOMETRY.f_dim;
     dims=GEOMETRY.s_dim;
     
-    Mat=MATERIAL.e;
-    MODEL=MATERIAL.MODEL;
-    MAT=MATERIAL.MAT;
+    Mat=GEOMETRY.material;
+    MODEL=MATERIAL(BLCK).MODEL;
+    MAT=MATERIAL(BLCK).MAT;
     
     f_v       = zeros(dimf,1);
     f_old     = zeros(dimf,1);
@@ -41,9 +41,9 @@ function [stiff_mtx,Int_var,Mat_state]=...
             
             if MODEL(Mat(e))<2
                 if MODEL(Mat(e))==0
-                    [A,T,Be]=Saint_Venant(Kt,e,F);
+                    [A,T,Be]=Saint_Venant(Kt,e,F,BLCK);
                 elseif MODEL(Mat(e))<2 && MODEL(Mat(e))>=1
-                    [A,T,Be]=Neo_Hookean(Kt,e,F,MAT_POINT(e).J);
+                    [A,T,Be]=Neo_Hookean(Kt,e,F,MAT_POINT(e).J,BLCK);
                 end
             else        
                 Sy      = Int_var.Sy(e,2);
@@ -52,12 +52,12 @@ function [stiff_mtx,Int_var,Mat_state]=...
 		
                 if MODEL(Mat(e))>=2 && MODEL(Mat(e))<3
                     [A,T,Gamma,dgamma,Sy,Be]=...
-                        Drucker_prager(Kt,e,Gamma,dgamma,Sy,F,Be,Fold);
+                        Drucker_prager(Kt,e,Gamma,dgamma,Sy,F,Be,Fold,BLCK);
                 elseif MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
                     P0      = Int_var.P0(e);
                     Sy_r    = Int_var.Sy_r(e,2);
                     [A,T,Gamma,dgamma,Sy,Sy_r,Be]=...
-                        M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,P0);
+                        M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,P0,BLCK);
                     Int_var.Sy_r(e,1) = Sy_r;
                 elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
                     P0      = Int_var.P0(e);
@@ -65,7 +65,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
                     etaB    = Int_var.eta(e,2);
                     epsvol  = Int_var.epsv(e,2);
                     [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
-                            PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,F,Fold,Be,P0);
+                            PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,F,Fold,Be,P0,BLCK);
                     Int_var.epsv(e,1)= epsvol;
                     Int_var.H(e,1)   = H;
                     Int_var.eta(e,1) = etaB;
@@ -92,6 +92,8 @@ function [stiff_mtx,Int_var,Mat_state]=...
                 [~,eigva_bw] = eig(bw);
                 tr_ew = log(sqrt(eigva_bw(1,1)))+log(sqrt(eigva_bw(2,2)))+...
                         log(sqrt(eigva_bw(3,3)));
+%                 tr_ew2 = (log(eigva_bw(1,1))+log(eigva_bw(2,2))+...
+%                         log(eigva_bw(3,3)))/2;
                 % Pore pressure
                 Mat_state.pw(e,1)=-Q*(tr_e+tr_ew);
             end
@@ -115,13 +117,13 @@ function [stiff_mtx,Int_var,Mat_state]=...
                 % ----------------------------
                 if Kt==1 || Kt==2 || Kt==4
                     [stiff_mtx]=...
-                        stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A);
+                        stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A,BLCK);
                 end           
             end
         end
         % ----------------------------
         % Internal forces
         % ----------------------------
-        [Mat_state]=internal_forces(MAT_POINT,Mat_state);
+        [Mat_state]=internal_forces(MAT_POINT,Mat_state,BLCK);
     end   
 end

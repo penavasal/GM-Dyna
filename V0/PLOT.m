@@ -10,6 +10,8 @@ function PLOT(driver,PLT,varargin)
 
     if strcmp(driver,'VTK')
         vtk_driver(str_in,str_out,steps,ampl,freq,folder)
+    elseif strcmp(driver,'GID')
+        GID_driver(str_in,str_out,steps,freq,folder)
     elseif strcmp(driver,'GRID')
         plot_ep(str_in,folder,steps,freq,varargin{:})
     elseif strcmp(driver,'DEFORMED') || strcmp(driver,'DISTRIBUTION')
@@ -178,10 +180,6 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
                    frame = getframe;
                    writeVideo(movie,frame);  
             end
-
-            if cont==42
-                cont
-            end
         end
 
         if film
@@ -242,7 +240,6 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
                    frame = getframe;
                    writeVideo(movie2,frame);  
             end
-            cont
         end
 
         if film2

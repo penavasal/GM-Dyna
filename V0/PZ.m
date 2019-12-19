@@ -1,13 +1,13 @@
 
 function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
-    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,P0)
+    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,P0,BLCK)
 
 
-    global MATERIAL
+    global MATERIAL GEOMETRY
     
-    MODEL=MATERIAL.MODEL;
-    Mat=MATERIAL.e;
-    MAT=MATERIAL.MAT;
+    MODEL=MATERIAL(BLCK).MODEL;
+    Mat=GEOMETRY.material;
+    MAT=MATERIAL(BLCK).MAT;
         
     
     % Initial values

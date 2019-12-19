@@ -6,7 +6,7 @@ classdef Time_Scheme
         alpha=0;
         theta=1;
         gamma=0;
-        tp;
+        %tp;
         t;
     end
     methods
@@ -79,62 +79,72 @@ classdef Time_Scheme
      
     end
     methods(Static)
-        function variables
-            global MATERIAL VARIABLE SOLVER GEOMETRY TIME
+        function variables(i)
+            global MATERIAL SOLVER GEOMETRY TIME
 
             h=GEOMETRY.h_ini;
             tt(GEOMETRY.elements,1)=0;
-            for e=1:GEOMETRY.elements
+            material=GEOMETRY.material;
+            for e=1:GEOMETRY.mat_points
                 if SOLVER.UW
-                    tt(e,1)=min(h(e)/MATERIAL.MAT(6,MATERIAL.e(e)),...
-                    h(e)/sqrt(MATERIAL.MAT(28,MATERIAL.e(e))/VARIABLE.rho_w));
+                    tt(e,1)=min(h(e)/MATERIAL(i).MAT(6,material(e)),...
+                    h(e)/sqrt(MATERIAL(i).MAT(28,material(e))/...
+                    MATERIAL(i).MAT(42,material(e))));
                 else
-                    tt(e,1)=h(e)/MATERIAL.MAT(6,MATERIAL.e(e));
+                    tt(e,1)=h(e)/MATERIAL(i).MAT(6,material(e));
                 end
             end
             TT=min(tt);
-            CFL=SOLVER.time_step/TT;
+            CFL=SOLVER.time_step(i)/TT;
             fprintf('%f of CFL\n',CFL);
 
-            delta_t=SOLVER.time_step;
+            delta_t=SOLVER.time_step(i);
 
-            ste=1;
-            t(ste,1)=0;
-            while t(ste,1)<SOLVER.Time_final
+            if i==1
+                ste=1;
+                t(ste,1)=0;
+                SOLVER.dim=0;
+            else
+                ste=SOLVER.step_final(i-1);
+                t(ste,1)=SOLVER.Time_final(i-1);
+                SOLVER.Time_final(i)=SOLVER.Time_final(i)+t(ste,1);
+            end
+            
+            while t(ste,1)<SOLVER.Time_final(i)-eps
                 ste=ste+1;
-                delta_t=delta_t*SOLVER.time_factor;
+                delta_t=delta_t*SOLVER.time_factor(i);
                 t(ste,1)=t(ste-1,1)+delta_t;
             end
-            SOLVER.Time_final=t(ste,1);
-            SOLVER.step_final=ste;
-            TIME.t=t;
-
-
+            SOLVER.Time_final(i)=t(ste,1);
+            SOLVER.step_final(i)=ste;
+            TIME{i}.t=t;
+            
             if SOLVER.SAVE_I==1
-                SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I);
+                SOLVER.dim=SOLVER.dim+floor(SOLVER.step_final(i)/SOLVER.SAVE_I);
             else
-                SOLVER.dim=floor(SOLVER.step_final/SOLVER.SAVE_I)+1;
+                SOLVER.dim=SOLVER.dim+floor(SOLVER.step_final(i)/SOLVER.SAVE_I)+1;
             end
-            TIME.tp=zeros(SOLVER.dim,1);
-            fprintf('%i plot steps\n',SOLVER.dim);
-            fprintf('Save %i times before the final\n',round(SOLVER.dim/SOLVER.SAVE_F));
+            %TIME{i}.tp=zeros(SOLVER.dim,1);
+            fprintf('%i plot steps when finish BLOCK %i\n',SOLVER.dim,i);
+            fprintf('Save %i times when finish BLOCK %i\n',...
+                round(SOLVER.dim/SOLVER.SAVE_F),i);
 
         end
              
-        function [GT]=calculation(d1,a1,v1,Fint,Mm,Cm,load,load1,ste)
+        function [GT]=calculation(d1,a1,v1,Fint,Mm,Cm,load,load1,ste,BLCK)
             
             global TIME
 
-            af=TIME.af;
-            am=TIME.am;
-            delta=TIME.delta;
-            alpha=TIME.alpha;
-            theta=TIME.theta;
+            af=TIME{BLCK}.af;
+            am=TIME{BLCK}.am;
+            delta=TIME{BLCK}.delta;
+            alpha=TIME{BLCK}.alpha;
+            theta=TIME{BLCK}.theta;
 
             if ste==1
-                delta_t=TIME.t(ste+1)-TIME.t(ste);
+                delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
             else
-                delta_t=TIME.t(ste)-TIME.t(ste-1);
+                delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
             end
 
             if alpha==0
@@ -164,21 +174,21 @@ classdef Time_Scheme
 
         end
         
-        function [matrix]=matrix(mass_mtx,stiff_mtx,damp_mtx,ste)
+        function [matrix]=matrix(mass_mtx,stiff_mtx,damp_mtx,ste,BLCK)
             
             global TIME
 
-            af=TIME.af;
-            am=TIME.am;
-            delta=TIME.delta;
-            alpha=TIME.alpha;
-            theta=TIME.theta;
+            af=TIME{BLCK}.af;
+            am=TIME{BLCK}.am;
+            delta=TIME{BLCK}.delta;
+            alpha=TIME{BLCK}.alpha;
+            theta=TIME{BLCK}.theta;
 
 
             if ste==1
-                delta_t=TIME.t(ste+1)-TIME.t(ste);
+                delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
             else
-                delta_t=TIME.t(ste)-TIME.t(ste-1);
+                delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
             end
 
             if alpha==0
@@ -194,18 +204,18 @@ classdef Time_Scheme
 
         end
         
-        function [incr_d]=solver_1(InvK,FT,a1,v1,ste)
+        function [incr_d]=solver_1(InvK,FT,a1,v1,ste,BLCK)
             
             global TIME
 
-            alpha=TIME.alpha;
-            theta=TIME.theta;
+            alpha=TIME{BLCK}.alpha;
+            theta=TIME{BLCK}.theta;
 
 
             if ste==1
-                delta_t=TIME.t(ste+1)-TIME.t(ste);
+                delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
             else
-                delta_t=TIME.t(ste)-TIME.t(ste-1);
+                delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
             end
 
             if theta==1
@@ -229,23 +239,23 @@ classdef Time_Scheme
 
         end
         
-        function [a1,v1]=solver_2(d1,a1,v1,ste)
+        function [a1,v1]=solver_2(d1,a1,v1,ste,BLCK)
             
             global TIME
 
-            af=TIME.af;
-            am=TIME.am;
-            delta=TIME.delta;
-            alpha=TIME.alpha;
-            theta=TIME.theta;
+            af=TIME{BLCK}.af;
+            am=TIME{BLCK}.am;
+            delta=TIME{BLCK}.delta;
+            alpha=TIME{BLCK}.alpha;
+            theta=TIME{BLCK}.theta;
 
 
             du=d1(:,1)-d1(:,2);
 
             if ste==1
-                time_step=TIME.t(ste+1)-TIME.t(ste);
+                time_step=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
             else
-                time_step=TIME.t(ste)-TIME.t(ste-1);
+                time_step=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
             end
 
             if alpha==0

@@ -1,11 +1,11 @@
 function [A,Sc,gamma,dgamma,Pcd,Pcs,Be]=...
-    M_Cam_Clay(Kt,ste,e,gamma,dgamma_,Pcd,Pcs,F,Fold,Be,P0)
+    M_Cam_Clay(Kt,ste,e,gamma,dgamma_,Pcd,Pcs,F,Fold,Be,P0,BLCK)
 
-    global MATERIAL
+    global MATERIAL GEOMETRY
     
-    MODEL=MATERIAL.MODEL;
-    Mat=MATERIAL.e;
-    MAT=MATERIAL.MAT;
+    MODEL=MATERIAL(BLCK).MODEL;
+    Mat=GEOMETRY.material;
+    MAT=MATERIAL(BLCK).MAT;
     
     % Initial values
     
@@ -41,7 +41,7 @@ function [A,Sc,gamma,dgamma,Pcd,Pcs,Be]=...
         [TTe,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcs,Kt,P0,dgamma_);
         Pcd=Pcs;
     elseif MODEL(Mat(e))==3.1
-        [TTe,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0,dgamma_,ste);
+        [TTe,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0,dgamma_,ste,BLCK);
     end
     
     gamma=gamma-dgamma*2*Q/P/Ge(6)^2;
@@ -207,13 +207,14 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
             lambda,kappa,mu0,alfa,P0,epsev0,M);
 end
 
-function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = visco(Ge,defepr,Pcd,Pcs,Kt,P0,dgamma_,ste)
+function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = ...
+    visco(Ge,defepr,Pcd,Pcs,Kt,P0,dgamma_,ste,BLCK)
     global TIME
     
     if ste==1
-        delta_t=TIME.t(ste+1)-TIME.t(ste);
+        delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
     else
-        delta_t=TIME.t(ste)-TIME.t(ste-1);
+        delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
     end
     
     I = eye(3);

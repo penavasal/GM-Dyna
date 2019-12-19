@@ -5,12 +5,12 @@ function MAT_POINT=read_problem
 %   Read some important problem parameters from problem.txt
 %
 % Date:
-%   Version 2.0   02.04.2019
+%   Version 3.0   26.11.2019
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Some possible parameters if they are not read
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    global VARIABLE SOLVER TIME
+    global VARIABLE SOLVER TIME GEOMETRY
     
     % GEOMETRY
     filename='data_m';
@@ -20,27 +20,16 @@ function MAT_POINT=read_problem
     DIM=0;
     PLOT_ini=0;
     AMP=1;
-    
-    % TIME INTEGRATION SCHEME
-    TIS=1;
-    af=0;
-    am=0;
-    delta=0;
-    alpha=0;
-    theta=1;
-    rho=0;
-    
+        
     SOLVER.REMAPPING = 0;
     SOLVER.LIN = 0;
     SOLVER.AXI=0;
-    
-    SOLVER.time_factor=1;
-    
+        
     SOLVER.B_BAR=0;
     SOLVER.F_BAR=0;
     SOLVER.F_BAR_W=0;
     
-    SOLVER.INITIAL_COND=zeros(2,1);
+    SOLVER.INITIAL_PORE_PRESSURE=0;
     
     SOLVER.INIT_STEP=0;
     
@@ -50,8 +39,9 @@ function MAT_POINT=read_problem
     
     SOLVER.FAIL = 0;
     
+    SOLVER.BLOCKS = 1;
+    
     % VARIABLES
-    VARIABLE.rho_w=0;
     VARIABLE.g=0;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,6 +68,16 @@ function MAT_POINT=read_problem
     while (t<l)
         t=t+1;
         s1=a{t};
+        
+        if s1=='*'
+            if strcmp(b2{t},'TYPE_OF_PROBLEM')
+                disp('Reading problem')
+                continue
+            else
+                break
+            end
+        end
+        
         switch s1
             case '//'
                 continue
@@ -168,39 +168,13 @@ function MAT_POINT=read_problem
                     SOLVER.UW=3;
                 end
                 if SOLVER.UW>=1
-                    if VARIABLE.rho_w==0
-                        VARIABLE.rho_w=1000;
-                    end
                     if VARIABLE.g==0
                         VARIABLE.g=9.81;         % m/s2
                     end
                 end
-                continue
-            case 'WATER_DENSITY'
-                VARIABLE.rho_w=b(t);
-                continue
-            case 'INITIAL_GRAVITY'
-                if b(t)==1
-                    SOLVER.INITIAL_COND(1)=1;   %Multiplies g
-                    if VARIABLE.g==0
-                        VARIABLE.g=9.81;         % m/s2
-                    end
-                elseif b(t)==0
-                    SOLVER.INITIAL_COND(1)=0;   %Not g at the beginning
-                    if VARIABLE.g==0
-                        VARIABLE.g=9.81;         % m/s2
-                    end
-                end     
                 continue
             case 'INITIAL_PORE_PRESSURE'
-                SOLVER.INITIAL_COND(2)=b(t);   
-                continue
-            case 'INITIAL_DISPLACEMENT'
-                if strcmp(b2{t},'YES')
-                    SOLVER.INITIAL_d=1;
-                else
-                    SOLVER.INITIAL_d=0;
-                end
+                SOLVER.INITIAL_PORE_PRESSURE=b(t);   
                 continue
             case 'GRAVITY'
                 VARIABLE.g=b(t);   
@@ -214,58 +188,133 @@ function MAT_POINT=read_problem
             case 'F_BAR_W'
                 SOLVER.F_BAR_W=b(t);  
                 continue
-            case 'TIME_FINAL'
-                SOLVER.Time_final=b(t);
-                continue
-            case 'TIME_STEP'
-                SOLVER.time_step=b(t);  
-                continue
-            case 'TIME_FACTOR'
-                SOLVER.time_factor=b(t);  
-                continue
-            case 'SOLVER'
-                solver=b2{t};
-                if strcmp(solver,'IMPLICIT')
-                    SOLVER.IMPLICIT=1;
-                elseif strcmp(solver,'EXPLICIT')
-                    SOLVER.IMPLICIT=0;
-                else
-                    fprintf('Error, unrecognized parameter: %s !!\n',s1)
-                end
-                continue
             case 'SAVE_FREQUENCY'
                 SOLVER.SAVE_I=b(t); % Save info each XX steps
                 continue
             case 'FILE_FREQUENCY'
                 SOLVER.SAVE_F=b(t); % Save the file each XX steps
                 continue
+            otherwise
+                fprintf('Error, unrecognized parameter: %s !!\n',s1)
+                stop
+        end
+    end
+    
+    % BLOCKS
+    if strcmp(b2{t},'NUMBER_OF_BLOCKS')
+        t=t+1;
+        SOLVER.BLOCKS=str2double(a{t});
+        fprintf('Number of blocks: %i \n',SOLVER.BLOCKS)
+    else
+        fprintf('Error, unrecognized parameter: %s !!\n',s1)
+        stop
+    end
+    
+    % TIME INTEGRATION SCHEME
+    TIS=1*ones(SOLVER.BLOCKS,1);
+    af=0*ones(SOLVER.BLOCKS,1);
+    am=0*ones(SOLVER.BLOCKS,1);
+    delta=0*ones(SOLVER.BLOCKS,1);
+    alpha=0*ones(SOLVER.BLOCKS,1);
+    theta=1*ones(SOLVER.BLOCKS,1);
+    rho=0*ones(SOLVER.BLOCKS,1);
+    SOLVER.time_factor=1*ones(SOLVER.BLOCKS,1);
+    scheme=strings(SOLVER.BLOCKS,1);
+    FILES=strings(SOLVER.BLOCKS,4);
+    OUT=strings(SOLVER.BLOCKS,1);
+    
+    SOLVER.OutputType=zeros(1,2);
+
+    while (t<l)
+        t=t+1;
+        s1=a{t};
+        
+        if s1=='*'
+            if strcmp(b2{t},'BLOCK')
+                BLCK=str2double(b3{t});
+                fprintf('BLOCK: %i \n',BLCK)
+                t=t+1;
+                continue
+            else
+                fprintf('Error, unrecognized parameter: %s !!\n',s1)
+                stop
+            end
+        end
+        
+        switch s1
+            case '//'
+                continue
+            case 'TIME_FINAL'
+                SOLVER.Time_final(BLCK)=b(t);
+                continue
+            case 'TIME_STEP'
+                SOLVER.time_step(BLCK)=b(t);  
+                continue
+            case 'TIME_FACTOR'
+                SOLVER.time_factor(BLCK)=b(t);  
+                continue
+            case 'DYNAMIC'
+                SOLVER.DYN(BLCK)=b(t);  
+                if SOLVER.DYN(BLCK)==0
+                    scheme(BLCK)='STATIC';
+                    TIS(BLCK)=0;
+                end
+                continue
+            case 'SOLVER'
+                solver=b2{t};
+                if strcmp(solver,'IMPLICIT')
+                    SOLVER.IMPLICIT(BLCK)=1;
+                elseif strcmp(solver,'EXPLICIT')
+                    SOLVER.IMPLICIT(BLCK)=0;
+                else
+                    fprintf('Error, unrecognized parameter: %s !!\n',s1)
+                end
+                continue
+            case 'OUTPUT'
+                OUT(BLCK,1)=b2{t};
+                continue
+            case 'MATERIAL'
+                FILES(BLCK,1)=b2{t};
+                continue
+            case 'BOUNDARY_CONDITION'
+                FILES(BLCK,2)=b2{t};
+                continue
+            case 'LOAD'
+                FILES(BLCK,3)=b2{t};
+                continue
+            case 'CONTACT'
+                FILES(BLCK,4)=b2{t};
+                continue
             case 'SCHEME'
-                scheme=b2{t};
-                switch scheme
+                scheme(BLCK)=b2{t};
+                switch scheme(BLCK)
+                    case 'STATIC'
+                        TIS(BLCK)=0;
+                        continue
                     case 'NEWMARK1'
-                        TIS=1;
+                        TIS(BLCK)=1;
                         continue
                     case 'NEWMARK2'
-                        TIS=2;
+                        TIS(BLCK)=2;
                         continue
                     case 'GENERALIZED_ALPHA'
-                        TIS=3;
+                        TIS(BLCK)=3;
                         continue
                     case 'HHT'
-                        TIS=4;
+                        TIS(BLCK)=4;
                         continue
                     case 'WILSON'
-                        TIS=5;
+                        TIS(BLCK)=5;
                         continue
                     case 'WBZ'
-                        TIS=6;
+                        TIS(BLCK)=6;
                         continue
                     case 'COLLOCATION'
-                        TIS=7;
+                        TIS(BLCK)=7;
                         continue
                     case 'NEWMARK_EXPLICIT'
-                        delta=0.5;     %gamma
-                        TIS=1;
+                        delta(BLCK)=0.5;     %gamma
+                        TIS(BLCK)=1;
                         continue
                     otherwise
                         disp('Error, no such time integration scheme!')
@@ -273,34 +322,34 @@ function MAT_POINT=read_problem
                 end
                 continue 
             case 'DELTA'
-                delta=b(t); 
+                delta(BLCK)=b(t); 
                 continue
             case 'ALPHA'
-                alpha=b(t); 
+                alpha(BLCK)=b(t); 
                 continue
             case 'ALPHA_M'
-                am=b(t); 
+                am(BLCK)=b(t); 
                 continue
             case 'ALPHA_F'
-                af=b(t); 
+                af(BLCK)=b(t); 
                 continue
             case 'RHO'
-                rho=b(t); 
+                rho(BLCK)=b(t); 
                 continue
             case 'THETA'
-                theta=b(t); 
+                theta(BLCK)=b(t); 
                 continue
             case 'NEWTON_RAPHSON_LOOP'
-                SOLVER.NR=b(t); %Every NR iterations re-calculate K matrix 
+                SOLVER.NR(BLCK)=b(t); %Every NR iterations re-calculate K matrix 
                 continue
             case 'NR_TOLERANCE_RELATIVE'
-                SOLVER.rel_tolerance =b(t); 
+                SOLVER.rel_tolerance(BLCK) =b(t); 
                 continue
             case 'NR_TOLERANCE_ABSOLUTE'
-                SOLVER.abs_tolerance=b(t);  
+                SOLVER.abs_tolerance(BLCK)=b(t);  
                 continue
             case 'ITERATIONS' 
-                SOLVER.NR_iterations=b(t); 
+                SOLVER.NR_iterations(BLCK)=b(t); 
                 continue
             otherwise
                 fprintf('Error, unrecognized parameter: %s !!\n',s1)
@@ -310,46 +359,79 @@ function MAT_POINT=read_problem
     
     fclose(fid); 
 
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Add the geometry
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    MAT_POINT = read_geometry(...
+    [MAT_POINT,NODE_LIST] = read_geometry(...
         ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegrid,pathgeo);
-    
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Add a physical problem
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %--------------------------------------------------------------------------
-    % PARAMETERS
-    %--------------------------------------------------------------------------
-    % Read material properties
-    read_material;
+    SOLVER.Element=ELEMENT;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Add shape function parameters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     [MAT_POINT]=shape_function_calculation(1,MAT_POINT);
-   
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%SOLVER
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if SOLVER.IMPLICIT==0 && TIS~=1
-        disp('error with the explicit time integration scheme,')
-        disp('changed to Newmark');
-        TIS=1;
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % BLOCK problem
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    for i=1:SOLVER.BLOCKS
+        
+        if strcmp(OUT(i),'')
+           SOLVER.Output(i)='FILE.mat';
+        else
+           SOLVER.Output(i)=strcat(OUT(i),'.mat');
+        end
+
+        A=exist(SOLVER.Output(i),'file');
+
+        j=0;
+        while A==2
+            j=j+1;
+            SOLVER.Output(i)=strcat(OUT(i),'_',int2str(j),'.mat');
+            A=exist(SOLVER.Output(i),'file');
+        end
+        
+        %--------------------------------------------------------------------------
+        % PARAMETERS
+        %--------------------------------------------------------------------------
+        % Read material properties
+        read_material(FILES(i,1),i);
+
+         % SOLVER
+         %----------------------------------------------------------------------
+         if SOLVER.IMPLICIT(i)==0 && TIS(i)~=1
+             disp('error with the explicit time integration scheme,')
+             disp('changed to Newmark');
+             TIS(i)=1;
+         end
+         % Solver variables: Time Integration Scheme
+         %----------------------------------------------------------------------
+         TIME{i}=...
+             Time_Scheme(TIS(i),af(i),am(i),delta(i),alpha(i),theta(i),rho(i));
+ 
+         % Time-related conditions
+         %----------------------------------------------------------------------
+         TIME{i}.variables(i);
+ 
+         % BOUNDARY CONDITIONS
+         %----------------------------------------------------------
+         % FORCES
+         %--------------------------------------------------------------------------
+         read_load(FILES(i,3),i,NODE_LIST);
+         
+         % CONSTRAINTS
+         %--------------------------------------------------------------------------
+         read_boundary(FILES(i,2),i,NODE_LIST);
+         
+         % Contact conditions  && Potential Surface
+         %--------------------------------------------------------------------------
+         if isempty(FILES(i,4))
+            read_contact; 
+         end
     end
-    %----------------------------------------------------------------------
-    % Solver variables: Time Integration Scheme
-    %----------------------------------------------------------------------
-    TIME=Time_Scheme(TIS,af,am,delta,alpha,theta,rho);
-    
-    %----------------------------------------------------------------------
-    % Time-related conditions
-    %----------------------------------------------------------------------
-    TIME.variables;
-    
 end
 

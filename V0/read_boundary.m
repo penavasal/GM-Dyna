@@ -1,11 +1,11 @@
 
-function read_boundary
+function read_boundary(filetxt,BLCK,NODE_LIST)
 
 % File: read_boundary
 %   Read loads from boundary.txt
 %
 % Date:
-%   Version 1.0   19.04.2018
+%   Version 2.0   25.11.2019
 
     global GEOMETRY SOLVER
     
@@ -21,7 +21,7 @@ function read_boundary
     
     %FILE
 
-    fid = fopen('boundary.txt', 'rt'); % opción rt para abrir en modo texto
+    fid = fopen(filetxt, 'rt'); % opción rt para abrir en modo texto
     formato = '%s %s %s %s'; % formato de cada línea 
     data = textscan(fid, formato, 'HeaderLines', 1);
     
@@ -39,11 +39,13 @@ function read_boundary
         loads=str2double(bb{l});
     end
     
-    RANGE=zeros(sp,2*loads); % Range of loads
+    %RANGE=zeros(sp,2*loads); % Range of loads
+    NLIST=strings(loads,1); % Lista de nodos
     VECTOR=zeros(sp,loads); % Directions of loads
     VALUE = strings(loads,1);
     TIED = strings(loads,1);
     INTERVAL=zeros(2,loads); % Intervals of loads
+    OUT=zeros(loads,1);
     TYPE=zeros(loads,1);
     
 
@@ -86,66 +88,66 @@ function read_boundary
                         disp('Error, type of boundary not implemented yet!')
                         stop
                 end
-            case 'X_RANGE'
-                cc = str2double(bb{t});
-                if isnan(cc)
-                    if strcmp(bb{t},'FULL')
-                        RANGE(1,M*2-1)=L;
-                    elseif strcmp(bb{t},'INI')
-                        RANGE(1,M*2-1)=L0;
-                    else
-                        disp('Error, wrong load X range!')
-                    end
-                else
-                    RANGE(1,M*2-1)=cc;
-                end
-                cc = str2double(c{t});
-                if isnan(cc)
-                    len=strlength(c{t});
-                    if len==0 
-                        RANGE(1,M*2)=RANGE(1,M*2-1);
-                    elseif strcmp(c{t},'FULL')
-                        RANGE(1,M*2)=L;
-                    elseif strcmp(c{t},'INI')
-                        RANGE(1,M*2)=L0;
-                    else
-                        disp('Error, wrong load X range!')
-                        stop
-                    end
-                else
-                    RANGE(1,M*2)=cc;
-                end
-                continue
-            case 'Y_RANGE'
-                cc = str2double(bb{t});
-                if isnan(cc)
-                    if strcmp(bb{t},'FULL')
-                        RANGE(2,M*2-1)=H;
-                    elseif strcmp(bb{t},'INI')
-                        RANGE(2,M*2-1)=H0;
-                    else
-                        disp('Error, wrong load Y range!')
-                    end
-                else
-                    RANGE(2,M*2-1)=cc;
-                end
-                cc = str2double(c{t});
-                if isnan(cc)
-                    len=strlength(c{t});
-                    if len==0 
-                        RANGE(2,M*2)=RANGE(2,M*2-1);
-                    elseif strcmp(c{t},'FULL')
-                        RANGE(2,M*2)=H;
-                    elseif strcmp(c{t},'INI')
-                        RANGE(2,M*2)=H0;
-                    else
-                        disp('Error, wrong load Y range!')
-                        stop
-                    end
-                else
-                    RANGE(2,M*2)=cc;
-                end
-                continue
+%             case 'X_RANGE'
+%                 cc = str2double(bb{t});
+%                 if isnan(cc)
+%                     if strcmp(bb{t},'FULL')
+%                         RANGE(1,M*2-1)=L;
+%                     elseif strcmp(bb{t},'INI')
+%                         RANGE(1,M*2-1)=L0;
+%                     else
+%                         disp('Error, wrong load X range!')
+%                     end
+%                 else
+%                     RANGE(1,M*2-1)=cc;
+%                 end
+%                 cc = str2double(c{t});
+%                 if isnan(cc)
+%                     len=strlength(c{t});
+%                     if len==0 
+%                         RANGE(1,M*2)=RANGE(1,M*2-1);
+%                     elseif strcmp(c{t},'FULL')
+%                         RANGE(1,M*2)=L;
+%                     elseif strcmp(c{t},'INI')
+%                         RANGE(1,M*2)=L0;
+%                     else
+%                         disp('Error, wrong load X range!')
+%                         stop
+%                     end
+%                 else
+%                     RANGE(1,M*2)=cc;
+%                 end
+%                 continue
+%             case 'Y_RANGE'
+%                 cc = str2double(bb{t});
+%                 if isnan(cc)
+%                     if strcmp(bb{t},'FULL')
+%                         RANGE(2,M*2-1)=H;
+%                     elseif strcmp(bb{t},'INI')
+%                         RANGE(2,M*2-1)=H0;
+%                     else
+%                         disp('Error, wrong load Y range!')
+%                     end
+%                 else
+%                     RANGE(2,M*2-1)=cc;
+%                 end
+%                 cc = str2double(c{t});
+%                 if isnan(cc)
+%                     len=strlength(c{t});
+%                     if len==0 
+%                         RANGE(2,M*2)=RANGE(2,M*2-1);
+%                     elseif strcmp(c{t},'FULL')
+%                         RANGE(2,M*2)=H;
+%                     elseif strcmp(c{t},'INI')
+%                         RANGE(2,M*2)=H0;
+%                     else
+%                         disp('Error, wrong load Y range!')
+%                         stop
+%                     end
+%                 else
+%                     RANGE(2,M*2)=cc;
+%                 end
+%                 continue
             case 'VECTOR'
                 VECTOR(1,M)=str2double(bb{t});
                 VECTOR(2,M)=str2double(c{t});
@@ -156,6 +158,12 @@ function read_boundary
             case 'VALUE'
                 VALUE(M)=bb{t};
                 continue
+            case 'OUTPUT'
+                OUT(M)=str2double(bb{t});
+                continue
+            case 'NODE_LIST'
+                NLIST(M)=bb{t};
+                continue
             case 'TIED'
                 TIED(M)=bb{t};
                 continue
@@ -164,15 +172,27 @@ function read_boundary
                 val2=str2double(c{t});
                 if isnan(val)
                     if strcmp(bb{t},'FULL')
-                        INTERVAL(1,M)=0;
-                        INTERVAL(2,M)=SOLVER.Time_final;
+                        if BLCK==1
+                            INTERVAL(1,M)=0;
+                        else
+                            INTERVAL(1,M)=SOLVER.Time_final(BLCK-1);
+                        end
+                        INTERVAL(2,M)=SOLVER.Time_final(BLCK);
                     elseif strcmp(bb{t},'INI')
-                        INTERVAL(1,M)=0;
+                        if BLCK==1
+                            INTERVAL(1,M)=0;
+                        else
+                            INTERVAL(1,M)=SOLVER.Time_final(BLCK-1);
+                        end
                         if isnan(val2)
                             if strcmp(c{t},'FULL')
-                                INTERVAL(2,M)=SOLVER.Time_final;
+                                INTERVAL(2,M)=SOLVER.Time_final(BLCK);
                             elseif strcmp(c{t},'INI') || strcmp(c{t},'')
-                                INTERVAL(2,M)=0;
+                                if BLCK==1
+                                    INTERVAL(2,M)=0;
+                                else
+                                    INTERVAL(2,M)=SOLVER.Time_final(BLCK-1);
+                                end
                             end
                         else
                             if val2==0
@@ -190,7 +210,7 @@ function read_boundary
                     val=str2double(c{t});
                     if isnan(val)
                         if c{t}=='FULL'
-                            INTERVAL(2,M)=SOLVER.Time_final;
+                            INTERVAL(2,M)=SOLVER.Time_final(BLCK);
                         else
                             disp('Error, wrong load interval!')
                             stop
@@ -209,86 +229,72 @@ function read_boundary
     
     fclose(fid);
     
-    [b_mult_ini]=interval(INTERVAL,loads);
-    [b_nds]=localization(RANGE,loads,TIED,TYPE);
+    interval(INTERVAL,VALUE,loads,BLCK);
+    %[b_nds]=localization(RANGE,loads,TIED,TYPE);
     
-    calculate_boundaries(b_mult_ini,b_nds,VALUE,VECTOR,TYPE,loads);
-end
-
-function [Load_nds]=localization(R,mats,TIED,TYPE)
-
-    global GEOMETRY
-    x_0=GEOMETRY.x_0;
-    [nodes,~]=size(x_0);
-    Load_nds=zeros(nodes,mats);
+    calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads);
     
-    for m=1:mats
-        for nodo=1:nodes
-            tol=GEOMETRY.h_nds(nodo,1)/5;
-            if (x_0(nodo,2)>=R(2,m*2-1)-tol) && (x_0(nodo,2)<=R(2,m*2)+tol) 
-                if (x_0(nodo,1)>=R(1,m*2-1)-tol) && (x_0(nodo,1)<=R(1,m*2)+tol)
-                    if TYPE(m)~=5
-                        Load_nds(nodo,m)=1;
-                    else
-                        for k=1:mats
-                            if TYPE(k)==5 && k~=m
-                                if strcmp(TIED(m),'X')
-                                    D=R(1,k*2-1);
-                                elseif strcmp(TIED(m),'Y')
-                                    D=R(2,k*2-1);
-                                else
-                                    disp('no defined tied direction')
-                                    stop
-                                end 
-                            end
-                        end
-                        for j=1:nodes
-                            if strcmp(TIED(m),'X') && (nodo~=j)
-                                if (x_0(j,2)>=x_0(nodo,2)-tol) && (x_0(j,2)<=x_0(nodo,2)+tol)
-                                    if (x_0(j,1)>=D-tol) && (x_0(j,1)<=D+tol)
-                                        Load_nds(nodo,m)=j;
-                                        break;
-                                    end
-                                end
-                            elseif strcmp(TIED(m),'Y') && (nodo~=j)
-                                if (x_0(j,1)>=x_0(nodo,1)-tol) && (x_0(j,1)<=x_0(nodo,1)+tol)
-                                    if (x_0(j,2)>=D-tol) && (x_0(j,2)<=D+tol) 
-                                        Load_nds(nodo,m)=j;
-                                        break;
-                                    end
-                                end
-                            end
-                        end
-                    end
+    for i=1:loads
+        if OUT(i)==1
+            tt=0;
+            for j=1:length(SOLVER.OutputType(:,1))
+                if SOLVER.OutputType(j,1)==0
+                    SOLVER.OutputType(j,1)=1;
+                    SOLVER.OutputType(j,2)=i;
+                    tt=0;
+                    break;
+                elseif SOLVER.OutputType(j,1)==1 && SOLVER.OutputType(j,2)==i
+                    tt=0;
+                    break;
+                else
+                    tt=1;
                 end
             end
-        end
-    end
-
-end
-
-function [load_mult]=interval(INTERVAL,loads)
-
-    global SOLVER TIME
-
-    load_mult=zeros(SOLVER.step_final,loads);
-    
-    for m=1:loads
-        for i=1:SOLVER.step_final
-            t=TIME.t(i);
-            if t>=INTERVAL(1,m) && t<=INTERVAL(2,m)
-                load_mult(i,m)=1;
+            if tt==1
+                j=j+1;
+                SOLVER.OutputType(j,1)=1;
+                SOLVER.OutputType(j,2)=i;
             end
         end
-        
+    end
+end
+
+function interval(INTERVAL,VALUE,loads,BLCK)
+
+    global SOLVER TIME BOUNDARY
+    
+    if BLCK==1
+        ini=1;
+        fin=SOLVER.step_final(BLCK);
+    else
+        ini=SOLVER.step_final(BLCK-1);
+        fin=SOLVER.step_final(BLCK);
+    end
+    
+    BOUNDARY.b_mult(fin,loads)=' ';
+    
+    for m=1:loads
+        for i=ini:SOLVER.step_final(BLCK)
+            t=TIME{BLCK}.t(i);
+            if t>=INTERVAL(1,m) && t<=INTERVAL(2,m)
+                BOUNDARY.b_mult(i,m)=1;
+                val=str2double(VALUE(m));
+                if isnan(val)
+                    t=TIME{BLCK}.t(i);
+                    val=eval(VALUE(m));
+                end
+                BOUNDARY.b_mult(i,m)=num2str(val);
+            else
+                BOUNDARY.b_mult(i,m)='NULL';
+            end
+        end 
     end
 
 end
 
-function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
-    loads)
+function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads)
     
-    global GEOMETRY SOLVER TIME BOUNDARY
+    global GEOMETRY SOLVER BOUNDARY
     
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
@@ -297,13 +303,14 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
     BOUNDARY.dad  = zeros(GEOMETRY.nodes*df,loads);
     BOUNDARY.vad  = zeros(GEOMETRY.nodes*df,loads);
     BOUNDARY.Type = TYPE;
-    BOUNDARY.tied = zeros(GEOMETRY.nodes*df,loads);
-    b_mult = strings(size(load_mult_ini)); 
+    BOUNDARY.tied = zeros(GEOMETRY.nodes*df,loads); 
     
     BOUNDARY.size=loads;
+    
+    bcs=NODE_LIST.bcs;
+    BC=NODE_LIST.BC;
 
     for m=1:loads
-        
         % Direction
         V=VECTOR(:,m)';
         nv=norm(V);
@@ -315,98 +322,162 @@ function calculate_boundaries(load_mult_ini,load_nds,VALUE,VECTOR,TYPE,...
             V=V/norm(V);
         end
         
+        %NODE LIST
+        
+        ll=str2double(NLIST(m));
+        if isnan(ll)
+            if strcmp(NLIST(m),'FULL') && (TYPE(m)~=5)
+                nod_f=linspace(1,nodes);
+            else
+                fprintf('Error, unrecognized list of nodes: %s !! \n',ll)
+                stop
+            end
+        else
+            if ll>bcs
+                fprintf('Error, unrecognized list of nodes: %i !! \n',ll)
+                stop
+            else
+                nod_f=BC{ll};
+            end 
+        end
+        
+        
         % Nodes
-        for i=1:GEOMETRY.nodes
-            if load_nds(i,m)
-                if SOLVER.UW==0 && (TYPE(m)==2 || TYPE(m)==4)
-                    disp('error, take care of the water boundary conditions!!');
-                elseif SOLVER.UW==1 && TYPE(m)==6
-                    disp('error, take care of the water boundary conditions!!');
-                elseif SOLVER.UW==2 && (TYPE(m)==2 || TYPE(m)==4)
-                    disp('error, take care of the water boundary conditions!!');
-                elseif (TYPE(m)==2) || (TYPE(m)==1 && SOLVER.UW==0)
+            
+        if SOLVER.UW==0 && (TYPE(m)==2 || TYPE(m)==4)
+            disp('error, take care of the water boundary conditions!!');
+            stop
+        elseif SOLVER.UW==1 && TYPE(m)==6
+            disp('error, take care of the water boundary conditions!!');
+            stop
+        elseif SOLVER.UW==2 && (TYPE(m)==2 || TYPE(m)==4)
+            disp('error, take care of the water boundary conditions!!');
+            stop
+        else
+            [long,~]=size(nod_f);
+            for i=1:long
+                if (TYPE(m)==2) || (TYPE(m)==1 && SOLVER.UW==0)
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.dad(i*df+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(i*df+1-k,m)=1;
+                            BOUNDARY.dad(nod_f(i)*df+1-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(nod_f(i)*df+1-k,m)=1;
                         end
                     end
                 elseif TYPE(m)==1 && SOLVER.UW==1
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.dad(i*df-sp+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(i*df-sp+1-k,m)=1;
+                            BOUNDARY.dad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(nod_f(i)*df-sp+1-k,m)=1;
                         end
                     end
                 elseif TYPE(m)==1 && SOLVER.UW==2
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.dad(i*df-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(i*df-k,m)=1;
+                            BOUNDARY.dad(nod_f(i)*df-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(nod_f(i)*df-k,m)=1;
                         end
                     end
                 elseif (TYPE(m)==4) || (TYPE(m)==3 && SOLVER.UW==0)
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.vad(i*df+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(i*df+1-k,m)=2;
+                            BOUNDARY.vad(nod_f(i)*df+1-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(nod_f(i)*df+1-k,m)=2;
                         end
                     end
                 elseif TYPE(m)==3 && SOLVER.UW==1
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.vad(i*df-sp+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(i*df-sp+1-k,m)=2;
+                            BOUNDARY.vad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(nod_f(i)*df-sp+1-k,m)=2;
                         end
                     end
                 elseif TYPE(m)==3 && SOLVER.UW==2
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.vad(i*df-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(i*df-k,m)=2;
+                            BOUNDARY.vad(nod_f(i)*df-k,m)=V(sp+1-k);
+                            BOUNDARY.constrains(nod_f(i)*df-k,m)=2;
                         end
                     end
                 elseif TYPE(m)==5
-                    for k=1:sp
-                        if V(sp+1-k)~=0
-                            if SOLVER.UW==1
-                                BOUNDARY.dad(i*df-sp+1-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(i*df-sp+1-k,m)=3;
-                                BOUNDARY.tied(i*df-sp+1-k,m)=...
-                                    load_nds(i,m)*df-sp+1-k;
-                            else
-                                BOUNDARY.dad(i*df+1-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(i*df+1-k,m)=3;
-                                BOUNDARY.tied(i*df+1-k,m)=...
-                                    load_nds(i,m)*df+1-k;
-                            end
-                        end
-                    end
+                    disp('check!!! tied nodes')
+                    stop
+%                     for k=1:sp
+%                         if V(sp+1-k)~=0
+%                             if SOLVER.UW==1
+%                                 BOUNDARY.dad(i*df-sp+1-k,m)=sign(V(sp+1-k));
+%                                 BOUNDARY.constrains(i*df-sp+1-k,m)=3;
+%                                 BOUNDARY.tied(i*df-sp+1-k,m)=...
+%                                     load_nds(i,m)*df-sp+1-k;
+%                             else
+%                                 BOUNDARY.dad(i*df+1-k,m)=sign(V(sp+1-k));
+%                                 BOUNDARY.constrains(i*df+1-k,m)=3;
+%                                 BOUNDARY.tied(i*df+1-k,m)=...
+%                                     load_nds(i,m)*df+1-k;
+%                             end
+%                         end
+%                     end
                 elseif TYPE(m)==6 && SOLVER.UW==2
-                    BOUNDARY.dad(i*df,m)=1;
-                    BOUNDARY.constrains(i*df,m)=1;
+                    BOUNDARY.dad(nod_f(i)*df,m)=1;
+                    BOUNDARY.constrains(nod_f(i)*df,m)=1;
                 end
                 if SOLVER.UW==0 && sp~=df
                     % No water
-                    BOUNDARY.constrains(i*df,m)=1;
-                    BOUNDARY.constrains(i*df-1,m)=1;
+                    BOUNDARY.constrains(nod_f(i)*df,m)=1;
+                    BOUNDARY.constrains(nod_f(i)*df-1,m)=1;
                 end
             end
-        end
-        
-        %Values
-        for i=1:SOLVER.step_final
-            val=str2double(VALUE(m));
-            if isnan(val)
-                t=TIME.t(i);
-                val=eval(VALUE(m));
-            end
-            if load_mult_ini(i,m)==1
-                b_mult(i,m)=num2str(val);
-            else
-                b_mult(i,m)='NULL';
-            end
-        end
+        end    
     end
-    BOUNDARY.b_mult=b_mult;
 end
+
+% function [Load_nds]=localization(R,mats,TIED,TYPE)
+% 
+%     global GEOMETRY
+%     x_0=GEOMETRY.x_0;
+%     [nodes,~]=size(x_0);
+%     Load_nds=zeros(nodes,mats);
+%     
+%     for m=1:mats
+%         for nodo=1:nodes
+%             tol=GEOMETRY.h_nds(nodo,1)/5;
+%             if (x_0(nodo,2)>=R(2,m*2-1)-tol) && (x_0(nodo,2)<=R(2,m*2)+tol) 
+%                 if (x_0(nodo,1)>=R(1,m*2-1)-tol) && (x_0(nodo,1)<=R(1,m*2)+tol)
+%                     if TYPE(m)~=5
+%                         Load_nds(nodo,m)=1;
+%                     else
+%                         for k=1:mats
+%                             if TYPE(k)==5 && k~=m
+%                                 if strcmp(TIED(m),'X')
+%                                     D=R(1,k*2-1);
+%                                 elseif strcmp(TIED(m),'Y')
+%                                     D=R(2,k*2-1);
+%                                 else
+%                                     disp('no defined tied direction')
+%                                     stop
+%                                 end 
+%                             end
+%                         end
+%                         for j=1:nodes
+%                             if strcmp(TIED(m),'X') && (nodo~=j)
+%                                 if (x_0(j,2)>=x_0(nodo,2)-tol) && (x_0(j,2)<=x_0(nodo,2)+tol)
+%                                     if (x_0(j,1)>=D-tol) && (x_0(j,1)<=D+tol)
+%                                         Load_nds(nodo,m)=j;
+%                                         break;
+%                                     end
+%                                 end
+%                             elseif strcmp(TIED(m),'Y') && (nodo~=j)
+%                                 if (x_0(j,1)>=x_0(nodo,1)-tol) && (x_0(j,1)<=x_0(nodo,1)+tol)
+%                                     if (x_0(j,2)>=D-tol) && (x_0(j,2)<=D+tol) 
+%                                         Load_nds(nodo,m)=j;
+%                                         break;
+%                                     end
+%                                 end
+%                             end
+%                         end
+%                     end
+%                 end
+%             end
+%         end
+%     end
+% 
+% end

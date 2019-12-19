@@ -1,55 +1,48 @@
 
-function Explicit_solver(MAT_POINT)
+function Explicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
+                Mat_state,GLOBAL,MATRIX,load_s)
 
-    tic;
-    
     %--------------------------------------------------------------------------
     % Initialize variables
     %--------------------------------------------------------------------------
-    global GEOMETRY SOLVER TIME VARIABLE
-
-    %----------------------------------------------------------------------
-    % Initial state & initial shape functions and matrixes - Save
-    %----------------------------------------------------------------------
-    
-    [ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,OUTPUT,...
-        ~,load_s,MATRIX]=init(MAT_POINT);
-    
-    save(OUTPUT.name, 'GEOMETRY','VARIABLE','SOLVER');
-    
-    %[MATRIX]   = MATRIX.lumped_mass(MAT_POINT,MATRIX);
-    %[MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
+    global GEOMETRY SOLVER TIME
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % LOOP
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    for ste=ste+1:SOLVER.step_final
+    for ste=ste+1:SOLVER.step_final(BLCK)
+        
+        if ste==1
+            time_step=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
+        else
+            time_step=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
+        end 
+        gamma=TIME{BLCK}.gamma;
+        
 
         % 1. Forces
         load_s(:,2)=load_s(:,1);
-        [load_s(:,1),OUTPUT]=calculate_forces...
-            (ste,MAT_POINT,Disp_field,Mat_state,OUTPUT,MATRIX);
+        [load_s(:,1),out_list1]=calculate_forces...
+            (ste,MAT_POINT,Disp_field,Mat_state,MATRIX,BLCK);
 
         % --------------------------------------------------------
         % 2. Predictor         
         [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
-            (ste,Disp_field,MAT_POINT,Mat_state);
+            (ste,Disp_field,MAT_POINT,Mat_state,time_step,gamma);
         
 
         % 3. Recompute mass and damping matrices
-        [MATRIX] = MATRIX.lumped_mass(MAT_POINT,MATRIX);
+        [MATRIX] = MATRIX.lumped_mass(MAT_POINT,MATRIX,BLCK);
         [MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
 
         % 4. Constitutive &/O Stiffness_mat
         [~,Int_var,Mat_state]=...
-            Constitutive(3,ste,Int_var,Mat_state,MAT_POINT);
-
-        [OUTPUT]=LIB.reaction(Mat_state.fint,OUTPUT);
+            Constitutive(3,ste,Int_var,Mat_state,MAT_POINT,BLCK);
 
         %  5. Final conditions: corrector
         
         [Disp_field]=explicit_corrector...
-            (ste,MATRIX,Disp_field,load_s,Mat_state.fint);
+            (ste,MATRIX,Disp_field,load_s,Mat_state.fint,time_step,gamma);
 
         % 6. Storage
         if rem(ste,SOLVER.SAVE_I)==0
@@ -57,9 +50,8 @@ function Explicit_solver(MAT_POINT)
             ste_p=ste_p+1;
             fprintf('ste_p %i \n',ste_p);
 
-            for i=1:OUTPUT.number
-                OUTPUT.list(ste_p,i)=OUTPUT.inst(i);
-            end
+            [out_list2]=LIB.reaction(Mat_state.fint);
+            GLOBAL.OutputList(ste_p,:)=out_list1+out_list2;
     
             GLOBAL.d(:,ste_p)   = Disp_field.d(:,1);
             GLOBAL.a(:,ste_p)   = Disp_field.a(:,1);
@@ -93,15 +85,15 @@ function Explicit_solver(MAT_POINT)
                 GLOBAL.Fw(:,ste_p) = Mat_state.Fw(:,1);
             end
 
-            TIME.tp(ste_p,1)=TIME.t(ste);
+            GLOBAL.tp(ste_p,1)=TIME{BLCK}.t(ste);
+            GLOBAL.ste_p=ste_p;
       
         end
 
         % 7. Save info
         if ((rem(ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) ...
                 || (ste==SOLVER.step_final) || (SOLVER.FAIL==1))
-            save(OUTPUT.name,'ste','ste_p','TIME','MAT_POINT',...
-                'GLOBAL','OUTPUT','-append')
+            save(SOLVER.Output(BLCK),'MAT_POINT','GLOBAL','-append')
         end
         
         % 8.. Update
@@ -127,11 +119,6 @@ function Explicit_solver(MAT_POINT)
         Int_var.dgamma(:,2) = Int_var.dgamma(:,1);
 
     end
-    
-    tfin=toc;
-    
-    disp(tfin);
-
 
 end
 

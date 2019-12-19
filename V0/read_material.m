@@ -1,5 +1,5 @@
 
-function read_material
+function read_material(filetxt,BLCK)
 
 % File: read_material
 %   Read the material type and properties from mat.txt
@@ -9,12 +9,14 @@ function read_material
 % 5-DP Plain strain, 6-MCC
 %
 % Date:
-%   Version 1.0   21.03.2018
+%   Version 2.0   25.11.2019
 
     global MATERIAL SOLVER GEOMETRY
     
     x_0=GEOMETRY.x_0;
     [~,sp]=size(x_0);
+    
+    mat_e=GEOMETRY.material;
     
     %GEOM
     L=max(x_0(:,1));
@@ -25,7 +27,7 @@ function read_material
     
     %FILE
 
-    fid = fopen('mat.txt', 'rt'); % opción rt para abrir en modo texto
+    fid = fopen(filetxt, 'rt'); % opción rt para abrir en modo texto
     formato = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s '; % formato de cada línea 
     data = textscan(fid, formato, 'HeaderLines', 1);
 
@@ -41,12 +43,20 @@ function read_material
         l=l+1;
         mats=str2double(bb{l});
     end
-    MATERIAL.MAT=zeros(41,mats);   % Numero máximo de propiedades reconocidas
-    MATERIAL.MODEL=zeros(mats,1);
-    RANGE=zeros(sp,2*mats); % Range of for materials
+    
+    mats2=max(mat_e);
+    if mats2<=mats
+        MATERIAL(BLCK).number=mats;
+    else
+        fprintf('Error, need more materials \n')
+        stop
+    end
+    
+    MATERIAL(BLCK).MAT=zeros(42,mats);   % Numero máximo de propiedades reconocidas
+    MATERIAL(BLCK).MODEL=zeros(mats,1);
+    %RANGE=zeros(sp,2*mats); % Range of for materials
 
     M=0;
-    K0=0;
     ks=0;
     kw=0;
     t=l;
@@ -61,222 +71,218 @@ function read_material
             s2=c{t};
             switch s2
                 case 'LINEAR_ELASTIC'
-                    MATERIAL.MODEL(M)=0;
+                    MATERIAL(BLCK).MODEL(M)=0;
                     continue
                 case 'NEO_HOOKEAN' 
-                    MATERIAL.MODEL(M)=1.0;
+                    MATERIAL(BLCK).MODEL(M)=1.0;
                     continue
                 case 'NEO_HOOKEAN_WRIGGERS' 
-                    MATERIAL.MODEL(M)=1.0;
+                    MATERIAL(BLCK).MODEL(M)=1.0;
                     continue
                 case 'NEO_HOOKEAN_BONET' 
-                    MATERIAL.MODEL(M)=1.1;
+                    MATERIAL(BLCK).MODEL(M)=1.1;
                     continue
                 case 'NEO_HOOKEAN_EHLERS' 
-                    MATERIAL.MODEL(M)=1.2;
+                    MATERIAL(BLCK).MODEL(M)=1.2;
                     continue
                 case 'VON_MISES'
-                    MATERIAL.MODEL(M)=2.0;
+                    MATERIAL(BLCK).MODEL(M)=2.0;
                     continue
                 case 'DRUCKER_PRAGER'
-                    MATERIAL.MODEL(M)=2.1;
+                    MATERIAL(BLCK).MODEL(M)=2.1;
                     continue
                 case 'DRUCKER_PRAGER_O'
-                    MATERIAL.MODEL(M)=2.1;
+                    MATERIAL(BLCK).MODEL(M)=2.1;
                     continue
                 case 'DRUCKER_PRAGER_I'
-                    MATERIAL.MODEL(M)=2.2;
+                    MATERIAL(BLCK).MODEL(M)=2.2;
                     continue
                 case 'DRUCKER_PRAGER_PS'
-                    MATERIAL.MODEL(M)=2.3;
+                    MATERIAL(BLCK).MODEL(M)=2.3;
                     continue
                 case 'MODIFIED_CAM_CLAY'
-                    MATERIAL.MODEL(M)=3.0;
+                    MATERIAL(BLCK).MODEL(M)=3.0;
                     continue
                 case 'MODIFIED_CAM_CLAY_VISCO'
-                    MATERIAL.MODEL(M)=3.1;
+                    MATERIAL(BLCK).MODEL(M)=3.1;
                     continue
                 case 'PZ_FORWARD'
-                    MATERIAL.MODEL(M)=4.2;
+                    MATERIAL(BLCK).MODEL(M)=4.2;
                     continue
                 case 'PZ_MODIFIEDEULER'
-                    MATERIAL.MODEL(M)=4.3;
+                    MATERIAL(BLCK).MODEL(M)=4.3;
                     continue
                 case 'PZ_BACKWARD'
-                    MATERIAL.MODEL(M)=4.1;
+                    MATERIAL(BLCK).MODEL(M)=4.1;
                     continue
                 otherwise
                     disp('Error, no such material model!')
                     stop
             end
         end
-        if strcmp(s1,'X_RANGE')
-            d = str2double(bb{t});
-            if isnan(d)
-                if strcmp(bb{t},'FULL')
-                    RANGE(1,M*2-1)=L;
-                elseif strcmp(bb{t},'INI')
-                    RANGE(1,M*2-1)=L0;
-                else
-                    disp('Error, wrong material range!')
-                    stop
-                end
-            else
-                RANGE(1,M*2-1)=d;
-            end
-            d = str2double(c{t});
-            if isnan(d)
-                if strcmp(c{t},'FULL')
-                    RANGE(1,M*2)=L;
-                elseif strcmp(c{t},'INI')
-                    RANGE(1,M*2)=L0;
-                else
-                    disp('Error, wrong material range!')
-                    stop
-                end
-            else
-                RANGE(1,M*2)=d;
-            end
-            continue
-        end
-        if strcmp(s1,'Y_RANGE')
-            d = str2double(bb{t});
-            if isnan(d)
-                if strcmp(bb{t},'FULL')
-                    RANGE(2,M*2-1)=H;
-                elseif strcmp(bb{t},'INI')
-                    RANGE(2,M*2-1)=H0;
-                else
-                    disp('Error, wrong material range!')
-                    stop
-                end
-            else
-                RANGE(2,M*2-1)=d;
-            end
-            d = str2double(c{t});
-            if isnan(d)
-                if strcmp(c{t},'FULL')
-                    RANGE(2,M*2)=H;
-                elseif strcmp(c{t},'INI')
-                    RANGE(2,M*2)=H0;
-                else
-                    disp('Error, wrong material range!')
-                    stop
-                end
-            else
-                RANGE(2,M*2)=d;
-            end
-            continue
-        end
+%         if strcmp(s1,'X_RANGE')
+%             d = str2double(bb{t});
+%             if isnan(d)
+%                 if strcmp(bb{t},'FULL')
+%                     RANGE(1,M*2-1)=L;
+%                 elseif strcmp(bb{t},'INI')
+%                     RANGE(1,M*2-1)=L0;
+%                 else
+%                     disp('Error, wrong material range!')
+%                     stop
+%                 end
+%             else
+%                 RANGE(1,M*2-1)=d;
+%             end
+%             d = str2double(c{t});
+%             if isnan(d)
+%                 if strcmp(c{t},'FULL')
+%                     RANGE(1,M*2)=L;
+%                 elseif strcmp(c{t},'INI')
+%                     RANGE(1,M*2)=L0;
+%                 else
+%                     disp('Error, wrong material range!')
+%                     stop
+%                 end
+%             else
+%                 RANGE(1,M*2)=d;
+%             end
+%             continue
+%         end
+%         if strcmp(s1,'Y_RANGE')
+%             d = str2double(bb{t});
+%             if isnan(d)
+%                 if strcmp(bb{t},'FULL')
+%                     RANGE(2,M*2-1)=H;
+%                 elseif strcmp(bb{t},'INI')
+%                     RANGE(2,M*2-1)=H0;
+%                 else
+%                     disp('Error, wrong material range!')
+%                     stop
+%                 end
+%             else
+%                 RANGE(2,M*2-1)=d;
+%             end
+%             d = str2double(c{t});
+%             if isnan(d)
+%                 if strcmp(c{t},'FULL')
+%                     RANGE(2,M*2)=H;
+%                 elseif strcmp(c{t},'INI')
+%                     RANGE(2,M*2)=H0;
+%                 else
+%                     disp('Error, wrong material range!')
+%                     stop
+%                 end
+%             else
+%                 RANGE(2,M*2)=d;
+%             end
+%             continue
+%         end
         if strcmp(s1, '//')
         	continue
         end
         switch s1
             case 'YOUNG'
-                MATERIAL.MAT(1,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(1,M)=str2double(bb{t});
                 continue
             case 'POISSON'
-                MATERIAL.MAT(2,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(2,M)=str2double(bb{t});
                 continue
             case 'DENSITY'
-                MATERIAL.MAT(3,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(3,M)=str2double(bb{t});
                 continue
             case 'SHEAR_MODULUS'
-                MATERIAL.MAT(4,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(4,M)=str2double(bb{t});
                 continue
             case 'GHAR'
-                MATERIAL.MAT(4,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(4,M)=str2double(bb{t});
                 continue
             case 'LAME_CONSTANT'
-                MATERIAL.MAT(5,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(5,M)=str2double(bb{t});
                 continue
             case 'BULK_MODULUS'
-                MATERIAL.MAT(29,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(29,M)=str2double(bb{t});
                 continue
             case 'KHAR'
-                MATERIAL.MAT(29,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(29,M)=str2double(bb{t});
                 continue
             case 'CONSTRAINED_MODULUS'
-                MATERIAL.MAT(17,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(17,M)=str2double(bb{t});
                 continue
             case 'WAVE_SPEED'
-                MATERIAL.MAT(6,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(6,M)=str2double(bb{t});
                 continue
             case 'YIELD_STRESS'
-                MATERIAL.MAT(7,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(7,M)=str2double(bb{t});
                 continue
             case 'COHESION'
-                MATERIAL.MAT(7,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(7,M)=str2double(bb{t});
                 continue
             case 'PRECONSOLIDATION'
-                MATERIAL.MAT(7,M)=str2double(bb{t});     % Preconsolidation, before OCR
+                MATERIAL(BLCK).MAT(7,M)=str2double(bb{t});     % Preconsolidation, before OCR
                 continue
             case 'INITIAL_PRESSURE'
-                MATERIAL.MAT(25,M)=str2double(bb{t});    % Initial pressure
+                MATERIAL(BLCK).MAT(25,M)=str2double(bb{t});    % Initial pressure
                 continue
             case 'P0'
-                MATERIAL.MAT(25,M)=str2double(bb{t});    % Initial pressure
+                MATERIAL(BLCK).MAT(25,M)=str2double(bb{t});    % Initial pressure
                 continue
             case 'HARDENING'
-                MATERIAL.MAT(8,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(8,M)=str2double(bb{t});
                 continue
             case 'HARDENING_EXPONENT'
-                MATERIAL.MAT(9,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(9,M)=str2double(bb{t});
                 continue
             case 'EPSILON0'
-                MATERIAL.MAT(10,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(10,M)=str2double(bb{t});
                 continue
             case 'FRICTION_ANGLE'
-                MATERIAL.MAT(11,M)=str2double(bb{t})* pi/180;
+                MATERIAL(BLCK).MAT(11,M)=str2double(bb{t})* pi/180;
                 continue
             case 'DILATANCY_ANGLE'
-                MATERIAL.MAT(12,M)=str2double(bb{t})* pi/180;
+                MATERIAL(BLCK).MAT(12,M)=str2double(bb{t})* pi/180;
                 continue
             case 'VISCOSITY'
-                MATERIAL.MAT(13,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(13,M)=str2double(bb{t});
                 continue
             case 'GAMMA0'
-                MATERIAL.MAT(13,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(13,M)=str2double(bb{t});
                 continue
             case 'VISCOSITY_EXPONENT'
-                MATERIAL.MAT(14,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(14,M)=str2double(bb{t});
                 continue
             case 'N'
-                MATERIAL.MAT(14,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(14,M)=str2double(bb{t});
                 continue
             case 'PERMEABILITY'
-                MATERIAL.MAT(15,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(15,M)=str2double(bb{t});
                 continue
             case 'POROSITY'
-                MATERIAL.MAT(16,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(16,M)=str2double(bb{t});
                 continue
             case 'WATER_BULK_MODULUS'
-                MATERIAL.MAT(18,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(18,M)=str2double(bb{t});
                 continue
             case 'CRITICAL_STATE_LINE'
-                MATERIAL.MAT(19,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(19,M)=str2double(bb{t});
                 continue
             case 'MF'
-                MATERIAL.MAT(19,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(19,M)=str2double(bb{t});
                 continue
             case 'ALPHA_PARAMETER'
-                MATERIAL.MAT(20,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(20,M)=str2double(bb{t});
                 continue
             case 'LAMBDA'
-                MATERIAL.MAT(21,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(21,M)=str2double(bb{t});
                 continue
             case 'KAPPA'
-                MATERIAL.MAT(22,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(22,M)=str2double(bb{t});
                 continue
             case 'INITIAL_VOLUMETRIC_STRAIN'
-                MATERIAL.MAT(23,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(23,M)=str2double(bb{t});
                 continue
             case 'OCR'
-                MATERIAL.MAT(24,M)=str2double(bb{t});
-                continue
-            case 'K0'
-                MATERIAL.MAT(26,M)=str2double(bb{t});
-                K0=1;
+                MATERIAL(BLCK).MAT(24,M)=str2double(bb{t});
                 continue
             case 'KS'
                 ks=str2double(bb{t});
@@ -285,40 +291,43 @@ function read_material
                 kw=str2double(bb{t});
                 continue
             case 'CREEP_INDEX'
-                MATERIAL.MAT(30,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(30,M)=str2double(bb{t});
                 continue
             case 'REFERENCE_TIME'
-                MATERIAL.MAT(31,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(31,M)=str2double(bb{t});
                 continue
             case 'MG'
-                MATERIAL.MAT(32,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(32,M)=str2double(bb{t});
                 continue
             case 'ALPHA_F'
-                MATERIAL.MAT(33,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(33,M)=str2double(bb{t});
                 continue
             case 'ALPHA_G'
-                MATERIAL.MAT(34,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(34,M)=str2double(bb{t});
                 continue
             case 'BETA0'
-                MATERIAL.MAT(35,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(35,M)=str2double(bb{t});
                 continue
             case 'BETA1'
-                MATERIAL.MAT(36,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(36,M)=str2double(bb{t});
                 continue
             case 'H0'
-                MATERIAL.MAT(37,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(37,M)=str2double(bb{t});
                 continue
             case 'GAMMA_HDM'
-                MATERIAL.MAT(38,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(38,M)=str2double(bb{t});
                 continue
             case 'HU0'
-                MATERIAL.MAT(39,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(39,M)=str2double(bb{t});
                 continue
             case 'GAMMA_U'
-                MATERIAL.MAT(40,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(40,M)=str2double(bb{t});
                 continue
             case 'GAMMA_VOL'
-                MATERIAL.MAT(41,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(41,M)=str2double(bb{t});
+                continue
+            case 'WATER_DENSITY'
+                MATERIAL(BLCK).MAT(42,M)=str2double(bb{t});
                 continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)
@@ -329,53 +338,48 @@ function read_material
     
     fclose(fid); 
     
-    MATERIAL.number=mats;
-    localization(RANGE);
-    
+    %localization(RANGE);
     
     for i=1:mats
         if SOLVER.UW
-            n=MATERIAL.MAT(16,i);
+            n=MATERIAL(BLCK).MAT(16,i);
             if n==0
                 fprintf('Error, no porosity !! \n')
             end
             if ks==0
                 ks=1e40;       % Pa
-                MATERIAL.MAT(27,i)=ks;
+                MATERIAL(BLCK).MAT(27,i)=ks;
             else
-                MATERIAL.MAT(27,i)=ks;
+                MATERIAL(BLCK).MAT(27,i)=ks;
             end
-            if MATERIAL.MAT(18,i)==0
+            if MATERIAL(BLCK).MAT(18,i)==0
                 if kw==0
                     fprintf('Error, no water bulk modulus !! \n')
                 else
-                    MATERIAL.MAT(28,i)=kw;
-                    MATERIAL.MAT(18,i)=1/(n/kw+(1-n)/ks);
+                    MATERIAL(BLCK).MAT(28,i)=kw;
+                    MATERIAL(BLCK).MAT(18,i)=1/(n/kw+(1-n)/ks);
                 end
             else
                 if kw==0
-                    MATERIAL.MAT(28,i)=1/(1/MATERIAL.MAT(18,i)+(1-n)/n/ks);
+                    MATERIAL(BLCK).MAT(28,i)=1/(1/MATERIAL(BLCK).MAT(18,i)+(1-n)/n/ks);
                 else
                     fprintf(...
                     'Error, two different values of the water bulk modulus !! \n')
                 end
             end
         end
-        if MATERIAL.MODEL(i)<3
-            MATERIAL.MAT(:,i)=elastic_tools(MATERIAL.MAT(:,i));
+        if MATERIAL(BLCK).MODEL(i)<3
+            MATERIAL(BLCK).MAT(:,i)=elastic_tools(MATERIAL(BLCK).MAT(:,i));
         end
-        if MATERIAL.MODEL(i)<3 && MATERIAL.MODEL(i)>=2
-            MATERIAL.MAT(:,i)=dp_tools(MATERIAL.MAT(:,i));
-        elseif MATERIAL.MODEL(i)<4 && MATERIAL.MODEL(i)>=3
-            MATERIAL.MAT(:,i)=mcc_tools(MATERIAL.MAT(:,i),K0);
-        elseif MATERIAL.MODEL(i)<5 && MATERIAL.MODEL(i)>=4
-            MATERIAL.MAT(:,i)=pz_tools(MATERIAL.MAT(:,i),K0);
+        if MATERIAL(BLCK).MODEL(i)<3 && MATERIAL(BLCK).MODEL(i)>=2
+            MATERIAL(BLCK).MAT(:,i)=dp_tools(MATERIAL(BLCK).MAT(:,i));
+        elseif MATERIAL(BLCK).MODEL(i)<4 && MATERIAL(BLCK).MODEL(i)>=3
+            MATERIAL(BLCK).MAT(:,i)=mcc_tools(MATERIAL(BLCK).MAT(:,i));
+        elseif MATERIAL(BLCK).MODEL(i)<5 && MATERIAL(BLCK).MODEL(i)>=4
+            MATERIAL(BLCK).MAT(:,i)=pz_tools(MATERIAL(BLCK).MAT(:,i));
         end
         
     end
-
-
-
 
 end
 
@@ -440,7 +444,7 @@ function Mat=dp_tools(Mat)
 
 end
 
-function Mat=pz_tools(Mat,K0)
+function Mat=pz_tools(Mat)
 
     global SOLVER
 
@@ -518,11 +522,6 @@ function Mat=pz_tools(Mat,K0)
         Mat(34)=Mat(33); % Alpha g = alpha f
     end
     
-    %%K0
-    if Mat(26)==0 && K0==0
-        Mat(26)=(1-sin(Mat(11)))*Mat(24)^(sin(Mat(11)));
-    end
-    
     %%% E
     Mat(1)=2*Mat(4)*(1+Mat(2)); 
     % Wave velocity
@@ -536,7 +535,7 @@ function Mat=pz_tools(Mat,K0)
     
 end
 
-function Mat=mcc_tools(Mat,K0)
+function Mat=mcc_tools(Mat)
 
     global SOLVER
 
@@ -573,11 +572,6 @@ function Mat=mcc_tools(Mat,K0)
         stop
     end
     
-    %%K0
-    if Mat(26)==0 && K0==0
-        Mat(26)=(1-sin(Mat(11)))*Mat(24)^(sin(Mat(11)));
-    end
-    
     %%% E
     Mat(1)=2*Mat(4)*(1+Mat(2)); 
     % Wave velocity
@@ -591,36 +585,36 @@ function Mat=mcc_tools(Mat,K0)
     
 end
 
-function localization(R)
-
-    global MATERIAL GEOMETRY
-    
-    for m=1:MATERIAL.number
-        for nodo=1:GEOMETRY.nodes
-            tol=GEOMETRY.h_nds(nodo,1)/5;
-            if (GEOMETRY.x_0(nodo,2)>=R(2,m*2-1)-tol) ...
-                    && (GEOMETRY.x_0(nodo,2)<=R(2,m*2)+tol) 
-                if (GEOMETRY.x_0(nodo,1)>=R(1,m*2-1)-tol) ...
-                        && (GEOMETRY.x_0(nodo,1)<=R(1,m*2)+tol)
-                    MATERIAL.n(nodo)=m;
-                end
-            end
-        end
-
-        for e=1:GEOMETRY.mat_points
-            tol=GEOMETRY.h_ini(e,1)/5;
-            if (GEOMETRY.xg_0(e,2)>=R(2,m*2-1)-tol) ...
-                    && (GEOMETRY.xg_0(e,2)<=R(2,m*2)+tol)
-                if (GEOMETRY.xg_0(e,1)>=R(1,m*2-1)-tol) ...
-                        && (GEOMETRY.xg_0(e,1)<=R(1,m*2)+tol)
-                    MATERIAL.e(e)=m;
-                end
-            end
-        end
-        
-    end
-
-end
-
+% function localization(R)
+% 
+%     global MATERIAL GEOMETRY
+%     
+%     for m=1:MATERIAL(BLCK).number
+%         for nodo=1:GEOMETRY.nodes
+%             tol=GEOMETRY.h_nds(nodo,1)/5;
+%             if (GEOMETRY.x_0(nodo,2)>=R(2,m*2-1)-tol) ...
+%                     && (GEOMETRY.x_0(nodo,2)<=R(2,m*2)+tol) 
+%                 if (GEOMETRY.x_0(nodo,1)>=R(1,m*2-1)-tol) ...
+%                         && (GEOMETRY.x_0(nodo,1)<=R(1,m*2)+tol)
+%                     MATERIAL(BLCK).n(nodo)=m;
+%                 end
+%             end
+%         end
+% 
+%         for e=1:GEOMETRY.mat_points
+%             tol=GEOMETRY.h_ini(e,1)/5;
+%             if (GEOMETRY.xg_0(e,2)>=R(2,m*2-1)-tol) ...
+%                     && (GEOMETRY.xg_0(e,2)<=R(2,m*2)+tol)
+%                 if (GEOMETRY.xg_0(e,1)>=R(1,m*2-1)-tol) ...
+%                         && (GEOMETRY.xg_0(e,1)<=R(1,m*2)+tol)
+%                     MATERIAL(BLCK).e(e)=m;
+%                 end
+%             end
+%         end
+%         
+%     end
+% 
+% end
+% 
 
 

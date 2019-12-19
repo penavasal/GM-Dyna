@@ -1,5 +1,5 @@
 function [load_s,OUTPUT]=...
-            calculate_forces(ste,MAT_POINT,Disp_field,Mat_state,OUTPUT,MATRIX)
+            calculate_forces(ste,MAT_POINT,Disp_field,Mat_state,MATRIX,BLCK)
 
     global SOLVER LOAD GEOMETRY
 
@@ -12,9 +12,12 @@ function [load_s,OUTPUT]=...
     if SOLVER.UW==1
         ext_forces_w = LOAD.ext_forces_w;
     end
-
     
-    [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,Mat_state,MATRIX);
+    type=SOLVER.OutputType;
+    [number,~]=size(type);
+    OUTPUT(1,number)=0;
+
+    [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,Mat_state,MATRIX,BLCK);
     
     load=zeros(GEOMETRY.nodes*df,LOAD.size);
     acce=zeros(GEOMETRY.nodes*df,LOAD.size);
@@ -32,11 +35,7 @@ function [load_s,OUTPUT]=...
 %                 t=1;
 %             end
             t=1;
-            if SOLVER.UW==1 && (SOLVER.IMPLICIT==1 || SOLVER.step0==1) 
-                t=-1;
-            end
-            
-            if SOLVER.UW==2 && (SOLVER.IMPLICIT==1 || SOLVER.step0==1) 
+            if (SOLVER.UW==1 || SOLVER.UW==2) && SOLVER.IMPLICIT(BLCK)==1
                 t=-1;
             end
                 
@@ -55,9 +54,9 @@ function [load_s,OUTPUT]=...
             end
         end
         
-        for i=1:OUTPUT.number
-            if OUTPUT.type(i,1)==1 && OUTPUT.type(i,2)==m
-                OUTPUT.inst(i)=sum(load(:,m));
+        for i=1:number
+            if type(i,1)==1 && type(i,2)==m
+                OUTPUT(1,i)=sum(load(:,m));
             end
         end
     end

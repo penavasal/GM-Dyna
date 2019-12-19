@@ -114,7 +114,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                     dN(2,i)=b(2,(i-1)*sp+2);
                     pwv(i,1)=d(nd(i)*df,1);
                 end
-                Mat_state.pw(e,1)=N'*pwv;
+                %Pw=N'*pwv;
+                Mat_state.pw(e,1)=Mat_state.pw(e,3)+N'*pwv;
                 dPw=dN*pwv;
                 Mat_state.dpw((e-1)*sp+1:e*sp,1)=dPw;
             end
@@ -123,8 +124,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 %%%%%%   F_BAR   %%%%%%
                 F_store(k)={F};
                 % New vol, dens, jaco
-                area_p_n(j)=area_p_n(j)+GEOMETRY.Area(e)*jacobians(e);
-                logJ(j)=logJ(j) + GEOMETRY.Area(e)*jacobians(e)*log(jacobians(e));
+                area_p_n(j)=area_p_n(j)+GEOMETRY.Area(e);%*jacobians(e);
+                logJ(j)=logJ(j) + GEOMETRY.Area(e)*log(jacobians(e));%*jacobians(e);
             else
                 % New jaco
                 MAT_POINT(e).J=jacobians(e);
@@ -151,8 +152,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                     %%%%%%   F_BAR W  %%%%%%
                     F_store_w(k)={F_w};
                     % New vol, dens, jaco
-                    area_p_w(j)=area_p_w(j)+GEOMETRY.Area(e)*det(F_w);
-                    logJ_w(j)=logJ_w(j) + GEOMETRY.Area(e)*det(F_w)*log(det(F_w));
+                    area_p_w(j)=area_p_w(j)+GEOMETRY.Area(e);%*jacobians(e);
+                    logJ_w(j)=logJ_w(j) + GEOMETRY.Area(e)*log(det(F_w));%*jacobians(e);
                 else
                     %Storage of vector F
                     [f_w]=LIB.m2v(F_w);
@@ -160,6 +161,20 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                         Mat_state.Fw(e*dimf+1-i,1)=f_w(dimf+1-i);
                     end
                 end
+%             elseif SOLVER.UW==2
+%                 if SOLVER.F_BAR_PW>0
+%                     %%%%%%   F_BAR PW  %%%%%%
+%                     F_store_w(k)={F_w};
+%                     % New vol, dens, jaco
+%                     area_p_w(j)=area_p_w(j)+GEOMETRY.Area(e)*det(F_w);
+%                     logJ_w(j)=logJ_w(j) + GEOMETRY.Area(e)*det(F_w)*log(det(F_w));
+%                 else
+%                     %Storage of vector F
+%                     [f_w]=LIB.m2v(F_w);
+%                     for i=1:dimf
+%                         Mat_state.Fw(e*dimf+1-i,1)=f_w(dimf+1-i);
+%                     end
+%                 end
             end
         end        
         %%%%%%   F_BAR   %%%%%%

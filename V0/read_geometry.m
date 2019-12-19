@@ -1,4 +1,5 @@
-function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegrid,pathgeo)
+function [MAT_POINT,NODE_LIST]=...
+    read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegrid,pathgeo)
 
     global GEOMETRY SOLVER
     
@@ -93,7 +94,8 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
 
     GEOMETRY=struct('elem',0,'patch_con',0,'patch_el',0,'Area',0,'x_0',0,...
         'elements',0,'nodes',0,'Area_p',0,'sp',0,'df',0,'xg_0',0,...
-        'h_ini',0,'h_nds',0,'mat_points',0,'node_connect',0);
+        'h_ini',0,'h_nds',0,'mat_points',0,'node_connect',0,...
+        'material',0);
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,22 +104,25 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
           
     
     
-    [x,elem,NNE,~]=read_mesh(filegrid,pathgeo,DIM);
+    %[x,elem,NNE,~]=read_mesh(filegrid,pathgeo,DIM);
+    [x,elem,NNE,materials,NODE_LIST]=read_dat(filegrid,pathgeo,DIM);
     x_a=x*AMP;    % SCALE
     
     if strcmp(GRID,'T3')
         
         if NNE==4 && grid==0
             if strcmp(ELEMENT,'T3')
-                [elem,patch_con,patch_el]=...
-                    split2(x_a,elem);
+                [elem,patch_con,patch_el,materials]=...
+                    split2(x_a,elem,materials);
             elseif strcmp(ELEMENT,'T3-inverse')
                 [elem]=reverse(elem); %reverse
-                [elem,patch_con,patch_el]=split2(x_a,elem);
+                [elem,patch_con,patch_el,materials]=...
+                    split2(x_a,elem,materials);
             elseif strcmp(ELEMENT,'T3-diamond')
                 %Patch 4P1P0
                 [xp]=q_g_center(x_a,elem);
-                [x_a,elem,patch_con,patch_el]=split(x_a,elem,xp);
+                [x_a,elem,patch_con,patch_el,materials]=...
+                    split(x_a,elem,xp,materials);
             end
             
             GEOMETRY.elem=elem;
@@ -164,7 +169,7 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
             elseif strcmp(ELEMENT,'Q4-4')
                 elem_0=elem;
                 [xg,GEOMETRY.elem,GEOMETRY.Area,GEOMETRY.patch_el,...
-                    GEOMETRY.patch_con]=quad4xg(x_a,elem);
+                    GEOMETRY.patch_con,materials]=quad4xg(x_a,elem,materials);
             end
         end
     end
@@ -216,15 +221,15 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
 
         elseif strcmp(ELEMENT,'Q4-4')
             elem_0=elem;
-            [xg,~,GEOMETRY.Area,GEOMETRY.patch_el,...
-                GEOMETRY.patch_con]=quad4xg(x_mp,elem_mp);
+            [xg,~,GEOMETRY.Area,GEOMETRY.patch_el,GEOMETRY.patch_con,...
+                materials]=quad4xg(x_mp,elem_mp,materials);
         end
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Geometry parameters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
-    
+    GEOMETRY.material=materials;
     [aa,bb]=size(GEOMETRY.patch_con);
     GEOMETRY.Area_p=zeros(aa,1);
     for i=1:aa
@@ -397,7 +402,7 @@ function [MAT_POINT]=read_geometry(ELEMENT,GRID,DIM,PLOT_ini,AMP,filename,filegr
 
 end
 
-function [x_a,nw_elem,patch_con,patch_el]=split(x_a,elem,xp)
+function [x_a,nw_elem,patch_con,patch_el,nw_mat]=split(x_a,elem,xp,mat)
 
     [nodes,sp]=size(x_a);
     [elements,NNE]=size(elem);
@@ -409,6 +414,7 @@ function [x_a,nw_elem,patch_con,patch_el]=split(x_a,elem,xp)
     end
         
     nw_elem=zeros(elements*NNE,NNE-1);
+    nw_mat=zeros(elements*NNE,1);
     patch_el=zeros(elements,1);
     patch_con=zeros(elements,NNE);
     for i=1:elements
@@ -416,11 +422,15 @@ function [x_a,nw_elem,patch_con,patch_el]=split(x_a,elem,xp)
             nw_elem((i-1)*NNE+j,1)=nodes+i;
             nw_elem((i-1)*NNE+j,2)=elem(i,j);
             nw_elem((i-1)*NNE+j,3)=elem(i,j+1);
+            
+            nw_mat((i-1)*NNE+j,1)=mat(i);
         end
         j=j+1;
         nw_elem((i-1)*NNE+j,1)=nodes+i;
         nw_elem((i-1)*NNE+j,2)=elem(i,j);
         nw_elem((i-1)*NNE+j,3)=elem(i,1);
+        
+        nw_mat((i-1)*NNE+j,1)=mat(i);
         
         for j=1:NNE
             patch_con(i,j)=(i-1)*NNE+j;
@@ -434,12 +444,13 @@ function [x_a,nw_elem,patch_con,patch_el]=split(x_a,elem,xp)
     end
 end
 
-function [nw_elem,patch_con,patch_el]=split2(x_a,elem)
+function [nw_elem,patch_con,patch_el,nw_material]=split2(x_a,elem,material)
 
     [elements,NNE]=size(elem);
     [~,sp]=size(x_a);
         
     nw_elem=zeros(elements*sp,NNE-1);
+    nw_material=zeros(elements*sp,1);
     patch_el=zeros(elements,1);
     patch_con=zeros(elements,sp);
 
@@ -469,6 +480,9 @@ function [nw_elem,patch_con,patch_el]=split2(x_a,elem)
             nw_elem((i-1)*sp+2,2)=elem(i,1);
             nw_elem((i-1)*sp+2,3)=elem(i,2);
         end
+        
+        nw_material((i-1)*sp+1,1)=material(i);
+        nw_material((i-1)*sp+2,1)=material(i);
         
         for j=1:sp
             patch_con(i,j)=(i-1)*sp+j;
@@ -521,7 +535,7 @@ function [elem2]=reverse(elem)
 
 end
 
-function [xg,elem_0,Area,patch_el,patch_con]=quad4xg(x_a,elem_0)
+function [xg,elem_0,Area,patch_el,patch_con,nw_mat]=quad4xg(x_a,elem_0,mat)
 
     [~,sp]=size(x_a);
     [elements,NNE]=size(elem_0);
@@ -530,6 +544,7 @@ function [xg,elem_0,Area,patch_el,patch_con]=quad4xg(x_a,elem_0)
     
     xg=zeros(elements*NNE,sp);
     Area=zeros(elements*NNE,1);
+    nw_mat=zeros(elements*NNE,1);
     patch_el=zeros(elements*NNE,1);
     patch_con=zeros(elements,NNE);
     k=0;
@@ -587,6 +602,7 @@ function [xg,elem_0,Area,patch_el,patch_con]=quad4xg(x_a,elem_0)
             end
             %elem(k,:)=elem_0(e,:);
             Area(k)=area_/NNE;
+            nw_mat(k)=mat(e);
             
         end 
         for j=1:4
@@ -749,4 +765,228 @@ function [x,elem,NNE,El_type]=read_mesh(str1,str2,DIM)
         in=in+1;
     end
 
+end
+
+function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
+
+
+    close all
+    
+    % File: Geo_DynCLM
+    %   Read geometry in *.dat and save in the geometry variables
+
+    % Date:
+    %   Version 3.0   25.11.2019
+
+    %Input file name
+    if ismac || isunix  % Code to run on Mac or Unix plaform 
+        filename_i=strcat(str2,'/',str1,'.dat');
+    elseif ispc         % Code to run on Windows platform
+        filename_i=strcat(str2,'\',str1,'.dat');
+    else
+        disp('Platform not supported')
+        stop
+    end 
+
+    f_i = fopen(filename_i, 'rt');
+    formato = '%s %s %s %s %s %s %s'; % formato de cada línea 
+
+    tsargs = {...
+        'HeaderLines',0,...
+        'HeaderColumns',0,...
+        'ReturnOnError',false,...
+        'EmptyValue',0,...
+        'CollectOutput',true,...
+        'EndOfLine','\r\n'};
+
+    % Collect info
+    res  = textscan(f_i,formato,-1,tsargs{:});
+    data=res{1};
+    
+    fclose(f_i);
+    
+    [l,~]=size(data);
+    
+    t=0;
+    while (t<l)
+        t=t+1;
+        s1=data{t,1};
+
+        switch s1
+            case 'NNODE='
+                nodes=str2double(data{t,2});
+                continue
+            case 'NCONE='
+                NNE=str2double(data{t,2});
+                continue
+            case 'NDIME='
+                if DIM>str2double(data{t,2})
+                    fprintf('Error, DIM mismatches with spatial dimension of the mesh!!\n')
+                    stop
+                end
+                x=zeros(nodes,DIM);
+                continue
+            case 'NELEM='
+                elements=str2double(data{t,2});
+                elem=zeros(elements,NNE);
+                material=zeros(elements,1);
+                continue
+            case 'NMATS='
+                mats=str2double(data{t,2});
+                continue
+            case 'CONNECTIVITY'
+                break
+            otherwise
+                continue
+        end
+    end
+    
+    % CHECK
+    if t>l
+        fprintf('Error, bad reading of geometry!!\n')
+        stop
+    end
+    
+    % CONNECTIVITY
+    for i=1:elements
+        t=t+1;
+        material(i)=str2double(data{t,2});
+        for j=1:NNE
+            elem(i,j)=str2double(data{t,2+j});
+        end
+    end
+    
+    % CHECK
+    t=t+2;
+    if strcmp(data{t,1},'NODES')~=1
+        fprintf('Error, bad reading of geometry!!\n')
+        stop
+    end
+    
+    % NODES
+    for i=1:nodes
+        t=t+1;
+        for j=1:DIM
+            x(i,j)=str2double(data{t,1+j});
+        end
+    end
+
+    t=t+4;
+    fin=0;
+    if t>l
+        fin=1;
+    elseif strcmp(data{t,1},'BOUNDARY_CONDITIONS')==0 && ...
+            strcmp(data{t,1},'LOADS')==0
+        fprintf('Error, bad reading of geometry!!\n')
+        stop
+    end
+    
+    if fin==0
+        bcs=0;
+        pls=0;
+        lls=0;
+        vls=0;
+        BC={};
+        PL={};
+        LL={};
+        VL={};
+    end
+    
+    while fin==0
+        t=t+1;
+        s1=data{t,1};
+        switch s1
+            case 'BC_SET'
+                num=str2double(data{t,3});
+                if num~=0
+                    bcs=bcs+1;
+                    if bcs==str2double(data{t,2})
+                        list=zeros(num,1);
+                        for i=1:num
+                            t=t+1;
+                            list(i)=str2double(data{t,1});
+                        end
+                        BC{bcs}=list;
+                        clear num list
+                    else
+                        fprintf('Error, bad numbering of set of BC!!\n')
+                        stop
+                    end
+                end
+                continue
+            case 'POINT_LOAD'
+                num=str2double(data{t,3});
+                if num~=0
+                    pls=pls+1;
+                    if pls==str2double(data{t,2})
+                        list=zeros(num,1);
+                        for i=1:num
+                            t=t+1;
+                            list(i)=str2double(data{t,1});
+                        end
+                        PL{pls}=list;
+                        clear num list
+                    else
+                        fprintf('Error, bad numbering of set of LOADs!!\n')
+                        stop
+                    end
+                end
+                continue
+            case 'LINE_LOAD'
+                num=str2double(data{t,3});
+                if num~=0
+                    lls=lls+1;
+                    if lls==str2double(data{t,2})
+                        list=zeros(num,2);
+                        for i=1:num
+                            t=t+1;
+                            list(i,1)=str2double(data{t,1});
+                            list(i,2)=str2double(data{t,2});
+                        end
+                        LL{lls}=list;
+                        clear num list
+                    else
+                        fprintf('Error, bad numbering of set of LOADs!!\n')
+                        stop
+                    end
+                end
+                continue
+            case 'VOLUME_LOAD'
+                num=str2double(data{t,3});
+                if num~=0
+                    vls=vls+1;
+                    if vls==str2double(data{t,2})
+                        list=zeros(num,1);
+                        for i=1:num
+                            t=t+1;
+                            list(i)=str2double(data{t,1});
+                        end
+                        VL{vls}=list;
+                        clear num list
+                    else
+                        fprintf('Error, bad numbering of set of LOADs!!\n')
+                        stop
+                    end 
+                end
+                continue
+            case 'END_BC'
+                t=t+2;
+                if t>l
+                    fin=1;
+                elseif strcmp(data{t,1},'LOADS')==0
+                    fprintf('Error, bad reading of geometry!!\n')
+                    stop
+                end
+                continue
+            case 'END_LDS'
+                fin=1;
+                continue
+            otherwise
+                fprintf('Error, bad reading of geometry!!\n')
+                stop
+        end
+    end
+
+    NODE_LIST=struct('bcs',bcs,'pls',pls,'lls',lls,'vls',vls,...
+        'BC',{BC},'PL',{PL},'LL',{LL},'VL',{VL});
 end

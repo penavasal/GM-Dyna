@@ -1,18 +1,12 @@
 
 function [Disp_field]=explicit_corrector...
-    (ste,MATRIX,Disp_field,load_t,int_Ft)
+    (ste,MATRIX,Disp_field,load_t,int_Ft,time_step,gamma)
 
-    global GEOMETRY TIME SOLVER
+    global GEOMETRY SOLVER
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
-    
-    if ste==1
-        time_step=TIME.t(ste+1)-TIME.t(ste);
-    else
-        time_step=TIME.t(ste)-TIME.t(ste-1);
-    end 
-    
+
     %% Allocate
     a0  = Disp_field.a;
     v0  = Disp_field.v;
@@ -39,7 +33,6 @@ function [Disp_field]=explicit_corrector...
         vs=v0;
     end
     
-    gamma=TIME.gamma;
     
     %% 0. Boundary conditions
     [boundary,~,~]=calculate_boundaries(ste);

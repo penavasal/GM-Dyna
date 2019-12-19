@@ -199,19 +199,25 @@
         end
         
         % Reaction forces
-        function [OUTPUT]=reaction(residual,OUTPUT)
+        function [OUTPUT]=reaction(residual)
 
-            global GEOMETRY
-
-            for i=1:OUTPUT.number
-                if OUTPUT.type(i,1)==2
+            global GEOMETRY SOLVER BOUNDARY
+            
+            constrains  = BOUNDARY.constrains;
+            
+            type=SOLVER.OutputType;
+            [number,~]=size(type);
+            OUTPUT(1,number)=0;
+            
+            for i=1:number
+                if type(i,1)==2
                     R=0;
                     for j=1:GEOMETRY.df*GEOMETRY.nodes
-                        if OUTPUT.ref_list(j,i)==1
+                        if constrains(j,type(i,2))
                             R=R+residual(j);
                         end
                     end
-                    OUTPUT.inst(i)=R;
+                    OUTPUT(1,i)=R;
                 end
             end
 

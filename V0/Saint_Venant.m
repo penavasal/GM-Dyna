@@ -1,11 +1,11 @@
-function [A,T,Be]=Saint_Venant(Kt,e,F)
+function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
     
     % St. Venant Material
 
-    global MATERIAL
+    global MATERIAL GEOMETRY
     
-    Material=MATERIAL.e;
-    MAT=MATERIAL.MAT;
+    Material=GEOMETRY.material;
+    MAT=MATERIAL(BLCK).MAT;
     
     G  = MAT(4,Material(e));
     Lam= MAT(5,Material(e));   

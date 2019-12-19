@@ -1,7 +1,7 @@
 
 function [Disp_field,Mat_state,MAT_POINT]=...
             Newton_Raphson_solver(ste,stiff_mtx,mass_mtx,damp_mtx,load_s,...
-            MAT_POINT,Disp_field,Int_var,Mat_state)
+            MAT_POINT,Disp_field,Int_var,Mat_state,BLCK)
         
     global SOLVER GEOMETRY
     
@@ -12,13 +12,13 @@ function [Disp_field,Mat_state,MAT_POINT]=...
     d0  = Disp_field.d;
     a0  = Disp_field.a;
     v0  = Disp_field.v;
-    du=zeros(GEOMETRY.df*GEOMETRY.nodes,SOLVER.NR_iterations);
+    du=zeros(GEOMETRY.df*GEOMETRY.nodes,SOLVER.NR_iterations(BLCK));
     
-    [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
+    [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste,BLCK);
     [InvK,~]=apply_conditions(0,ste,matrix,0);
 
     % Solve Newton Raphson
-    TOL=SOLVER.rel_tolerance;
+    TOL=SOLVER.rel_tolerance(BLCK);
     
     if ste==1
         TOL=TOL*10000;
@@ -26,17 +26,17 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         TOL=TOL*100;
     end
         
-    NR1=SOLVER.NR;
-    error_nr=zeros(SOLVER.NR_iterations,1);
+    NR1=SOLVER.NR(BLCK);
+    error_nr=zeros(SOLVER.NR_iterations(BLCK),1);
     iter=0;
     a=1;
-    while iter<SOLVER.NR_iterations
+    while iter<SOLVER.NR_iterations(BLCK)
         
         iter=iter+1;
 
         % 1. Evaluate residual 
         [GT]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
-            damp_mtx,load_s(:,1),load_s(:,2),ste);
+            damp_mtx,load_s(:,1),load_s(:,2),ste,BLCK);
 
         [~,GT]=apply_conditions(min(iter,2),ste,matrix,GT);
         
@@ -46,14 +46,14 @@ function [Disp_field,Mat_state,MAT_POINT]=...
             % 2. Check for convergence
             if iter==1
                 GT0=norm(GT);
-                TOL=max(SOLVER.abs_tolerance*GT0,TOL);
+                TOL=max(SOLVER.abs_tolerance(BLCK)*GT0,TOL);
             else
                 [CONVER,error_nr,a,iter]=LIB.convergence(GT,GT0,error_nr,...
-                    TOL,iter,SOLVER.NR_iterations,a);
+                    TOL,iter,SOLVER.NR_iterations(BLCK),a);
                 if CONVER==1     
                     break
                 elseif a==1
-                    if iter>SOLVER.NR_iterations/2 && NR1>1
+                    if iter>SOLVER.NR_iterations(BLCK)/2 && NR1>1
                         NR1=max(1,floor(NR1/2));
                     end
                 else
@@ -64,16 +64,16 @@ function [Disp_field,Mat_state,MAT_POINT]=...
                     d0(:,1)=d0(:,1)-du(:,iter+1);
                     [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
                     [~,Int_var,Mat_state]=...
-                        Constitutive(0,ste,Int_var,Mat_state,MAT_POINT);
+                        Constitutive(0,ste,Int_var,Mat_state,MAT_POINT,BLCK);
                     [GT]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
-                        damp_mtx,load_s(:,1),load_s(:,2),ste);
+                        damp_mtx,load_s(:,1),load_s(:,2),ste,BLCK);
                     [~,GT]=apply_conditions(min(iter,2),ste,matrix,GT);
                 end
             end
         end
 
         % 3. Solve for displacement increment
-        [du(:,iter+1)]=Time_Scheme.solver_1(InvK,GT,a0,v0,ste);
+        [du(:,iter+1)]=Time_Scheme.solver_1(InvK,GT,a0,v0,ste,BLCK);
         du(:,iter+1)=a*du(:,iter+1);
         d0(:,1)=d0(:,1)+du(:,iter+1);
         
@@ -107,16 +107,16 @@ function [Disp_field,Mat_state,MAT_POINT]=...
 
              if ste==1 || a<1e-4
                  [stiff_mtx,Int_var,Mat_state]=...
-                 Constitutive(4,ste,Int_var,Mat_state,MAT_POINT);
+                 Constitutive(4,ste,Int_var,Mat_state,MAT_POINT,BLCK);
              else
                 [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(1,ste,Int_var,Mat_state,MAT_POINT);
+                Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,BLCK);
             end
-            [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste);
+            [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste,BLCK);
             [InvK,~]=apply_conditions(0,ste,matrix,0);
         else       
             [~,Int_var,Mat_state]=...
-                Constitutive(0,ste,Int_var,Mat_state,MAT_POINT);
+                Constitutive(0,ste,Int_var,Mat_state,MAT_POINT,BLCK);
         end
 
 

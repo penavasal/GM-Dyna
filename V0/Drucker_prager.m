@@ -1,12 +1,12 @@
 
 function [A,Sc,gamma,dgamma,sy,Be]=...
-    Drucker_prager(Kt,e,gamma,dgamma,sy,F,Be,Fold)
+    Drucker_prager(Kt,e,gamma,dgamma,sy,F,Be,Fold,BLCK)
 
-    global MATERIAL
+    global MATERIAL GEOMETRY
     
-    MODEL=MATERIAL.MODEL;
-    Mat=MATERIAL.e;
-    MAT=MATERIAL.MAT;
+    MODEL=MATERIAL(BLCK).MODEL;
+    Mat=GEOMETRY.material;
+    MAT=MATERIAL(BLCK).MAT;
     
     % Initial values
     I=eye(3);
