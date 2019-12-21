@@ -11,7 +11,9 @@ function Implicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
     %--------------------------------------------------------------------------
     % Initial matrices
     %--------------------------------------------------------------------------
-    [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX,BLCK);
+    if SOLVER.DYN(BLCK)==1
+        [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX,BLCK);
+    end
          
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      % LOOP
@@ -32,8 +34,10 @@ function Implicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
         % --------------------------------------------------------
 
         % 3. Recompute mass and damping matrices
-        [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX,BLCK);
-
+        if SOLVER.DYN(BLCK)==1
+            [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX,BLCK);
+        end
+        
         % 4. Constitutive & Stiffness_mat
         [stiff_mtx,Int_var,Mat_state]=...
                 Constitutive(2,ste,Int_var,Mat_state,MAT_POINT,BLCK);

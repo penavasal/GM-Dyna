@@ -23,17 +23,13 @@ function SOLVER(MAT_POINT)
     while BLCK<SOLVER.BLOCKS+1
         
         save(SOLVER.Output(BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
-        if SOLVER.DYN(BLCK)==0
-            Static_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
-                    Mat_state,GLOBAL,stiff_mtx,MATRIX,load_s);
+
+        if SOLVER.IMPLICIT(BLCK)==0
+            Explicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
+                Mat_state,GLOBAL,MATRIX,load_s)
         else
-            if SOLVER.IMPLICIT(BLCK)==0
-                Explicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
-                    Mat_state,GLOBAL,MATRIX,load_s)
-            else
-                Implicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
-                    Mat_state,GLOBAL,stiff_mtx,MATRIX,load_s)
-            end
+            Implicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
+                Mat_state,GLOBAL,stiff_mtx,MATRIX,load_s)
         end
         BLCK=BLCK+1;
     end

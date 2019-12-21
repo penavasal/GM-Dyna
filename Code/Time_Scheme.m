@@ -133,94 +133,103 @@ classdef Time_Scheme
              
         function [GT]=calculation(d1,a1,v1,Fint,Mm,Cm,load,load1,ste,BLCK)
             
-            global TIME
+            global TIME SOLVER
+            
+            if SOLVER.DYN(BLCK)==1
 
-            af=TIME{BLCK}.af;
-            am=TIME{BLCK}.am;
-            delta=TIME{BLCK}.delta;
-            alpha=TIME{BLCK}.alpha;
-            theta=TIME{BLCK}.theta;
+                af=TIME{BLCK}.af;
+                am=TIME{BLCK}.am;
+                delta=TIME{BLCK}.delta;
+                alpha=TIME{BLCK}.alpha;
+                theta=TIME{BLCK}.theta;
 
-            if ste==1
-                delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
+                if ste==1
+                    delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
+                else
+                    delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
+                end
+
+                if alpha==0
+                    A=0;
+                    B=0;
+                    C=0;
+                    D=1/delta/delta_t;
+                    E=1-1/delta;
+                    F=0;
+                else
+                    A=(1-am)/alpha/delta_t/delta_t/theta/theta;
+                    B=(1-am)/alpha/delta_t/theta;
+                    C=(1-am)/2/alpha-1;
+                    D=(1-af)*delta/alpha/delta_t/theta;
+                    E=1-(1-af)*delta/alpha;
+                    F=(1-af)*(1-delta/2/alpha)*delta_t*theta;
+                end
+
+                G=theta*(1-af);
+                H=(1-af);
+
+                du=d1(:,1)-d1(:,2);
+
+                GT= G*(load-load1)+load1 - (H*(Fint(:,1)-Fint(:,2))+Fint(:,2))...
+                        -Mm*(A*du-B*v1(:,2)-C*a1(:,2))...
+                        -Cm*(D*du+E*v1(:,2)+F*a1(:,2));
             else
-                delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
+                GT= load - Fint(:,1);
             end
-
-            if alpha==0
-                A=0;
-                B=0;
-                C=0;
-                D=1/delta/delta_t;
-                E=1-1/delta;
-                F=0;
-            else
-                A=(1-am)/alpha/delta_t/delta_t/theta/theta;
-                B=(1-am)/alpha/delta_t/theta;
-                C=(1-am)/2/alpha-1;
-                D=(1-af)*delta/alpha/delta_t/theta;
-                E=1-(1-af)*delta/alpha;
-                F=(1-af)*(1-delta/2/alpha)*delta_t*theta;
-            end
-
-            G=theta*(1-af);
-            H=(1-af);
-
-            du=d1(:,1)-d1(:,2);
-
-            GT= G*(load-load1)+load1 - (H*(Fint(:,1)-Fint(:,2))+Fint(:,2))...
-                    -Mm*(A*du-B*v1(:,2)-C*a1(:,2))...
-                    -Cm*(D*du+E*v1(:,2)+F*a1(:,2));
 
         end
         
         function [matrix]=matrix(mass_mtx,stiff_mtx,damp_mtx,ste,BLCK)
             
-            global TIME
-
-            af=TIME{BLCK}.af;
-            am=TIME{BLCK}.am;
-            delta=TIME{BLCK}.delta;
-            alpha=TIME{BLCK}.alpha;
-            theta=TIME{BLCK}.theta;
-
-
-            if ste==1
-                delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
+            global TIME SOLVER
+            
+            if SOLVER.DYN(BLCK)==0
+                matrix = stiff_mtx;  
             else
-                delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
+
+                af=TIME{BLCK}.af;
+                am=TIME{BLCK}.am;
+                delta=TIME{BLCK}.delta;
+                alpha=TIME{BLCK}.alpha;
+                theta=TIME{BLCK}.theta;
+
+
+                if ste==1
+                    delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
+                else
+                    delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
+                end
+
+                if alpha==0
+                    A=0;
+                    D=1/delta/delta_t;
+                else
+                    A=(1-am)/alpha/delta_t/delta_t/theta/theta;
+                    D=(1-af)*delta/alpha/delta_t/theta;
+                end
+
+                matrix = (1-af)*stiff_mtx + A*mass_mtx + D*damp_mtx;
+                
             end
-
-            if alpha==0
-                A=0;
-                D=1/delta/delta_t;
-            else
-                A=(1-am)/alpha/delta_t/delta_t/theta/theta;
-                D=(1-af)*delta/alpha/delta_t/theta;
-            end
-
-
-            matrix = (1-af)*stiff_mtx + A*mass_mtx + D*damp_mtx;
-
         end
         
         function [incr_d]=solver_1(InvK,FT,a1,v1,ste,BLCK)
             
-            global TIME
-
-            alpha=TIME{BLCK}.alpha;
-            theta=TIME{BLCK}.theta;
-
-
-            if ste==1
-                delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
-            else
-                delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
-            end
-
-            if theta==1
+            global TIME SOLVER
+ 
+            if TIME{BLCK}.theta==1 || SOLVER.DYN(BLCK)
                 incr_d=InvK*FT;
             else
+                
+                alpha=TIME{BLCK}.alpha;
+                theta=TIME{BLCK}.theta;
+
+                if ste==1
+                    delta_t=TIME{BLCK}.t(ste+1)-TIME{BLCK}.t(ste);
+                else
+                    delta_t=TIME{BLCK}.t(ste)-TIME{BLCK}.t(ste-1);
+                end
+                
                 A=1/alpha/delta_t/delta_t/theta/theta;
                 B=1/alpha/delta_t/theta;
                 C=1/2/alpha;

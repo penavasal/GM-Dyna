@@ -51,7 +51,8 @@ classdef DYN_MATRIX
             mass_mtx=zeros(GEOMETRY.nodes*df);
             damp_mtx=zeros(GEOMETRY.nodes*df);
 
-            if alpha || SOLVER.UW==1  || SOLVER.UW==2
+            if (alpha || SOLVER.UW==1  || SOLVER.UW==2) && ...
+                    SOLVER.DYN(BLCK)==1
                 for i=1:GEOMETRY.mat_points
                     
                     rho_w=MATERIAL(BLCK).MAT(42,mati(i));
@@ -138,7 +139,7 @@ classdef DYN_MATRIX
                 end
             end
 
-            if SOLVER.LIN && SOLVER.UW==1 && SOLVER.AXI==0
+            if SOLVER.LIN && SOLVER.UW==1 && SOLVER.AXI==0 && SOLVER.DYN(BLCK)==1
                 if alpha
                     [M1]=DYN_MATRIX.mass_lin_uw(MAT_POINT,d);
                     mass_mtx=mass_mtx+M1;
