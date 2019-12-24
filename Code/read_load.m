@@ -204,7 +204,7 @@ function read_load(filetxt,BLCK,NODE_LIST)
     
     fclose(fid);
     
-    interval(INTERVAL,loads,BLCK,VALUE);
+    interval(INTERVAL,loads,BLCK,VALUE,TYPE);
     %[load_nds]=localization(RANGE,TYPE,loads);
     
     calculate_forces(NODE_LIST,VECTOR,TYPE,NLIST,loads);
@@ -235,7 +235,7 @@ function read_load(filetxt,BLCK,NODE_LIST)
     
 end
 
-function interval(INTERVAL,loads,BLCK,VALUE)
+function interval(INTERVAL,loads,BLCK,VALUE,TYPE)
 
     global SOLVER TIME LOAD VARIABLE
     
