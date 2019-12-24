@@ -20,9 +20,9 @@ function [Disp_field,Mat_state,MAT_POINT]=...
     % Solve Newton Raphson
     TOL=SOLVER.rel_tolerance(BLCK);
     
-    if ste==1
+    if ste==SOLVER.step_ini(BLCK)
         TOL=TOL*10000;
-    elseif ste<3
+    elseif ste<SOLVER.step_ini(BLCK)+3
         TOL=TOL*100;
     end
         
@@ -42,6 +42,7 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         
         if isnan(GT)   %|| NORMErec(iter,1)>emax
             error('Fallo en el NR global \n');
+            SOLVER.FAIL=1;
         else
             % 2. Check for convergence
             if iter==1
@@ -80,7 +81,7 @@ function [Disp_field,Mat_state,MAT_POINT]=...
             % 3.1 Check
             if isnan(du(:,iter+1))
                 disp('Nan in displacements')
-                pause
+                SOLVER.FAIL=1;
             end
         
         

@@ -232,7 +232,7 @@ function read_boundary(filetxt,BLCK,NODE_LIST)
     interval(INTERVAL,VALUE,loads,BLCK);
     %[b_nds]=localization(RANGE,loads,TIED,TYPE);
     
-    calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads);
+    calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads);
     
     for i=1:loads
         if OUT(i)==1
@@ -266,18 +266,17 @@ function interval(INTERVAL,VALUE,loads,BLCK)
     if BLCK==1
         ini=1;
         fin=SOLVER.step_final(BLCK);
+        BOUNDARY.b_mult=strings(fin,loads);
     else
         ini=SOLVER.step_final(BLCK-1);
         fin=SOLVER.step_final(BLCK);
     end
     
-    BOUNDARY.b_mult(fin,loads)=' ';
-    
     for m=1:loads
-        for i=ini:SOLVER.step_final(BLCK)
+        for i=ini:fin
             t=TIME{BLCK}.t(i);
             if t>=INTERVAL(1,m) && t<=INTERVAL(2,m)
-                BOUNDARY.b_mult(i,m)=1;
+                %BOUNDARY.b_mult(i,m)=1;
                 val=str2double(VALUE(m));
                 if isnan(val)
                     t=TIME{BLCK}.t(i);
@@ -292,12 +291,13 @@ function interval(INTERVAL,VALUE,loads,BLCK)
 
 end
 
-function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads)
+function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads)
     
     global GEOMETRY SOLVER BOUNDARY
     
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
+    x=GEOMETRY.x_0;
     
     BOUNDARY.constrains = zeros(GEOMETRY.nodes*df,loads);
     BOUNDARY.dad  = zeros(GEOMETRY.nodes*df,loads);
@@ -317,6 +317,9 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads)
         if nv==0
             if TYPE~=6
                 continue
+            else
+                disp('Error on the vector of boundary conditon');
+                stop;
             end
         else
             V=V/norm(V);
@@ -326,7 +329,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads)
         
         ll=str2double(NLIST(m));
         if isnan(ll)
-            if strcmp(NLIST(m),'FULL') && (TYPE(m)~=5)
+            if strcmp(NLIST(m),'FULL')
                 nod_f=linspace(1,nodes);
             else
                 fprintf('Error, unrecognized list of nodes: %s !! \n',ll)
@@ -339,6 +342,30 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads)
             else
                 nod_f=BC{ll};
             end 
+        end
+        
+        if TYPE(m)==5
+            l2=str2double(TIED(m));
+            if isnan(ll)
+                fprintf('Error, unrecognized list of nodes: %s !! \n',ll)
+                stop
+            end
+            if ll>bcs
+                fprintf('Error, unrecognized list of nodes: %i !! \n',ll)
+                stop
+            else
+                nod_aux=BC{l2};
+            end 
+            nod_f2=zeros(length(nod_aux),1);
+            for i=1:length(nod_f)
+                for j=1:length(nod_aux)
+                    if x(nod_f(i),1)==x(nod_aux(j),1) ||...
+                            x(nod_f(i),2)==x(nod_aux(j),2) 
+                        nod_f2(i)=nod_aux(j);
+                        break;
+                    end
+                end
+            end
         end
         
         
@@ -399,23 +426,26 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TYPE,loads)
                         end
                     end
                 elseif TYPE(m)==5
-                    disp('check!!! tied nodes')
-                    stop
-%                     for k=1:sp
-%                         if V(sp+1-k)~=0
-%                             if SOLVER.UW==1
-%                                 BOUNDARY.dad(i*df-sp+1-k,m)=sign(V(sp+1-k));
-%                                 BOUNDARY.constrains(i*df-sp+1-k,m)=3;
-%                                 BOUNDARY.tied(i*df-sp+1-k,m)=...
-%                                     load_nds(i,m)*df-sp+1-k;
-%                             else
-%                                 BOUNDARY.dad(i*df+1-k,m)=sign(V(sp+1-k));
-%                                 BOUNDARY.constrains(i*df+1-k,m)=3;
-%                                 BOUNDARY.tied(i*df+1-k,m)=...
-%                                     load_nds(i,m)*df+1-k;
-%                             end
-%                         end
-%                     end
+                    for k=1:sp
+                        if V(sp+1-k)~=0
+                            if SOLVER.UW==1
+                                BOUNDARY.dad(i*df-sp+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(i*df-sp+1-k,m)=3;
+                                BOUNDARY.tied(i*df-sp+1-k,m)=...
+                                    nod_f2(i)*df-sp+1-k;
+                            elseif SOLVER.UW==2
+                                BOUNDARY.dad(i*df-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(i*df-k,m)=3;
+                                BOUNDARY.tied(i*df-k,m)=...
+                                    nod_f2(i)*df-k;
+                            else
+                                BOUNDARY.dad(i*df+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(i*df+1-k,m)=3;
+                                BOUNDARY.tied(i*df+1-k,m)=...
+                                    nod_f2(i)*df+1-k;
+                            end
+                        end
+                    end
                 elseif TYPE(m)==6 && SOLVER.UW==2
                     BOUNDARY.dad(nod_f(i)*df,m)=1;
                     BOUNDARY.constrains(nod_f(i)*df,m)=1;

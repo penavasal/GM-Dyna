@@ -129,53 +129,14 @@ function [BLK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     
     if SOLVER.INIT_file~=0
 
-        for j=1:GEOMETRY.nodes
-            for i=1:GEOMETRY.sp
-                 Disp_field.x_a(j,i)=GEOMETRY.x_0(j,i)+...
-                     GLOBAL.d((j-1)*GEOMETRY.df+i,ste_p);
-            end
-         end
-                   
-        Disp_field.a(:,2)=GLOBAL.a(:,ste_p);
-        Disp_field.v(:,2)=GLOBAL.v(:,ste_p);
-        Disp_field.d(:,2)=GLOBAL.d(:,ste_p);
-        Disp_field.d(:,1)=GLOBAL.d(:,ste_p);
-
-        Int_var.gamma(:,2)=GLOBAL.gamma(:,ste_p);
-        Int_var.epsv(:,2)=GLOBAL.epsv(:,ste_p);
-        Int_var.Sy(:,2)=GLOBAL.Sy(:,ste_p);
-        Int_var.Sy_r(:,2)=GLOBAL.Sy_r(:,ste_p);
-        Int_var.eta(:,2)=GLOBAL.eta(:,ste_p);
-        Int_var.H(:,2)=GLOBAL.H(:,ste_p);
-        Int_var.dgamma(:,2)=GLOBAL.dgamma(:,ste_p);
-        Int_var.P0(:,1)=GLOBAL.Ps(:,1);
-        
-        Mat_state.Sigma(:,2)=GLOBAL.Sigma(:,ste_p);                %STRESS
-        Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,1);            %STRESS INITIAL
-        Mat_state.F(:,2)=GLOBAL.F(:,ste_p);          %DEFORMATION GRADIENT
-        Mat_state.F(:,1)=GLOBAL.F(:,ste_p);          %DEFORMATION GRADIENT
-        Mat_state.Be(:,2)=GLOBAL.Be(:,ste_p);           %LEFT CAUCHY GREEN 
-        
+        % MAT_POINT
         [MAT_POINT]=LIB.list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
-        
         [MAT_POINT]=LIB.list2S(MAT_POINT,'xg',...
             reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
-        
-        if SOLVER.UW>0
-            Mat_state.pw(:,2)=GLOBAL.pw(:,ste_p);
-            Mat_state.pw(:,3)=GLOBAL.pw(:,1);
-            if SOLVER.UW==1
-                Mat_state.Fw(:,2)=GLOBAL.Fw(:,ste_p);
-                Mat_state.Fw(:,1)=GLOBAL.Fw(:,ste_p);
-            end
-        end
-        
         MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
         
-        [stiff_mtx,Int_var,Mat_state]=...
-        Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,BLK);
-        
-        Mat_state.fint(:,2)=Mat_state.fint(:,1);
+        [Disp_field,Mat_state,Int_var,stiff_mtx]=VECTORS.Update_ini(...
+            BLK,GLOBAL,ste,ste_p,Disp_field,Mat_state,Int_var,MAT_POINT);
         
     else
         Disp_field.x_a=GEOMETRY.x_0;

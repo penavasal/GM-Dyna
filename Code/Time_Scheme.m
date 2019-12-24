@@ -104,8 +104,10 @@ classdef Time_Scheme
                 ste=1;
                 t(ste,1)=0;
                 SOLVER.dim=0;
+                SOLVER.step_ini(i)=ste+1;
             else
                 ste=SOLVER.step_final(i-1);
+                SOLVER.step_ini(i)=ste;
                 t(ste,1)=SOLVER.Time_final(i-1);
                 SOLVER.Time_final(i)=SOLVER.Time_final(i)+t(ste,1);
             end
@@ -120,9 +122,9 @@ classdef Time_Scheme
             TIME{i}.t=t;
             
             if SOLVER.SAVE_I==1
-                SOLVER.dim=SOLVER.dim+floor(SOLVER.step_final(i)/SOLVER.SAVE_I);
+                SOLVER.dim=floor(SOLVER.step_final(i)/SOLVER.SAVE_I);
             else
-                SOLVER.dim=SOLVER.dim+floor(SOLVER.step_final(i)/SOLVER.SAVE_I)+1;
+                SOLVER.dim=floor(SOLVER.step_final(i)/SOLVER.SAVE_I)+1;
             end
             %TIME{i}.tp=zeros(SOLVER.dim,1);
             fprintf('%i plot steps when finish BLOCK %i\n',SOLVER.dim,i);

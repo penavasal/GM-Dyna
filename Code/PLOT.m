@@ -62,7 +62,6 @@ function plot_ep(str,folder,ste_p,rt,varargin)
         colorbar
         axis([0,DDD,0,HHH])
         drawnow
-        pause
     end
 
     %Plot contour of pore pressure to obtain 0 pore pressure value
