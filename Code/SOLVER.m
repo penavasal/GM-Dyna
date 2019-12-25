@@ -23,7 +23,8 @@ function SOLVER(MAT_POINT)
     while BLCK<SOLVER.BLOCKS+1
         
         if BLCK>1
-            if SOLVER.Output(BLCK)~=SOLVER.Output(BLCK-1)  
+            if SOLVER.Output(BLCK)~=SOLVER.Output(BLCK-1)  || ...
+                    isfile(SOLVER.Output(BLCK))==0
                 save(SOLVER.Output(BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
             end
         else

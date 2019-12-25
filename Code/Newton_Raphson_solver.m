@@ -78,11 +78,11 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         du(:,iter+1)=a*du(:,iter+1);
         d0(:,1)=d0(:,1)+du(:,iter+1);
         
-            % 3.1 Check
-            if isnan(du(:,iter+1))
-                disp('Nan in displacements')
-                SOLVER.FAIL=1;
-            end
+        % 3.1 Check
+        if isnan(du(:,iter+1))
+            disp('Nan in displacements')
+            SOLVER.FAIL=1;
+        end
         
         
         

@@ -196,6 +196,7 @@ function [dim,ste_aux,BLK]=fix_time(tp,ste_p)
     for i=1:BLOCKS
         if t_p<SOLVER.Time_final(i)
             BLK=i;
+            break;
         end
     end
     if BLK==0
