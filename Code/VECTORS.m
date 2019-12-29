@@ -152,7 +152,7 @@
             OUTPUT(1,number)=0;
             
             for i=1:number
-                if type(i,1)==2
+                if type(i,1)==1
                     R=0;
                     for j=1:GEOMETRY.df*GEOMETRY.nodes
                         if constrains(j,type(i,2))

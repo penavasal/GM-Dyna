@@ -55,8 +55,8 @@ function [load_s,OUTPUT]=...
         end
         
         for i=1:number
-            if type(i,1)==1 && type(i,2)==m
-                OUTPUT(1,i)=sum(load(:,m));
+            if type(i,1)==2 && type(i,2)==m
+                OUTPUT(1,i)=sum(load(:,m))+sum(acce(:,m));
             end
         end
     end

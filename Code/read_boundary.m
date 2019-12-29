@@ -429,19 +429,19 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads)
                     for k=1:sp
                         if V(sp+1-k)~=0
                             if SOLVER.UW==1
-                                BOUNDARY.dad(i*df-sp+1-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(i*df-sp+1-k,m)=3;
-                                BOUNDARY.tied(i*df-sp+1-k,m)=...
+                                BOUNDARY.dad(nod_f(i)*df-sp+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(nod_f(i)*df-sp+1-k,m)=3;
+                                BOUNDARY.tied(nod_f(i)*df-sp+1-k,m)=...
                                     nod_f2(i)*df-sp+1-k;
                             elseif SOLVER.UW==2
-                                BOUNDARY.dad(i*df-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(i*df-k,m)=3;
-                                BOUNDARY.tied(i*df-k,m)=...
+                                BOUNDARY.dad(nod_f(i)*df-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(nod_f(i)*df-k,m)=3;
+                                BOUNDARY.tied(nod_f(i)*df-k,m)=...
                                     nod_f2(i)*df-k;
                             else
-                                BOUNDARY.dad(i*df+1-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(i*df+1-k,m)=3;
-                                BOUNDARY.tied(i*df+1-k,m)=...
+                                BOUNDARY.dad(nod_f(i)*df+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY.constrains(nod_f(i)*df+1-k,m)=3;
+                                BOUNDARY.tied(nod_f(i)*df+1-k,m)=...
                                     nod_f2(i)*df+1-k;
                             end
                         end
