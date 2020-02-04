@@ -1,56 +1,75 @@
 function [load_s,OUTPUT]=...
-            calculate_forces(ste,MAT_POINT,Disp_field,Mat_state,MATRIX,BLCK)
+            calculate_forces(STEP,MAT_POINT,Mat_state,MATRIX)
 
-    global SOLVER LOAD GEOMETRY
+    global SOLVER LOAD GEOMETRY VARIABLE
+    
+    g=VARIABLE.g;
+    t=STEP.t;
+    BLCK=STEP.BLCK;
 
     df=GEOMETRY.df;
     sp=GEOMETRY.sp;
     
-    ext_forces_s = LOAD.ext_forces_s;
-    ext_acce     = LOAD.ext_acce;
-    load_mult    = LOAD.load_mult;
+    ext_forces_s = LOAD{BLCK}.ext_forces_s;
+    ext_acce     = LOAD{BLCK}.ext_acce;
+    value        = LOAD{BLCK}.value;
     if SOLVER.UW==1
-        ext_forces_w = LOAD.ext_forces_w;
+        ext_forces_w = LOAD{BLCK}.ext_forces_w;
     end
     
     type=SOLVER.OutputType;
     [number,~]=size(type);
     OUTPUT(1,number)=0;
-
-    [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,Mat_state,MATRIX,BLCK);
     
-    load=zeros(GEOMETRY.nodes*df,LOAD.size);
-    acce=zeros(GEOMETRY.nodes*df,LOAD.size);
+    if any(eval(value(5,:)) == 3)
+        [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,Mat_state,MATRIX,BLCK);
+    else
+        MATRIX.l_mass=zeros(GEOMETRY.nodes*df);
+    end
     
-    for m=1:LOAD.size
+    load=zeros(GEOMETRY.nodes*df,LOAD{BLCK}.size);
+    acce=zeros(GEOMETRY.nodes*df,LOAD{BLCK}.size);
+    
+    for m=1:LOAD{BLCK}.size
+        
+        if t<eval(value(2,m)) || t>eval(value(3,m))
+            continue;
+        end
+        
+        if strcmp(value(4,m),'VALUE')
+            val=eval(value(1,m));
+        elseif strcmp(value(4,m),'FUNCTION')
+            val=eval(value(1,m));
+        elseif strcmp(value(4,m),'FILE')
+            file_l=value{1,m};
+            val=interp1(file_l(:,1),file_l(:,2),t,'pchip','extrap'); 
+            if value(5,m) == 3
+                val=val*g;
+            end
+        else
+            disp('Error, wrong type of load!')
+            stop
+        end 
         vec=MATRIX.l_mass*ext_acce(:,m);
+        
         for i=1:GEOMETRY.nodes 
-%             if SOLVER.AXI
-%                 %if Disp_field.x_a(i,1)==0
-%                 %    t=2*pi*GEOMETRY.h_nds(i)/20;  
-%                 %else
-%                     t=2*pi*Disp_field.x_a(i,1);
-%                 %end
-%             else
-%                 t=1;
-%             end
-            t=1;
+            tt=1;
             if (SOLVER.UW==1 || SOLVER.UW==2) && SOLVER.IMPLICIT(BLCK)==1
-                t=-1;
+                tt=-1;
             end
                 
             if SOLVER.UW==1
             load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...
-                +t*ext_forces_s((i-1)*sp+1:i*sp,m)*load_mult(ste,m);
+                +tt*ext_forces_s((i-1)*sp+1:i*sp,m)*val;
             acce((i-1)*df+1:i*df,m)=acce((i-1)*df+1:i*df,m)...
-                +t*vec((i-1)*df+1:i*df,1)*load_mult(ste,m);
+                +tt*vec((i-1)*df+1:i*df,1)*val;
             load((i-1)*df+sp+1:i*df,m)=load((i-1)*df+sp+1:i*df,m)...
-                +t*ext_forces_w((i-1)*sp+1:i*sp,m)*load_mult(ste,m);
+                +tt*ext_forces_w((i-1)*sp+1:i*sp,m)*val;
             elseif SOLVER.UW==0 || SOLVER.UW==2
             load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...
-                +t*ext_forces_s((i-1)*sp+1:i*sp,m)*load_mult(ste,m);
+                +tt*ext_forces_s((i-1)*sp+1:i*sp,m)*val;
             acce((i-1)*df+1:(i-1)*df+sp,m)=acce((i-1)*df+1:(i-1)*df+sp,m)...
-                +t*vec((i-1)*sp+1:i*sp,1)*load_mult(ste,m);
+                +tt*vec((i-1)*sp+1:i*sp,1)*val;
             end
         end
         

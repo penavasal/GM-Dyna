@@ -1,12 +1,15 @@
 
-function [boundary,i_disp,velo,matrix]=calculate_boundaries(ste,matrix)
+function [boundary,i_disp,velo,matrix]=calculate_boundaries(STEP,matrix)
 
     global BOUNDARY
+    
+    ste = STEP.ste;
+    BLCK= STEP.BLCK;
 
-    constrains  = BOUNDARY.constrains;
-    dad         = BOUNDARY.dad;
-    vad         = BOUNDARY.vad;
-    b_mult      = BOUNDARY.b_mult; 
+    constrains  = BOUNDARY{BLCK}.constrains;
+    dad         = BOUNDARY{BLCK}.dad;
+    vad         = BOUNDARY{BLCK}.vad;
+    b_mult      = BOUNDARY{BLCK}.b_mult; 
        
     [dofs,bds]=size(constrains);
     boundary=zeros(dofs,1);
@@ -14,20 +17,38 @@ function [boundary,i_disp,velo,matrix]=calculate_boundaries(ste,matrix)
     velo=zeros(dofs,1);
     
     for m=1:bds
-        if b_mult(ste,m)=='NULL'
+        t   = STEP.t;
+        if t<eval(b_mult(2,m)) || t>eval(b_mult(3,m))
             continue;
         else
-            val=str2double(b_mult(ste,m));
+            if strcmp(b_mult(4,m),'VALUE')
+                val=eval(b_mult(1,m));
+            elseif strcmp(b_mult(4,m),'FUNCTION')
+                val=eval(b_mult(1,m));
+            else
+                disp('Error, wrong type of boundary!')
+                stop
+            end 
+            
             if ste>1
-                if b_mult(ste-1,m)=='NULL'
-                    val2=0;
-                else
-                    val2=str2double(b_mult(ste-1,m));
-                end
-                if val2 && BOUNDARY.Type(m)~=5
+                t=t-STEP.dt;
+                if BOUNDARY{BLCK}.Type(m)~=5
+                    if t<eval(b_mult(2,m)) || t>eval(b_mult(3,m))
+                        val2=0;
+                    else
+                        if strcmp(b_mult(4,m),'VALUE')
+                            val2=eval(b_mult(1,m));
+                        elseif strcmp(b_mult(4,m),'FUNCTION')
+                            val2=eval(b_mult(1,m));
+                        else
+                            disp('Error, wrong type of boundary!')
+                            stop
+                        end 
+                    end
                     val=val-val2;
                 end
             end
+            
             for i=1:dofs
                 if constrains(i,m)==1
                     if boundary(i)==1
@@ -55,8 +76,8 @@ function [boundary,i_disp,velo,matrix]=calculate_boundaries(ste,matrix)
                         break;
                     else
                         matrix(i,i)=matrix(i,i)+val*dad(i,m);
-                        matrix(i,BOUNDARY.tied(i,m))=...
-                            matrix(i,BOUNDARY.tied(i,m))-val*dad(i,m);
+                        matrix(i,BOUNDARY{BLCK}.tied(i,m))=...
+                            matrix(i,BOUNDARY{BLCK}.tied(i,m))-val*dad(i,m);
                     end
                 end
             end

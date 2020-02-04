@@ -1,8 +1,11 @@
 
 function [Disp_field]=explicit_corrector...
-    (ste,MATRIX,Disp_field,load_t,int_Ft,time_step,gamma)
+    (STEP,MATRIX,Disp_field,load_t,int_Ft,gamma)
 
     global GEOMETRY SOLVER
+    
+    time_step=STEP.dt;
+    
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
@@ -35,7 +38,7 @@ function [Disp_field]=explicit_corrector...
     
     
     %% 0. Boundary conditions
-    [boundary,~,~]=calculate_boundaries(ste);
+    [boundary,~,~]=calculate_boundaries(STEP);
 
     %%  1.  Solver   %%%%
 

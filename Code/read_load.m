@@ -207,7 +207,7 @@ function read_load(filetxt,BLCK,NODE_LIST)
     interval(INTERVAL,loads,BLCK,VALUE,TYPE);
     %[load_nds]=localization(RANGE,TYPE,loads);
     
-    calculate_forces(NODE_LIST,VECTOR,TYPE,NLIST,loads);
+    calculate_forces(NODE_LIST,VECTOR,TYPE,NLIST,loads,BLCK);
     
     for i=1:loads
         if OUT(i)==1
@@ -237,23 +237,10 @@ end
 
 function interval(INTERVAL,loads,BLCK,VALUE,TYPE)
 
-    global SOLVER TIME LOAD VARIABLE
-    
-    g=VARIABLE.g;
+    global LOAD
         
-    if BLCK==1
-        ini=1;
-        fin=SOLVER.step_final(BLCK);
-    else
-        ini=SOLVER.step_final(BLCK-1);
-        fin=SOLVER.step_final(BLCK);
-    end
-    
-    if loads
-        LOAD.load_mult(fin,loads)=0;
-    else
-        LOAD.load_mult=0;
-    end
+    %LOAD{BLCK}.value(5,loads)=0;
+    LOAD{BLCK}.value=strings(5,loads);
     
     for m=1:loads
         % Value
@@ -261,39 +248,24 @@ function interval(INTERVAL,loads,BLCK,VALUE,TYPE)
         if isnan(val)
             if isfile(strcat(VALUE(m),'.txt'))
                 ff=strcat(VALUE(m),'.txt');
-                file_l=load_file(ff);
-                ff=1;
+                LOAD{BLCK}.value(1,m)={load_file(ff)};
+                LOAD{BLCK}.value(4,m)='FILE';
             else
-                ff=0;
+                LOAD{BLCK}.value(4,m)='FUNCTION';
+                LOAD{BLCK}.value(1,m)=VALUE(m);
             end
+        else
+            LOAD{BLCK}.value(4,m)='VALUE';
+            LOAD{BLCK}.value(1,m)=val;
         end
-        
-        %Interval
-        for i=ini:SOLVER.step_final(BLCK)
-            t=TIME{BLCK}.t(i);
-            if t>=INTERVAL(1,m) && t<=INTERVAL(2,m)
-                if isnan(val)
-                    if ff
-                        if TYPE(m)==3
-                            d=g;
-                        else
-                            d=1;
-                        end
-                        val1=interp1(file_l(:,1),file_l(:,2),t,'pchip','extrap')*d;      
-                    else
-                        val1=eval(VALUE(m));
-                    end 
-                else
-                    val1=val;
-                end                
-                LOAD.load_mult(i,m)=val1;
-            end
-        end 
+        LOAD{BLCK}.value(2,m)=INTERVAL(1,m);
+        LOAD{BLCK}.value(3,m)=INTERVAL(2,m);
+        LOAD{BLCK}.value(5,m)=TYPE(m);
     end
 end
 
 function calculate_forces...
-    (NODE_LIST,VECTOR,TYPE,NLIST,loads)
+    (NODE_LIST,VECTOR,TYPE,NLIST,loads,BLCK)
     
     global GEOMETRY SOLVER LOAD
     
@@ -303,12 +275,12 @@ function calculate_forces...
     df=GEOMETRY.df;
     
     if loads
-        LOAD.ext_forces_s = zeros(nodes*sp,loads);
+        LOAD{BLCK}.ext_forces_s = zeros(nodes*sp,loads);
         if SOLVER.UW==1
-            LOAD.ext_forces_w = zeros(nodes*sp,loads);
+            LOAD{BLCK}.ext_forces_w = zeros(nodes*sp,loads);
         end
-        LOAD.ext_acce = zeros(nodes*df,loads);    
-        LOAD.size=loads;
+        LOAD{BLCK}.ext_acce = zeros(nodes*df,loads);    
+        LOAD{BLCK}.size=loads;
 
         pls=NODE_LIST.pls;
         lls=NODE_LIST.lls;
@@ -318,12 +290,12 @@ function calculate_forces...
         LL=NODE_LIST.LL;
         VL=NODE_LIST.VL;  
     else
-        LOAD.ext_forces_s = 0;
+        LOAD{BLCK}.ext_forces_s = 0;
         if SOLVER.UW==1
-            LOAD.ext_forces_w = 0;
+            LOAD{BLCK}.ext_forces_w = 0;
         end
-        LOAD.ext_acce = 0;   
-        LOAD.size=loads;
+        LOAD{BLCK}.ext_acce = 0;   
+        LOAD{BLCK}.size=loads;
     end
 
     for m=1:loads
@@ -411,7 +383,7 @@ function calculate_forces...
             if TYPE(m)==1
                 nn=nod_f(j);
                 for k=1:sp
-                    LOAD.ext_forces_s(nn*sp+1-k,m)=V(sp+1-k);
+                    LOAD{BLCK}.ext_forces_s(nn*sp+1-k,m)=V(sp+1-k);
                 end
             elseif TYPE(m)==2
                 if SOLVER.AXI
@@ -427,14 +399,14 @@ function calculate_forces...
                 else
                     f=V*d/2;
                 end
-                LOAD.ext_forces_s(nod_f(j,1)*sp-1,m)=...
-                    LOAD.ext_forces_s(nod_f(j,1)*sp-1,m)+f(1);
-                LOAD.ext_forces_s(nod_f(j,1)*sp,m)=...
-                    LOAD.ext_forces_s(nod_f(j,1)*sp,m)+f(2);
-                LOAD.ext_forces_s(nod_f(j,2)*sp-1,m)=...
-                    LOAD.ext_forces_s(nod_f(j,2)*sp-1,m)+f(1);
-                LOAD.ext_forces_s(nod_f(j,2)*sp,m)=...
-                    LOAD.ext_forces_s(nod_f(j,2)*sp,m)+f(2);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)+f(1);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)=...
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)+f(2);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)=...
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)+f(1);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)=...
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)+f(2);
 %             if RANGE(1,m*2)-RANGE(1,m*2-1)==0
 %                 [LOAD.ext_forces_s(:,m)]=dist_f(nod_f,x_0,V,SOLVER.AXI);
 %             elseif RANGE(2,m*2)-RANGE(2,m*2-1)==0
@@ -446,22 +418,22 @@ function calculate_forces...
                 nn=nod_f(j);
                 if SOLVER.UW==0
                     for k=1:sp
-                        LOAD.ext_acce(nn*sp+1-k,m)=V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*sp+1-k,m)=V(sp+1-k);
                     end
                 elseif SOLVER.UW==1
                     for k=1:sp
-                        LOAD.ext_acce(nn*df+1-k,m)=V(sp+1-k);
-                        LOAD.ext_acce(nn*df-sp+1-k,m)=V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*df+1-k,m)=V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*df-sp+1-k,m)=V(sp+1-k);
                     end
                 elseif SOLVER.UW==2
                     for k=1:sp
-                        LOAD.ext_acce(nn*df-k,m)=V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*df-k,m)=V(sp+1-k);
                     end
                 end
             elseif TYPE(m)==4
                 nn=nod_f(j);
                 for k=1:sp
-                    LOAD.ext_forces_w(nn*sp+1-k,m)=V(sp+1-k);
+                    LOAD{BLCK}.ext_forces_w(nn*sp+1-k,m)=V(sp+1-k);
                 end
             elseif TYPE(m)==5
                 if SOLVER.AXI
@@ -477,14 +449,14 @@ function calculate_forces...
                 else
                     f=V*d/2;
                 end
-                LOAD.ext_forces_s(nod_f(j,1)*sp-1,m)=...
-                    LOAD.ext_forces_w(nod_f(j,1)*sp-1,m)+f(1);
-                LOAD.ext_forces_s(nod_f(j,1)*sp,m)=...
-                    LOAD.ext_forces_w(nod_f(j,1)*sp,m)+f(2);
-                LOAD.ext_forces_s(nod_f(j,2)*sp-1,m)=...
-                    LOAD.ext_forces_w(nod_f(j,2)*sp-1,m)+f(1);
-                LOAD.ext_forces_s(nod_f(j,2)*sp,m)=...
-                    LOAD.ext_forces_w(nod_f(j,2)*sp,m)+f(2);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)+f(1);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)=...
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp,m)+f(2);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)=...
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp-1,m)+f(1);
+                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)=...
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp,m)+f(2);
             end
         end     
     end

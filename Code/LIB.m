@@ -212,47 +212,26 @@
         end
         
         % Convergence and alpha scale (Line search)
-        function [CONVER,NORMErec,a,iter]=...
-            convergence(r,normr0,NORMErec,toll,iter,imax,a)
+        function [CONVER,NORMErec]=...
+            convergence(r,normr0,NORMErec,toll,iter,imax)
         
             global SOLVER
         
-            NORMErec(iter,1) = norm(r)/normr0; 
+            OBJ = norm(r)/normr0; 
             CONVER=0;
             
             if SOLVER.FAIL==1
                 CONVER=1;
-            elseif NORMErec(iter,1) < toll  ||  norm(r)< toll
+            elseif OBJ < toll
                 CONVER=1;
             else
-                if iter<imax
-                    if iter>imax/2
-                        %fprintf('iter %i \n',iter);
-                        if std(NORMErec(iter-10:iter-1))<toll/100
-                            CONVER=1;
-                        end
-                    end
-                    if (NORMErec(iter)-NORMErec(iter-1))>1e-5 && iter>4
-                        f1=NORMErec(iter-1);
-                        f2=NORMErec(iter);
-                        a=a*a*f1/2/(f2+f1*a-f1);
-                        iter = iter-1;
-                    else
-                        a=1;
-                    end
-                    if a<1e-9
-                        b=min(iter-1,10);
-                        if std(NORMErec(iter-b:iter))<toll/10 ||...
-                           NORMErec(iter,1) < toll *100
-                           CONVER=1;
-                        else
-                            fprintf('\n No convergence RM \n')
-                            stop;
-                        end
-                    end
-                    
+                NORMErec(iter,1) = OBJ;
+                if iter<imax && iter>imax/2
+                    %fprintf('iter %i \n',iter);
+                    if std(NORMErec(iter-10:iter-1))<toll/100
+                        CONVER=1;
+                    end    
                 elseif iter == imax
-
                     if NORMErec(iter,1)<toll*10
                         CONVER=1;
                     %elseif std(normr0*NORMErec(iter-10:iter-1))<toll/10
@@ -260,9 +239,31 @@
                         CONVER=1;
                     else
                         fprintf('\n No convergence RM \n')
-                        stop;
+                        SOLVER.FAIL=1;
+                        CONVER=1;
                     end
                 end         
+            end
+            
+        end
+        
+        function [a,CONVER]=a_factor_NR(a,NORMErec,toll,iter)
+            
+            f1=NORMErec(iter-1);
+            f2=NORMErec(iter);
+            a=a*a*f1/2/(f2+f1*a-f1);
+            CONVER=0;
+            
+            if a<1e-9
+                b=min(iter-1,10);
+                if std(NORMErec(iter-b:iter))<toll/10 ||...
+                   NORMErec(iter,1) < toll *100
+                   a=1;
+                   CONVER=1;
+                else
+                    fprintf('\n No convergence RM \n')
+                    stop;
+                end
             end
             
         end

@@ -232,8 +232,9 @@ function read_boundary(filetxt,BLCK,NODE_LIST)
     interval(INTERVAL,VALUE,loads,BLCK);
     %[b_nds]=localization(RANGE,loads,TIED,TYPE);
     
-    calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads);
+    calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK);
     
+    % OUTPUT
     for i=1:loads
         if OUT(i)==1
             tt=0;
@@ -257,41 +258,32 @@ function read_boundary(filetxt,BLCK,NODE_LIST)
             end
         end
     end
+    
 end
 
 function interval(INTERVAL,VALUE,loads,BLCK)
 
-    global SOLVER TIME BOUNDARY
+    global BOUNDARY
     
-    if BLCK==1
-        ini=1;
-        fin=SOLVER.step_final(BLCK);
-        BOUNDARY.b_mult=strings(fin,loads);
-    else
-        ini=SOLVER.step_final(BLCK-1);
-        fin=SOLVER.step_final(BLCK);
-    end
-    
+    BOUNDARY{BLCK}.b_mult=strings(4,loads);
+    %BOUNDARY{BLCK}.b_mult(4,loads)=0;
     for m=1:loads
-        for i=ini:fin
-            t=TIME{BLCK}.t(i);
-            if t>=INTERVAL(1,m) && t<=INTERVAL(2,m)
-                %BOUNDARY.b_mult(i,m)=1;
-                val=str2double(VALUE(m));
-                if isnan(val)
-                    t=TIME{BLCK}.t(i);
-                    val=eval(VALUE(m));
-                end
-                BOUNDARY.b_mult(i,m)=num2str(val);
-            else
-                BOUNDARY.b_mult(i,m)='NULL';
-            end
-        end 
+        % Value
+        val=str2double(VALUE(m));
+        if isnan(val)
+            BOUNDARY{BLCK}.b_mult(4,m)='FUNCTION';
+            BOUNDARY{BLCK}.b_mult(1,m)=VALUE(m);
+        else
+            BOUNDARY{BLCK}.b_mult(4,m)='VALUE';
+            BOUNDARY{BLCK}.b_mult(1,m)=val;
+        end
+        BOUNDARY{BLCK}.b_mult(2,m)=INTERVAL(1,m);
+        BOUNDARY{BLCK}.b_mult(3,m)=INTERVAL(2,m);
     end
 
 end
 
-function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads)
+function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK)
     
     global GEOMETRY SOLVER BOUNDARY
     
@@ -299,13 +291,13 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads)
     df=GEOMETRY.df;
     x=GEOMETRY.x_0;
     
-    BOUNDARY.constrains = zeros(GEOMETRY.nodes*df,loads);
-    BOUNDARY.dad  = zeros(GEOMETRY.nodes*df,loads);
-    BOUNDARY.vad  = zeros(GEOMETRY.nodes*df,loads);
-    BOUNDARY.Type = TYPE;
-    BOUNDARY.tied = zeros(GEOMETRY.nodes*df,loads); 
+    BOUNDARY{BLCK}.constrains = zeros(GEOMETRY.nodes*df,loads);
+    BOUNDARY{BLCK}.dad  = zeros(GEOMETRY.nodes*df,loads);
+    BOUNDARY{BLCK}.vad  = zeros(GEOMETRY.nodes*df,loads);
+    BOUNDARY{BLCK}.Type = TYPE;
+    BOUNDARY{BLCK}.tied = zeros(GEOMETRY.nodes*df,loads); 
     
-    BOUNDARY.size=loads;
+    BOUNDARY{BLCK}.size=loads;
     
     bcs=NODE_LIST.bcs;
     BC=NODE_LIST.BC;
@@ -315,9 +307,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads)
         V=VECTOR(:,m)';
         nv=norm(V);
         if nv==0
-            if TYPE~=6
-                continue
-            else
+            if TYPE(m)~=6
                 disp('Error on the vector of boundary conditon');
                 stop;
             end
@@ -386,74 +376,74 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads)
                 if (TYPE(m)==2) || (TYPE(m)==1 && SOLVER.UW==0)
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.dad(nod_f(i)*df+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(nod_f(i)*df+1-k,m)=1;
+                            BOUNDARY{BLCK}.dad(nod_f(i)*df+1-k,m)=V(sp+1-k);
+                            BOUNDARY{BLCK}.constrains(nod_f(i)*df+1-k,m)=1;
                         end
                     end
                 elseif TYPE(m)==1 && SOLVER.UW==1
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.dad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(nod_f(i)*df-sp+1-k,m)=1;
+                            BOUNDARY{BLCK}.dad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
+                            BOUNDARY{BLCK}.constrains(nod_f(i)*df-sp+1-k,m)=1;
                         end
                     end
                 elseif TYPE(m)==1 && SOLVER.UW==2
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.dad(nod_f(i)*df-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(nod_f(i)*df-k,m)=1;
+                            BOUNDARY{BLCK}.dad(nod_f(i)*df-k,m)=V(sp+1-k);
+                            BOUNDARY{BLCK}.constrains(nod_f(i)*df-k,m)=1;
                         end
                     end
                 elseif (TYPE(m)==4) || (TYPE(m)==3 && SOLVER.UW==0)
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.vad(nod_f(i)*df+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(nod_f(i)*df+1-k,m)=2;
+                            BOUNDARY{BLCK}.vad(nod_f(i)*df+1-k,m)=V(sp+1-k);
+                            BOUNDARY{BLCK}.constrains(nod_f(i)*df+1-k,m)=2;
                         end
                     end
                 elseif TYPE(m)==3 && SOLVER.UW==1
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.vad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(nod_f(i)*df-sp+1-k,m)=2;
+                            BOUNDARY{BLCK}.vad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
+                            BOUNDARY{BLCK}.constrains(nod_f(i)*df-sp+1-k,m)=2;
                         end
                     end
                 elseif TYPE(m)==3 && SOLVER.UW==2
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            BOUNDARY.vad(nod_f(i)*df-k,m)=V(sp+1-k);
-                            BOUNDARY.constrains(nod_f(i)*df-k,m)=2;
+                            BOUNDARY{BLCK}.vad(nod_f(i)*df-k,m)=V(sp+1-k);
+                            BOUNDARY{BLCK}.constrains(nod_f(i)*df-k,m)=2;
                         end
                     end
                 elseif TYPE(m)==5
                     for k=1:sp
                         if V(sp+1-k)~=0
                             if SOLVER.UW==1
-                                BOUNDARY.dad(nod_f(i)*df-sp+1-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(nod_f(i)*df-sp+1-k,m)=3;
-                                BOUNDARY.tied(nod_f(i)*df-sp+1-k,m)=...
+                                BOUNDARY{BLCK}.dad(nod_f(i)*df-sp+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY{BLCK}.constrains(nod_f(i)*df-sp+1-k,m)=3;
+                                BOUNDARY{BLCK}.tied(nod_f(i)*df-sp+1-k,m)=...
                                     nod_f2(i)*df-sp+1-k;
                             elseif SOLVER.UW==2
-                                BOUNDARY.dad(nod_f(i)*df-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(nod_f(i)*df-k,m)=3;
-                                BOUNDARY.tied(nod_f(i)*df-k,m)=...
+                                BOUNDARY{BLCK}.dad(nod_f(i)*df-k,m)=sign(V(sp+1-k));
+                                BOUNDARY{BLCK}.constrains(nod_f(i)*df-k,m)=3;
+                                BOUNDARY{BLCK}.tied(nod_f(i)*df-k,m)=...
                                     nod_f2(i)*df-k;
                             else
-                                BOUNDARY.dad(nod_f(i)*df+1-k,m)=sign(V(sp+1-k));
-                                BOUNDARY.constrains(nod_f(i)*df+1-k,m)=3;
-                                BOUNDARY.tied(nod_f(i)*df+1-k,m)=...
+                                BOUNDARY{BLCK}.dad(nod_f(i)*df+1-k,m)=sign(V(sp+1-k));
+                                BOUNDARY{BLCK}.constrains(nod_f(i)*df+1-k,m)=3;
+                                BOUNDARY{BLCK}.tied(nod_f(i)*df+1-k,m)=...
                                     nod_f2(i)*df+1-k;
                             end
                         end
                     end
                 elseif TYPE(m)==6 && SOLVER.UW==2
-                    BOUNDARY.dad(nod_f(i)*df,m)=1;
-                    BOUNDARY.constrains(nod_f(i)*df,m)=1;
+                    BOUNDARY{BLCK}.dad(nod_f(i)*df,m)=1;
+                    BOUNDARY{BLCK}.constrains(nod_f(i)*df,m)=1;
                 end
                 if SOLVER.UW==0 && sp~=df
                     % No water
-                    BOUNDARY.constrains(nod_f(i)*df,m)=1;
-                    BOUNDARY.constrains(nod_f(i)*df-1,m)=1;
+                    BOUNDARY{BLCK}.constrains(nod_f(i)*df,m)=1;
+                    BOUNDARY{BLCK}.constrains(nod_f(i)*df-1,m)=1;
                 end
             end
         end    

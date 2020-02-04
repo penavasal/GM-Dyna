@@ -2,12 +2,14 @@
     methods(Static)
 
         % Store
-        function GLOBAL=Store(GLOBAL,ste_p,ste,BLCK,Mat_state,Disp_field,...
+        function GLOBAL=Store(GLOBAL,STEP,Mat_state,Disp_field,...
             Int_var,MAT_POINT,out_list1)
 
-            global TIME SOLVER GEOMETRY
+            global SOLVER GEOMETRY
+            
+            ste_p=STEP.ste_p;
 
-            [out_list2]=VECTORS.reaction(Mat_state.fint);
+            [out_list2]=VECTORS.reaction(Mat_state.fint,STEP);
             GLOBAL.OutputList(ste_p,:)=out_list1+out_list2;
 
             GLOBAL.d(:,ste_p)   = Disp_field.d(:,1);
@@ -49,7 +51,7 @@
                 GLOBAL.dpw(:,ste_p) = Mat_state.dpw(:,1);
             end
 
-            GLOBAL.tp(ste_p,1)=TIME{BLCK}.t(ste);
+            GLOBAL.tp(ste_p,1)=STEP.t;
             GLOBAL.ste_p=ste_p;
 
         end
@@ -88,9 +90,13 @@
         
         % Update initial
         function [Disp_field,Mat_state,Int_var,stiff_mtx]=Update_ini(...
-                BLK,GLOBAL,ste,ste_p,Disp_field,Mat_state,Int_var,MAT_POINT)
+                STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT)
             
             global SOLVER GEOMETRY
+            
+            BLK=STEP.BLCK;
+            ste=STEP.ste;
+            ste_p=STEP.ste_p;
             
             for j=1:GEOMETRY.nodes
                 for i=1:GEOMETRY.sp
@@ -127,7 +133,7 @@
             end
             
             % Initial Stresses
-            Int_var.P0(:,1)=GLOBAL.Ps(:,1);
+            %Int_var.P0(:,1)=GLOBAL.Ps(:,1);
             Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,1);
             if SOLVER.UW>0
                 Mat_state.pw(:,3)=GLOBAL.pw(:,1);
@@ -136,16 +142,16 @@
             % Constitutive
             Mat_state.F(:,1)=GLOBAL.F(:,ste_p);
             [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,BLK);
+                Constitutive(1,STEP,Int_var,Mat_state,MAT_POINT);
             Mat_state.fint(:,2)=Mat_state.fint(:,1);
         end
         
         % Reaction forces
-        function [OUTPUT]=reaction(residual)
+        function [OUTPUT]=reaction(residual,STEP)
 
             global GEOMETRY SOLVER BOUNDARY
             
-            constrains  = BOUNDARY.constrains;
+            constrains  = BOUNDARY{STEP.BLCK}.constrains;
             
             type=SOLVER.OutputType;
             [number,~]=size(type);

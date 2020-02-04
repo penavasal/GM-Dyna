@@ -342,11 +342,11 @@ function MAT_POINT=read_problem
             case 'NEWTON_RAPHSON_LOOP'
                 SOLVER.NR(BLCK)=b(t); %Every NR iterations re-calculate K matrix 
                 continue
-            case 'NR_TOLERANCE_RELATIVE'
-                SOLVER.rel_tolerance(BLCK) =b(t); 
+            case 'NR_TOLERANCE_FORCES'
+                SOLVER.r_tolerance(BLCK) =b(t); 
                 continue
-            case 'NR_TOLERANCE_ABSOLUTE'
-                SOLVER.abs_tolerance(BLCK)=b(t);  
+            case 'NR_TOLERANCE_DISP'
+                SOLVER.d_tolerance(BLCK)=b(t);  
                 continue
             case 'ITERATIONS' 
                 SOLVER.NR_iterations(BLCK)=b(t); 

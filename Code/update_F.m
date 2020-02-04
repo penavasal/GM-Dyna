@@ -194,7 +194,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
                 end
                 
                 % New vol, dens, jaco
-                MAT_POINT(e).J=jacobians(e);
+                jaco_new=det(F_);
+                MAT_POINT(e).J=jaco_new;
                 
                 %Storage of vector F
                 [f]=LIB.m2v(F_);

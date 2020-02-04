@@ -1,12 +1,18 @@
 % Hay que arreglar la parte de contacto
 
 function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
-            (ste,Disp_field,MAT_POINT,Mat_state,time_step,gamma)
+            (STEP,Disp_field,MAT_POINT,Mat_state,gamma)
 
     global GEOMETRY
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
+    
+    time_step=STEP.dt;
+    
+%     if STEP.ste==395
+%         ste;
+%     end
     
     x_a = Disp_field.x_a;
     d0  = Disp_field.d;
@@ -14,7 +20,7 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
     v0  = Disp_field.v;
     
     %% 0. Boundary conditions
-    [boundary,i_disp,velo]=calculate_boundaries(ste);
+    [boundary,i_disp,velo]=calculate_boundaries(STEP);
 
     %% 1. Predictor
     C1=1;

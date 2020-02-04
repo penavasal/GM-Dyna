@@ -8,50 +8,50 @@ function SOLVER(MAT_POINT)
     %----------------------------------------------------------------------
     % Initial state, matrixes and load
     %----------------------------------------------------------------------    
-    [BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
-        stiff_mtx]=init(MAT_POINT);
+    [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,stiff_mtx]=...
+        init(MAT_POINT);
     
     MATRIX=DYN_MATRIX; 
     
     [load_s,out_list1]=...
-        calculate_forces(ste,MAT_POINT,Disp_field,Mat_state,MATRIX,BLCK);
-    GLOBAL.OutputList(ste_p,:)=out_list1;
+        calculate_forces(STEP,MAT_POINT,Mat_state,MATRIX);
+    GLOBAL.OutputList(STEP.ste_p,:)=out_list1;
     
     %----------------------------------------------------------------------
     % Solver for each Block
     %---------------------------------------------------------------------- 
-    while BLCK<SOLVER.BLOCKS+1
+    while STEP.BLCK<SOLVER.BLOCKS+1
         
-        if BLCK>1
-            if SOLVER.Output(BLCK)~=SOLVER.Output(BLCK-1)  || ...
-                    isfile(SOLVER.Output(BLCK))==0
-                save(SOLVER.Output(BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
+        if STEP.BLCK>1
+            if SOLVER.Output(STEP.BLCK)~=SOLVER.Output(STEP.BLCK-1)  || ...
+                    isfile(SOLVER.OutputSTEP.(BLCK))==0
+                save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
             end
         else
-            save(SOLVER.Output(BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
+            save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
         end
 
-        if SOLVER.IMPLICIT(BLCK)==0
-            [ste,ste_p,MAT_POINT,GLOBAL]=...
-                Explicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
+        if SOLVER.IMPLICIT(STEP.BLCK)==0
+            [STEP,MAT_POINT,GLOBAL]=...
+                Explicit_solver(STEP,MAT_POINT,Disp_field,Int_var,...
                 Mat_state,GLOBAL,MATRIX,load_s);
         else
-            [ste,ste_p,MAT_POINT,GLOBAL]=...
-                Implicit_solver(BLCK,ste,ste_p,MAT_POINT,Disp_field,Int_var,...
+            [STEP,MAT_POINT,GLOBAL]=...
+                Implicit_solver(STEP,MAT_POINT,Disp_field,Int_var,...
                 Mat_state,GLOBAL,stiff_mtx,MATRIX,load_s);
         end
-        BLCK=BLCK+1;
+        STEP.BLCK=STEP.BLCK+1;
         
-        if BLCK>SOLVER.BLOCKS
+        if STEP.BLCK>SOLVER.BLOCKS
             break;
         else
             % Update
             [Disp_field,Mat_state,Int_var,stiff_mtx]=VECTORS.Update_ini(...
-                BLCK,GLOBAL,ste,ste_p,Disp_field,Mat_state,Int_var,MAT_POINT);
+                STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT);
             
             [load_s,out_list1]=...
-                calculate_forces(ste,MAT_POINT,Disp_field,Mat_state,MATRIX,BLCK);
-            GLOBAL.OutputList(ste_p,:)=out_list1;
+                calculate_forces(STEP,MAT_POINT,Mat_state,MATRIX);
+            GLOBAL.OutputList(STEP.ste_p,:)=out_list1;
         end
     end
     

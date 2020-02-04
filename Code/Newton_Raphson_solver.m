@@ -1,9 +1,11 @@
 
 function [Disp_field,Mat_state,MAT_POINT]=...
-            Newton_Raphson_solver(ste,stiff_mtx,mass_mtx,damp_mtx,load_s,...
-            MAT_POINT,Disp_field,Int_var,Mat_state,BLCK)
+            Newton_Raphson_solver(STEP,stiff_mtx,mass_mtx,damp_mtx,load_s,...
+            MAT_POINT,Disp_field,Int_var,Mat_state)
         
     global SOLVER GEOMETRY
+    
+    BLCK=STEP.BLCK;
     
     clear error du
         
@@ -14,116 +16,122 @@ function [Disp_field,Mat_state,MAT_POINT]=...
     v0  = Disp_field.v;
     du=zeros(GEOMETRY.df*GEOMETRY.nodes,SOLVER.NR_iterations(BLCK));
     
-    [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste,BLCK);
-    [InvK,~]=apply_conditions(0,ste,matrix,0);
-
-    % Solve Newton Raphson
-    TOL=SOLVER.rel_tolerance(BLCK);
+    [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,STEP);
+    [InvK,~]=apply_conditions(0,STEP,matrix,0);
     
-    if ste==SOLVER.step_ini(BLCK)
-        TOL=TOL*10000;
-    elseif ste<SOLVER.step_ini(BLCK)+3
-        TOL=TOL*100;
-    end
-        
+    [GT0]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
+            damp_mtx,load_s(:,1),load_s(:,2),STEP);
+
+    [~,GT0]=apply_conditions(1,STEP,matrix,GT0);
+
+    
+    % Solve Newton Raphson
+    RTOL=SOLVER.r_tolerance(BLCK);
+    DTOL=SOLVER.d_tolerance(BLCK);      
     NR1=SOLVER.NR(BLCK);
+    
     error_nr=zeros(SOLVER.NR_iterations(BLCK),1);
-    iter=0;
-    a=1;
+    iter=1;
+    nGT0=norm(GT0);
+    GT=GT0;
+    
     while iter<SOLVER.NR_iterations(BLCK)
         
         iter=iter+1;
-
-        % 1. Evaluate residual 
-        [GT]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
-            damp_mtx,load_s(:,1),load_s(:,2),ste,BLCK);
-
-        [~,GT]=apply_conditions(min(iter,2),ste,matrix,GT);
         
-        if isnan(GT)   %|| NORMErec(iter,1)>emax
-            error('Fallo en el NR global \n');
+        % A. Delta u calculation
+        [Delta_u]=Time_Scheme.solver_1(InvK,GT,a0,v0,STEP);
+        
+        % A.1 Check
+        if isnan(du(:,iter))
+            disp('Nan in displacements')
             SOLVER.FAIL=1;
-        else
-            % 2. Check for convergence
-            if iter==1
-                GT0=norm(GT);
-                TOL=max(SOLVER.abs_tolerance(BLCK)*GT0,TOL);
+            break;
+        end
+        
+        A_conver=0;
+        a=1;
+        while A_conver==0
+            
+            % 1. Calculate displacements
+            %--------------------------------------------------------------
+            du(:,iter)=a*Delta_u;
+            d0(:,1)=d0(:,1)+du(:,iter);
+            
+            % 2. Update
+            %--------------------------------------------------------------
+            % 2.1 Deformation gradient
+            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
+            
+            % 2.2 Stress and Internal Forces
+            [~,Int_var,Mat_state]=...
+                Constitutive(0,STEP,Int_var,Mat_state,MAT_POINT);
+            
+            % 2.3 Residuum
+            [GT]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
+                damp_mtx,load_s(:,1),load_s(:,2),STEP);
+            [~,GT]=apply_conditions(2,STEP,matrix,GT);
+            
+            % 2. Convergence
+            %--------------------------------------------------------------
+            if isnan(GT)   %|| NORMErec(iter,1)>emax
+                error('Fallo en el NR global \n');
+                SOLVER.FAIL=1;
             else
-                [CONVER,error_nr,a,iter]=LIB.convergence(GT,GT0,error_nr,...
-                    TOL,iter,SOLVER.NR_iterations(BLCK),a);
+                [CONVER,error_nr]=LIB.convergence(GT,nGT0,error_nr,...
+                    RTOL,iter,SOLVER.NR_iterations(BLCK));
                 if CONVER==1     
-                    break
-                elseif a==1
-                    if iter>SOLVER.NR_iterations(BLCK)/2 && NR1>1
-                        NR1=max(1,floor(NR1/2));
-                    end
-                else
-                    if norm(d0(:,1))<1e-12 || norm(du(:,iter))<1e-15
+                    break;
+                elseif iter>8 && norm(du(:,iter))/norm(d0(:,1)) < DTOL
+                    CONVER=1;
+                    break;
+                elseif iter>8 && ...
+                        norm(du(:,iter)) < 10*eps
+                    CONVER=1;
+                    break;
+                elseif (error_nr(iter)-error_nr(iter-1))>1e-8 && iter>3
+                    d0(:,1)=d0(:,1)-du(:,iter);
+                    [a,CONVER]=LIB.a_factor_NR(a,error_nr,RTOL,iter);
+                    if CONVER==1     
                         break;
                     end
-                    
-                    d0(:,1)=d0(:,1)-du(:,iter+1);
-                    [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
-                    [~,Int_var,Mat_state]=...
-                        Constitutive(0,ste,Int_var,Mat_state,MAT_POINT,BLCK);
-                    [GT]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
-                        damp_mtx,load_s(:,1),load_s(:,2),ste,BLCK);
-                    [~,GT]=apply_conditions(min(iter,2),ste,matrix,GT);
+                else
+                    A_conver=1;
                 end
             end
         end
-
-        % 3. Solve for displacement increment
-        [du(:,iter+1)]=Time_Scheme.solver_1(InvK,GT,a0,v0,ste,BLCK);
-        du(:,iter+1)=a*du(:,iter+1);
-        d0(:,1)=d0(:,1)+du(:,iter+1);
         
-        % 3.1 Check
-        if isnan(du(:,iter+1))
-            disp('Nan in displacements')
-            SOLVER.FAIL=1;
-        end
-        
-        
-        
+        % B. Update
+        % B.1 Position
         for j=1:GEOMETRY.nodes
             for i=1:GEOMETRY.sp
                 x_a(j,i)=GEOMETRY.x_0(j,i)+d0((j-1)*GEOMETRY.df+i,1);
             end
         end
-
-        % 4. Update
-        
-        % 4.1 Deformation gradient
-        [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
-
-        % 4.2 Shape function
+        % B.2 Shape function
         if SOLVER.REMAPPING
 %         [B,near,p,gamma_,lam_LME,REMAP,wrap,EP]=LME_EP(jacobians,...
 %             volume,x_a,xg,B,near,p,gamma_,lam_LME,wrap,EP,ste);
         end
         
-        % 5. Evaluate tangent matrix for NR iteration
-        if rem(iter,NR1)==0
-
-             if ste==1 || a<1e-4
+        % B.3 Tangent matrix
+        if CONVER==0 && iter>SOLVER.NR_iterations(BLCK)/2 && NR1>1
+            NR1=max(1,floor(NR1/2));
+        end
+        if CONVER==0 && rem(iter,NR1)==0
+             if STEP.ste==1
                  [stiff_mtx,Int_var,Mat_state]=...
-                 Constitutive(4,ste,Int_var,Mat_state,MAT_POINT,BLCK);
+                 Constitutive(4,STEP,Int_var,Mat_state,MAT_POINT);
              else
                 [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(1,ste,Int_var,Mat_state,MAT_POINT,BLCK);
+                Constitutive(1,STEP,Int_var,Mat_state,MAT_POINT);
             end
-            [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,ste,BLCK);
-            [InvK,~]=apply_conditions(0,ste,matrix,0);
-        else       
-            [~,Int_var,Mat_state]=...
-                Constitutive(0,ste,Int_var,Mat_state,MAT_POINT,BLCK);
+            [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,STEP);
+            [InvK,~]=apply_conditions(0,STEP,matrix,0);
+        elseif CONVER==1
+            break;
         end
-
-
     end
-    
     Disp_field.x_a  = x_a;
     Disp_field.d    = d0;
-        
 end

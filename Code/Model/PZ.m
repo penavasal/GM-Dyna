@@ -1,12 +1,12 @@
 
 function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
-    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,P0,BLCK)
+    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,BLCK)
 
 
     global MATERIAL GEOMETRY
     
-    MODEL=MATERIAL(BLCK).MODEL;
     Mat=GEOMETRY.material;
+    MODEL=MATERIAL(BLCK).MODEL(Mat(e));
     MAT=MATERIAL(BLCK).MAT;
         
     
@@ -40,7 +40,7 @@ function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
     Ge(4) = MAT(34,Mat(e));%alphag;
     Ge(5) = MAT(19,Mat(e));%Mf;
     Ge(6) = MAT(32,Mat(e));%Mg;
-    Ge(7) = P0;
+    Ge(7) = MAT(25,Mat(e));%P0;
     Ge(8) = MAT(35,Mat(e));%beta0;
     Ge(9) = MAT(36,Mat(e));%beta1;
     Ge(10)= MAT(37,Mat(e));%H0;
@@ -203,7 +203,7 @@ end
 
 function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
             PZ_forward_Euler(ste,Ge,defepr,H,Kt,defplasdes,defplasvol,...
-            dgamma_,deps,zetamax,etaB)
+            dgamma_,deps,zetamax0,etaB)
 
     ITER=50;
         
@@ -245,14 +245,20 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
         
         
         if discri<abs(p)*1e-8    
-            [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
-            if discri<0
+            if abs(discri)<abs(p)*1e-2
+                discri=0;
+                [H]=define_H_u(Ge,p,eta,etaB,Mg);
+            else
+                [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
                 ng(1)=-abs(ng(1));
             end
+            zetamax=zetamax0;
         else %if discri<0
             % H calculation   
-            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvol,zetamax,Mg);
+            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvol,zetamax0,Mg);
+            etaB=0;
         end
+        
         % Plastic multiplier
         incrlanda = discri/(H+n(1:2)'*De*ng(1:2));
         incrlandasum=incrlandasum+incrlanda;

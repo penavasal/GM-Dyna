@@ -1,7 +1,10 @@
 function [stiff_mtx,Int_var,Mat_state]=...
-    Constitutive(Kt,ste,Int_var,Mat_state,MAT_POINT,BLCK)
+    Constitutive(Kt,STEP,Int_var,Mat_state,MAT_POINT)
  
     global GEOMETRY SOLVER MATERIAL
+    
+    ste=STEP.ste;
+    BLCK=STEP.BLCK;
     
     df=GEOMETRY.df;
     dimf=GEOMETRY.f_dim;
@@ -54,18 +57,18 @@ function [stiff_mtx,Int_var,Mat_state]=...
                     [A,T,Gamma,dgamma,Sy,Be]=...
                         Drucker_prager(Kt,e,Gamma,dgamma,Sy,F,Be,Fold,BLCK);
                 elseif MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
-                    P0      = Int_var.P0(e);
+                    %P0      = Int_var.P0(e);
                     Sy_r    = Int_var.Sy_r(e,2);
                     [A,T,Gamma,dgamma,Sy,Sy_r,Be]=...
-                        M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,P0,BLCK);
+                        M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,BLCK);
                     Int_var.Sy_r(e,1) = Sy_r;
                 elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
-                    P0      = Int_var.P0(e);
+                    %P0      = Int_var.P0(e);
                     H       = Int_var.H(e,2);
                     etaB    = Int_var.eta(e,2);
                     epsvol  = Int_var.epsv(e,2);
                     [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
-                            PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,F,Fold,Be,P0,BLCK);
+                            PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,F,Fold,Be,BLCK);
                     Int_var.epsv(e,1)= epsvol;
                     Int_var.H(e,1)   = H;
                     Int_var.eta(e,1) = etaB;
@@ -100,6 +103,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
 
             AA=isreal(T);
             if  AA(1)==0
+                disp('Error with stress, in Constitutive file');
                 SOLVER.FAIL=1;
                 break;
             else

@@ -1,7 +1,7 @@
-function [BLK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
+function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         stiff_mtx]=init(MAT_POINT)
     
-    global GEOMETRY VARIABLE MATERIAL TIME SOLVER
+    global GEOMETRY VARIABLE MATERIAL SOLVER
     
     
     % Which is the initial time and step
@@ -16,14 +16,16 @@ function [BLK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
             ste_p=GLOBAL.ste_p;
         end
         
-        [dim,ste,BLK]=fix_time(GLOBAL.tp,ste_p);
+        [dim,STEP]=fix_time(GLOBAL.tp,ste_p);
         SOLVER.dim=dim;
- 
+        STEP.ste_p=ste_p;
     else
         dim = SOLVER.dim;
-        ste=1;
-        ste_p=1;
-        BLK=1;
+        STEP.ste=1;
+        STEP.ste_p=1;
+        STEP.BLCK=1;
+        STEP.t=0;
+        STEP.dt=SOLVER.time_step(STEP.BLCK);
     end
     
     
@@ -54,7 +56,7 @@ function [BLK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     Int_var.Sy_r= zeros(elements,2);
     Int_var.H   = zeros(elements,2);
     Int_var.eta = zeros(elements,2);
-    Int_var.P0  = zeros(elements,1);
+    %Int_var.P0  = zeros(elements,1);
        
     Mat_state.title='Material state: material point information';
 
@@ -107,12 +109,12 @@ function [BLK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     end
     
     GLOBAL.tp(dim,1)=0;
-    GLOBAL.J(1:elements,ste_p:dim)=1;
+    GLOBAL.J(1:elements,STEP.ste_p+1:dim)=1;
     
     %----------------------------------------------------------------------
     % VECTORS OF PARAMETERS
     %----------------------------------------------------------------------
-    mmat=MATERIAL(BLK).MAT;
+    mmat=MATERIAL(STEP.BLCK).MAT;
     for i=1:elements
         mati=GEOMETRY.material(i);
         Int_var.Sy(i,2) = mmat(7,mati);
@@ -136,7 +138,7 @@ function [BLK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
         
         [Disp_field,Mat_state,Int_var,stiff_mtx]=VECTORS.Update_ini(...
-            BLK,GLOBAL,ste,ste_p,Disp_field,Mat_state,Int_var,MAT_POINT);
+            STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT);
         
     else
         Disp_field.x_a=GEOMETRY.x_0;
@@ -145,16 +147,17 @@ function [BLK,ste,ste_p,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         [Mat_state]=ini_F(Mat_state,l1,elements,GEOMETRY.sp,SOLVER.UW);
         
         GLOBAL.ste_p=1;
-        GLOBAL.tp(1)=TIME{1}.t(1);
+        GLOBAL.tp(1)=STEP.t;
         
-        [~,GLOBAL.d(:,1),GLOBAL.v(:,1),~]=calculate_boundaries(1,0);
+        [~,GLOBAL.d(:,1),GLOBAL.v(:,1),~]=calculate_boundaries(STEP,0);
         
         Disp_field.v(:,2)=GLOBAL.v(:,1);
         Disp_field.a(:,2)=GLOBAL.a(:,1);
         Disp_field.d(:,2)=GLOBAL.d(:,1);
         
         [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=initial_constitutive...
-        (GLOBAL,MAT_POINT,Mat_state,Int_var,1);
+        (GLOBAL,MAT_POINT,Mat_state,Int_var,STEP);
+    
     end 
 
 end
@@ -184,9 +187,9 @@ function [Mat_state]=ini_F(Mat_state,l1,elements,sp,UW)
     end
 end
 
-function [dim,ste_aux,BLK]=fix_time(tp,ste_p)
+function [dim,STEP]=fix_time(tp,ste_p)
 
-    global SOLVER TIME
+    global SOLVER
     
     BLOCKS=SOLVER.BLOCKS;
     
@@ -204,24 +207,39 @@ function [dim,ste_aux,BLK]=fix_time(tp,ste_p)
         stop
     end
     
-    l1=length(TIME{BLK}.t);
-
-    [~,ste_aux]=min(abs(TIME{BLK}.t(:)-t_p*ones(l1,1)));
-    if TIME{BLK}.t(ste_aux)-t_p < 0
-        ste_aux=ste_aux+1;
+    dt=SOLVER.time_step(BLK);
+    tf=SOLVER.time_factor(BLK);
+    
+    tb=0;
+    ste=0;
+    while tb<t_p
+        ste=ste+1;
+        tb=tb+dt*tf;
+        dt=dt*tf;
     end
+    tb=tb-dt;
+    dt=dt/tf;
+    ste_aux=ste-1;
+    l1=SOLVER.step_final(BLOCKS);
     l2=l1-ste_aux;
     
     dim_2=floor((l2)/SOLVER.SAVE_I);
     dim=dim_2+ste_p;
-    fprintf('%i plot steps\n',SOLVER.dim);
-    fprintf('Save %i times before the final\n',round(SOLVER.dim/SOLVER.SAVE_F));
+    fprintf('%i plot steps\n',dim);
+    fprintf('Save %i times before the final\n',round(dim/SOLVER.SAVE_F));
+    
+    STEP.BLCK=BLK;
+    STEP.ste=ste_aux;
+    STEP.dt=dt;
+    STEP.t=tb;
 end
 
 function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
-    initial_constitutive(GLOBAL,MAT_POINT,Mat_state,Int_var,BLCK)
+    initial_constitutive(GLOBAL,MAT_POINT,Mat_state,Int_var,STEP)
 
     global GEOMETRY SOLVER  MATERIAL
+    
+    BLCK=STEP.BLCK;
     
     MODEL=MATERIAL(BLCK).MODEL;
     Mat=GEOMETRY.material;
@@ -279,7 +297,7 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                 H=MAT(37,Mat(e));
                 epsvol=0;
                 [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
-                    PZ(Kt,1,e,Gamma,epsvol,dgamma,Sy,0,H,F,Fold,Be,press,BLCK);
+                    PZ(Kt,1,e,Gamma,epsvol,dgamma,Sy,0,H,F,Fold,Be,BLCK);
                 Int_var.epsv(e,1)  = epsvol;
             end
             Int_var.Sy(e,1)     = Sy;
@@ -294,6 +312,10 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             Mat_state.Sigma((e-1)*dims+i,3)=T_vec(i,1);
             GLOBAL.Sigma((e-1)*dims+i,1)=T_vec(i,1);
         end
+        
+        [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=...
+            VECTORS.invar(Mat_state.Sigma(:,1),e);   %PRESSURE
+        
         [be]=LIB.m2v(Be);
         [f]=LIB.m2v(F);
         for i=1:dimf
@@ -316,7 +338,7 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
         if MODEL(Mat(e))>=2
             Int_var.Sy(e,2)   =   Int_var.Sy(e,1);
             Int_var.Sy_r(e,2) =   Int_var.Sy_r(e,1);
-            Int_var.P0(e,1)   =   press;
+            %Int_var.P0(e,1)   =   press;
             if MODEL(Mat(e))>=4
                 Int_var.H(e,1) =   H;
                 Int_var.H(e,2) =   H;

@@ -1,12 +1,12 @@
 
-function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
+function [InvK,GT]=apply_conditions(type,STEP,matrix,GT)
 
     global GEOMETRY
     
     %%%% ONLY K MATRIX
     if type==0
         I=eye(GEOMETRY.df*GEOMETRY.nodes);
-        [boundary,~,~,matrix]=calculate_boundaries(ste,matrix);
+        [boundary,~,~,matrix]=calculate_boundaries(STEP,matrix);
         for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)
                 for j=1:GEOMETRY.nodes*GEOMETRY.df
@@ -17,14 +17,14 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
             end
         end
         if (abs(rcond(matrix)))<1e-14
-            %fprintf('fail with K matrix in ste %i \n',ste);
+            fprintf('fail with K matrix in ste %i \n',STEP.ste);
         end
         InvK=matrix\I;
     
     %%%% ONLY RESIDUUM VECTOR (FIRST ITER of NEWTON-RAPHSON)
     elseif type==1
     
-        [boundary,i_disp,~,~]=calculate_boundaries(ste,0);
+        [boundary,i_disp,~,~]=calculate_boundaries(STEP,0);
 
         for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)               
@@ -41,7 +41,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
     
     %%%% ONLY RESIDUUM VECTOR (SECOND and MORE ITERS of NEWTON-RAPHSON)
     elseif type==2
-         [boundary,~,~,~]=calculate_boundaries(ste,0);
+         [boundary,~,~,~]=calculate_boundaries(STEP,0);
          for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)               
                 GT(i)=0;
@@ -58,7 +58,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
     %%%% K and GT MATRIX for the INITIAL STEP    
     elseif type==3
         I=eye(GEOMETRY.df*GEOMETRY.nodes);
-        [boundary,~,~,matrix]=calculate_boundaries(1,matrix);
+        [boundary,~,~,matrix]=calculate_boundaries(STEP,matrix);
         for i=1:GEOMETRY.nodes*GEOMETRY.df
             if (boundary(i)~=0)
                 GT(i)=0;
@@ -70,7 +70,7 @@ function [InvK,GT]=apply_conditions(type,ste,matrix,GT)
             end
         end
         if (abs(rcond(matrix)))<1e-14
-            fprintf('fail with K matrix in ste %i \n',ste);
+            fprintf('fail with K matrix in ste %i \n',STEP.ste);
         end
         InvK=matrix\I;
         
