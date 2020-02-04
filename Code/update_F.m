@@ -25,8 +25,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
         for k=1:bb
             e=GEOMETRY.patch_con(j,k);
             nd = MAT_POINT(e).near;
-            nn = length(nd);
-            
+            nn = length(nd);         
 
             b=MAT_POINT(e).B;
             if SOLVER.AXI
@@ -68,7 +67,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
             dF_=bs*us;                % Incremental F
 
             if SOLVER.AXI==0
-                dF_(dimf)=dF_(1);
+                %dF_(dimf)=dF_(1);
+                dF_(dimf)=0;
             end
             dF_=dF_+m_I;
 

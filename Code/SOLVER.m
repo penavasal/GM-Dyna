@@ -11,6 +11,8 @@ function SOLVER(MAT_POINT)
     [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,stiff_mtx]=...
         init(MAT_POINT);
     
+    %perturbated(MAT_POINT,Mat_state,Disp_field,Int_var,stiff_mtx,STEP);
+    
     MATRIX=DYN_MATRIX; 
     
     [load_s,out_list1]=...
