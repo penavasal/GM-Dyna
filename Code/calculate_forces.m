@@ -25,7 +25,7 @@ function [load_s,OUTPUT]=...
     acce=zeros(GEOMETRY.nodes*df,LOAD{BLCK}.size);
     
     if LOAD{BLCK}.size>0
-        if any(eval(value(5,:)) == 3)
+        if any(str2double(value(5,:)) == 3)
             [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,Mat_state,MATRIX,BLCK);
         else
             MATRIX.l_mass=zeros(GEOMETRY.nodes*df);

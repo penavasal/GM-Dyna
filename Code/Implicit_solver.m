@@ -7,7 +7,7 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
     %--------------------------------------------------------------------------
     global SOLVER
     BLCK=STEP.BLCK;
-    STEP.dt = STEP.dt*SOLVER.time_factor(BLCK);
+    STEP.dt = SOLVER.time_step(BLCK)*SOLVER.time_factor(BLCK);
     STEP.t  = STEP.t + STEP.dt;
     
     %--------------------------------------------------------------------------
