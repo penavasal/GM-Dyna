@@ -21,14 +21,16 @@ function [load_s,OUTPUT]=...
     [number,~]=size(type);
     OUTPUT(1,number)=0;
     
-    if any(eval(value(5,:)) == 3)
-        [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,Mat_state,MATRIX,BLCK);
-    else
-        MATRIX.l_mass=zeros(GEOMETRY.nodes*df);
-    end
-    
     load=zeros(GEOMETRY.nodes*df,LOAD{BLCK}.size);
     acce=zeros(GEOMETRY.nodes*df,LOAD{BLCK}.size);
+    
+    if LOAD{BLCK}.size>0
+        if any(eval(value(5,:)) == 3)
+            [MATRIX]=MATRIX.lumped_mass_bf(MAT_POINT,Mat_state,MATRIX,BLCK);
+        else
+            MATRIX.l_mass=zeros(GEOMETRY.nodes*df);
+        end
+    end
     
     for m=1:LOAD{BLCK}.size
         
