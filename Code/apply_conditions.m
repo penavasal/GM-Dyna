@@ -17,7 +17,7 @@ function [InvK,GT]=apply_conditions(type,STEP,matrix,GT)
             end
         end
         if (abs(rcond(matrix)))<1e-14
-            fprintf('fail with K matrix in ste %i \n',STEP.ste);
+            %fprintf('fail with K matrix in ste %i \n',STEP.ste);
         end
         InvK=matrix\I;
     

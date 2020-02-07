@@ -248,7 +248,7 @@ function interval(INTERVAL,loads,BLCK,VALUE,TYPE)
         if isnan(val)
             if isfile(strcat(VALUE(m),'.txt'))
                 ff=strcat(VALUE(m),'.txt');
-                LOAD{BLCK}.value(1,m)={load_file(ff)};
+                LOAD{BLCK}.value(1,m)=ff;
                 LOAD{BLCK}.value(4,m)='FILE';
             else
                 LOAD{BLCK}.value(4,m)='FUNCTION';
@@ -462,16 +462,6 @@ function calculate_forces...
     end
 end
 
-function[list]=load_file(ff)
-
-    fid = fopen(ff, 'rt'); % opción rt para abrir en modo texto
-    formato = '%s %s'; % formato de cada línea 
-    data = textscan(fid, formato, 'HeaderLines', 1);
-    
-    list(:,1) = str2double(data{1});
-    list(:,2) = str2double(data{2});
-
-end
 
 % 
 % function [d1,d2]=dist(x_a,nd,j,r)

@@ -43,9 +43,9 @@ function [load_s,OUTPUT]=...
         elseif strcmp(value(4,m),'FUNCTION')
             val=eval(value(1,m));
         elseif strcmp(value(4,m),'FILE')
-            file_l=value{1,m};
-            val=interp1(file_l(:,1),file_l(:,2),t,'pchip','extrap'); 
-            if value(5,m) == 3
+            [file_l]=load_file(value{1,m});
+            val=interp1(file_l(:,1),file_l(:,2),[t],'pchip','extrap'); 
+            if eval(value(5,m)) == 3
                 val=val*g;
             end
         else
@@ -84,4 +84,15 @@ function [load_s,OUTPUT]=...
     
     load_s=sum(load,2)+sum(acce,2);
     
+end
+
+function[list]=load_file(ff)
+
+    fid = fopen(ff, 'rt'); % opción rt para abrir en modo texto
+    formato = '%s %s'; % formato de cada línea 
+    data = textscan(fid, formato);
+    
+    list(:,1) = str2double(data{1});
+    list(:,2) = str2double(data{2});
+
 end
