@@ -94,5 +94,7 @@ function[list]=load_file(ff)
     
     list(:,1) = str2double(data{1});
     list(:,2) = str2double(data{2});
+    
+    fclose(fid);
 
 end
