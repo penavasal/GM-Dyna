@@ -297,6 +297,9 @@ function MAT_POINT=read_problem
                     case 'NEWMARK2'
                         TIS(BLCK)=2;
                         continue
+                    case 'NEWMARK'
+                        TIS(BLCK)=2;
+                        continue
                     case 'GENERALIZED_ALPHA'
                         TIS(BLCK)=3;
                         continue
@@ -313,7 +316,6 @@ function MAT_POINT=read_problem
                         TIS(BLCK)=7;
                         continue
                     case 'NEWMARK_EXPLICIT'
-                        delta(BLCK)=0.5;     %gamma
                         TIS(BLCK)=1;
                         continue
                     otherwise
@@ -324,7 +326,13 @@ function MAT_POINT=read_problem
             case 'DELTA'
                 delta(BLCK)=b(t); 
                 continue
+            case 'GAMMA'
+                delta(BLCK)=b(t); 
+                continue
             case 'ALPHA'
+                alpha(BLCK)=b(t); 
+                continue
+            case 'BETA'
                 alpha(BLCK)=b(t); 
                 continue
             case 'ALPHA_M'
@@ -400,18 +408,14 @@ function MAT_POINT=read_problem
         %--------------------------------------------------------------------------
         % Read material properties
         read_material(FILES(i,1),i);
-
+         %**************
          % SOLVER
-         %----------------------------------------------------------------------
-         if SOLVER.IMPLICIT(i)==0 && TIS(i)~=1
-             disp('error with the explicit time integration scheme,')
-             disp('changed to Newmark');
-             TIS(i)=1;
-         end
+         %**************
+
          % Solver variables: Time Integration Scheme
          %----------------------------------------------------------------------
          TIME{i}=...
-             Time_Scheme(TIS(i),af(i),am(i),delta(i),alpha(i),theta(i),rho(i));
+             Time_Scheme(TIS(i),af(i),am(i),delta(i),alpha(i),theta(i),rho(i),i);
  
          % Time-related conditions
          %----------------------------------------------------------------------

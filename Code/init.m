@@ -43,7 +43,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     %----------------------------------------------------------------------
     
     Disp_field.title='Displacement field, velocity, acceleration and position';
-    Disp_field.d  = zeros(l0,2);
+    Disp_field.d  = zeros(l0,3);
     Disp_field.v  = zeros(l0,2);
     Disp_field.a  = zeros(l0,2);
     Disp_field.x_a= zeros(nodes,2);

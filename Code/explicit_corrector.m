@@ -1,18 +1,26 @@
 
 function [Disp_field]=explicit_corrector...
-    (STEP,MATRIX,Disp_field,load_t,int_Ft,gamma)
+    (STEP,MATRIX,Disp_field,load_t,int_Ft)
 
-    global GEOMETRY SOLVER
+    global GEOMETRY SOLVER TIME
     
     time_step=STEP.dt;
+    BLCK=STEP.BLCK;
     
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
+    
+    gamma=TIME{BLCK}.gamma;
+    beta=TIME{BLCK}.beta;
+    af=TIME{BLCK}.af;
+    am=TIME{BLCK}.am;
 
     %% Allocate
     a0  = Disp_field.a;
     v0  = Disp_field.v;
+    d0  = Disp_field.d;
+
 
     Inv=zeros(nodes*sp,nodes*sp);
     [vs,as,load_s,int_Fs]=deal(zeros(nodes*sp,2));
@@ -33,12 +41,13 @@ function [Disp_field]=explicit_corrector...
         int_Fs=int_Ft;
         load_s=load_t;
         as=a0;
+        us=d0;
         vs=v0;
     end
     
     
     %% 0. Boundary conditions
-    [boundary,~,~]=calculate_boundaries(STEP);
+    [boundary,i_disp,velo]=calculate_boundaries(STEP);
 
     %%  1.  Solver   %%%%
 
@@ -91,15 +100,33 @@ function [Disp_field]=explicit_corrector...
         end
     end
 
-    as(:,1)=Inv*residual(:,1)+as(:,2);
+    as(:,1)=1/(1-am)*Inv*residual(:,1)+as(:,2);
 
 
     %% 2. Corrector
     for i=1:nodes
         for j=1:sp
+            if af==1
+                if boundary((i-1)*df+j)==0
+                    vs((i-1)*sp+j,1)=vs((i-1)*sp+j,2)+...
+                        (1-gamma)*time_step*as((i-1)*sp+j,2);
+                    us((i-1)*sp+j,1)=us((i-1)*sp+j,2)+time_step*vs((i-1)*sp+j,2)...
+                        +(0.5-beta)*time_step*time_step*as((i-1)*sp+j,2);
+                elseif boundary((i-1)*df+j)==1
+                    us((i-1)*sp+j,1)=us((i-1)*sp+j,2)+i_disp((i-1)*sp+j,1);
+                    vs((i-1)*sp+j,1)=i_disp((i-1)*sp+j,1)/time_step;
+                else
+                    vs((i-1)*sp+j,1)=velo((i-1)*sp+j,1);
+                    us((i-1)*sp+j,1)=us((i-1)*sp+j,2)+velo((i-1)*sp+j,1)*time_step;
+                end
+            end
+            
+            
             if (boundary((i-1)*df+j)==0)
                 vs((i-1)*sp+j,1)=vs((i-1)*sp+j,1)+...
                     gamma*time_step*as((i-1)*sp+j,1);
+                us((i-1)*sp+j,1)=us((i-1)*sp+j,1)+...
+                    beta*time_step*time_step*as((i-1)*sp+j,1);
             end
             if SOLVER.UW==1
                 if (boundary((i-1)*df+sp+j)==0)
@@ -117,6 +144,7 @@ function [Disp_field]=explicit_corrector...
     else
         Disp_field.a=as;
         Disp_field.v=vs;
+        Disp_field.d=us;
     end
     
 end

@@ -62,6 +62,7 @@
             
             global SOLVER
             
+            Disp_field.d(:,3)=Disp_field.d(:,2);
             Disp_field.d(:,2)=Disp_field.d(:,1);
             Disp_field.v(:,2)=Disp_field.v(:,1);
             Disp_field.a(:,2)=Disp_field.a(:,1);

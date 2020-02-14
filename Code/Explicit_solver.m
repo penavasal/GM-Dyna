@@ -5,7 +5,7 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
     %--------------------------------------------------------------------------
     % Initialize variables
     %--------------------------------------------------------------------------
-    global SOLVER TIME
+    global SOLVER
     
     BLCK=STEP.BLCK;
     STEP.dt = STEP.dt*SOLVER.time_factor(BLCK);
@@ -16,8 +16,6 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     while STEP.t < SOLVER.Time_final(BLCK) 
         STEP.ste=STEP.ste+1;
-
-        gamma=TIME{BLCK}.gamma;
         
         % 1. Forces
         load_s(:,2)=load_s(:,1);
@@ -27,7 +25,7 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
         % --------------------------------------------------------
         % 2. Predictor         
         [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
-            (STEP,Disp_field,MAT_POINT,Mat_state,gamma);
+            (STEP,Disp_field,MAT_POINT,Mat_state);
         
 
         % 3. Recompute mass and damping matrices
@@ -41,7 +39,7 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
         % 5. Final conditions: corrector
         
         [Disp_field]=explicit_corrector...
-            (STEP,MATRIX,Disp_field,load_s,Mat_state.fint,gamma);
+            (STEP,MATRIX,Disp_field,load_s,Mat_state.fint);
 
         % 6. Storage
         if rem(STEP.ste,SOLVER.SAVE_I)==0

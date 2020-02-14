@@ -335,9 +335,9 @@ function print_file_2(str,str2,steps,dd)
                     if NNE==4 && strcmp(type,'Q4-4')
                         for j=1:4
                             if j==1
-                                fprintf( myfile ,[num2str(dPw(((i-1)*4+j)*sp+1,cont)) ' ' num2str(dPw(((i-1)*4+j)*sp+2,cont)) ' 0\n']);
+                                fprintf( myfile ,[num2str(dPw(((i-1)*4+j-1)*sp+1,cont)) ' ' num2str(dPw(((i-1)*4+j-1)*sp+2,cont)) ' 0\n']);
                             else
-                                fprintf( myfile ,['\t' num2str(dPw(((i-1)*4+j)*sp+1,cont)) ' ' num2str(dPw(((i-1)*4+j)*sp+2,cont)) ' 0\n']);
+                                fprintf( myfile ,['\t' num2str(dPw(((i-1)*4+j-1)*sp+1,cont)) ' ' num2str(dPw(((i-1)*4+j-1)*sp+2,cont)) ' 0\n']);
                             end
                         end
                     else

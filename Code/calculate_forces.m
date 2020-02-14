@@ -1,11 +1,17 @@
 function [load_s,OUTPUT]=...
             calculate_forces(STEP,MAT_POINT,Mat_state,MATRIX)
 
-    global SOLVER LOAD GEOMETRY VARIABLE
+    global SOLVER LOAD GEOMETRY VARIABLE TIME
     
     g=VARIABLE.g;
     t=STEP.t;
     BLCK=STEP.BLCK;
+    
+    if SOLVER.IMPLICIT(BLCK)==0
+        af=TIME{BLCK}.af;
+        dt=STEP.dt;
+        t=(1-af)*t+(t-dt)*af;
+    end
 
     df=GEOMETRY.df;
     sp=GEOMETRY.sp;

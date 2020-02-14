@@ -1,14 +1,21 @@
 % Hay que arreglar la parte de contacto
 
 function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
-            (STEP,Disp_field,MAT_POINT,Mat_state,gamma)
+            (STEP,Disp_field,MAT_POINT,Mat_state)
 
-    global GEOMETRY
+    global GEOMETRY TIME
+    
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
     nodes=GEOMETRY.nodes;
     
     time_step=STEP.dt;
+    BLCK=STEP.BLCK;
+    
+    gamma=TIME{BLCK}.gamma;
+    beta=TIME{BLCK}.beta;
+    af=TIME{BLCK}.af;
+    %am=TIME{BLCK}.am;
     
 %     if STEP.ste==395
 %         ste;
@@ -26,17 +33,27 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
     C1=1;
     C2=1;
     while C1 || C2
-        for i=1:nodes*df
-            if boundary(i)==0
-                d0(i,1)=d0(i,2)+time_step*v0(i,2)+0.5*time_step^2*a0(i,2);
-                v0(i,1)=v0(i,2)+(1-gamma)*time_step*a0(i,2);
-            elseif boundary(i)==1
-                d0(i,1)=d0(i,2)+i_disp(i,1);
-                v0(i,1)=i_disp(i,1)/time_step;
-            else
-                v0(i,1)=velo(i,1);
-                d0(i,1)=d0(i,2)+velo(i,1)*time_step;
+        if af~=1
+            for i=1:nodes*df
+                if boundary(i)==0
+                    d0(i,1)=d0(i,2)+time_step*v0(i,2)+...
+                        (0.5-beta)*time_step^2*a0(i,2);
+                    v0(i,1)=v0(i,2)+(1-gamma)*time_step*a0(i,2);
+                elseif boundary(i)==1
+                    d0(i,1)=d0(i,2)+i_disp(i,1);
+                    v0(i,1)=i_disp(i,1)/time_step;
+                else
+                    v0(i,1)=velo(i,1);
+                    d0(i,1)=d0(i,2)+velo(i,1)*time_step;
+                end
             end
+        end
+        
+        if af~=0
+            daf(:,1)=d0(:,1)*(1-af)+d0(:,2)*(af);
+            daf(:,2)=d0(:,3);
+        else
+            daf=d0;
         end
 
         for j=1:nodes
@@ -66,7 +83,7 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
 %         while REMAP==1           
             [MAT_POINT]=update_mp(d0,MAT_POINT);
             
-            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
+            [Mat_state,MAT_POINT]=update_F(daf,Mat_state,MAT_POINT);
 
 %             if iter==1
 %                 xg1=xg2;

@@ -6,13 +6,25 @@ classdef Time_Scheme
         alpha=0;
         theta=1;
         gamma=0;
+        beta=0;
         %tp;
         %t;
     end
     methods
-        function obj=Time_Scheme(TIS,af,am,delta,alpha,theta,rho)
-            if TIS==1
+        function obj=Time_Scheme(TIS,af,am,delta,alpha,theta,rho,i)
+         
+            global SOLVER
+                     
+            if SOLVER.DYN(i)==0 && TIS(i)~=0
+                disp('error with the time integration scheme,')
+                disp('changed to STATIC, beta and gamma zero');
+                %TIS(i)=0;
                 alpha=0;
+                delta=0;
+            elseif TIS(i)==1 && alpha~=0
+                disp('error time integration scheme, Newmark 1')
+                disp('no inertial terms: beta changed to zero')
+                alpha=0; 
             elseif TIS==3 || TIS==4 || TIS==6
                 if rho
                     if am || af
@@ -40,32 +52,44 @@ classdef Time_Scheme
                          end
                     end
                 elseif am || af
-                     if TIS==3                   %GENERALIZED ALPHA
-                        delta=0.5+af-am;
-                        alpha=0.25*(1-am+af)^2;
-                    elseif TIS==4                  %HHT
-                        delta=(1+2*af)/2;
-                        alpha=0.25*(1+af)^2;      
-                    elseif TIS==6                   %WBZ
-                        delta=0.5-am;
-                        alpha=0.25*(1-am)^2;
-                     end
+%                      if TIS==3                   %GENERALIZED ALPHA
+%                         delta=0.5+af-am;
+%                         alpha=0.25*(1-am+af)^2;
+%                     elseif TIS==4                  %HHT
+%                         delta=(1+2*af)/2;
+%                         alpha=0.25*(1+af)^2;      
+%                     elseif TIS==6                   %WBZ
+%                         delta=0.5-am;
+%                         alpha=0.25*(1-am)^2;
+%                      end
                 end
             elseif TIS==5                  %WILSON-THETA
+                 if SOLVER.IMPLICIT(i)==0
+                    disp('error with the explicit time integration scheme,')
+                    stop
+                 end
                 if theta==0
                     disp('Error, theta cannot be zero for Wilson')
+                    stop
                 end
                 alpha=1/4;
                 delta=1/2;
             elseif TIS==7                   %COLLOCATION METHOD
+                if SOLVER.IMPLICIT(i)==0
+                    disp('error with the explicit time integration scheme,')
+                    stop
+                end
                 if theta==0 
                     disp('Error, theta cannot be zero for Collocation')
+                    stop
                 end
                 if alpha==0 
                     disp('Error, alpha cannot be zero for Collocation')
+                    stop
                 end
                 if delta==0 
                     disp('Error, delta cannot be zero for Collocation')
+                    stop
                 end
             end
             
@@ -73,6 +97,7 @@ classdef Time_Scheme
             obj.am=am;
             obj.delta=delta;
             obj.gamma=delta;
+            obj.beta=alpha;
             obj.alpha=alpha;
             obj.theta=theta;
         end

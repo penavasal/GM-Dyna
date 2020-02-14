@@ -5,6 +5,7 @@ function [boundary,i_disp,velo,matrix]=calculate_boundaries(STEP,matrix)
     
     ste = STEP.ste;
     BLCK= STEP.BLCK;
+    %dt=STEP.dt;
 
     constrains  = BOUNDARY{BLCK}.constrains;
     dad         = BOUNDARY{BLCK}.dad;
@@ -70,6 +71,7 @@ function [boundary,i_disp,velo,matrix]=calculate_boundaries(STEP,matrix)
                         end
                     else
                         velo(i)=val*vad(i,m);
+                        %i_disp(i)=velo(i)*dt;
                     end
                 elseif constrains(i,m)==3
                     if isscalar(matrix)
