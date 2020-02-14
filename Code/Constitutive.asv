@@ -25,9 +25,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
     if SOLVER.FAIL==0
         for e=1:GEOMETRY.mat_points
             
-            if e==144 && STEP.ste==7
-                e;
-            end
+            if e==144 && STEP.ste
                         
             if SOLVER.UW==1
                 for i=1:dimf

@@ -66,7 +66,7 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
 %         while REMAP==1           
             [MAT_POINT]=update_mp(d0,MAT_POINT);
             
-            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
+            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT,STEP);
 
 %             if iter==1
 %                 xg1=xg2;
