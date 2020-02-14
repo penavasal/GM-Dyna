@@ -61,7 +61,7 @@ function [Disp_field,Mat_state,MAT_POINT]=...
             % 2. Update
             %--------------------------------------------------------------
             % 2.1 Deformation gradient
-            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT);
+            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT,STEP);
             
             % 2.2 Stress and Internal Forces
             [~,Int_var,Mat_state]=...

@@ -205,6 +205,10 @@ function [dim,STEP]=fix_time(tp,ste_p)
     if BLK==0
         disp('Init File time larger than problem time')
         stop
+    elseif BLK==1
+        tp0=0;
+    else
+        tp0=SOLVER.Time_final(BLK-1);
     end
     
     dt=SOLVER.time_step(BLK);
@@ -212,7 +216,7 @@ function [dim,STEP]=fix_time(tp,ste_p)
     
     tb=0;
     ste=0;
-    while tb<t_p
+    while tb<(t_p-tp0)
         ste=ste+1;
         tb=tb+dt*tf;
         dt=dt*tf;
@@ -231,7 +235,7 @@ function [dim,STEP]=fix_time(tp,ste_p)
     STEP.BLCK=BLK;
     STEP.ste=ste_aux;
     STEP.dt=dt;
-    STEP.t=tb;
+    STEP.t=tb+tp0;
 end
 
 function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...

@@ -103,7 +103,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
 
             AA=isreal(T);
             if  AA(1)==0
-                disp('Error with stress, in Constitutive file');
+                fprintf('Error with stress, in Constitutive file, element %i \n',e);
                 SOLVER.FAIL=1;
                 break;
             else

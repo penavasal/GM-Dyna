@@ -1,7 +1,7 @@
 
-function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
+function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
     
-    global GEOMETRY SOLVER
+    global GEOMETRY SOLVER MATERIAL VARIABLE
     
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
@@ -239,7 +239,16 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT)
             end
         end
         %%%%%%%%%%%%%%%%%%%%%%%%
-        
+        if SOLVER.UW>0
+            mmat=MATERIAL(STEP.BLCK).MAT;
+            for k=1:bb
+                e=GEOMETRY.patch_con(j,k);
+                mati=GEOMETRY.material(e);
+                Mat_state.k(e) = ...
+                    mmat(15,mati)/...
+                    mmat(42,mati)/VARIABLE.g;
+            end
+        end
     end
 end
 

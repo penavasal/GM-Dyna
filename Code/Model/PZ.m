@@ -475,10 +475,15 @@ function [H,zetamax]=define_H(Ge,etaf,eta,p,defplas,defvolplas,zetamax,Mg)
     ganma = Ge(11);
     ganma_vol = Ge(14);
     
-    zetacalcu=-p*(1-(eta/etaf))^(-1/alpha);
-    zetamax=max(zetamax,zetacalcu);
+    if (1-(eta/etaf))<0
+        zetacalcu=0;
+        HDM=1;
+    else
+        zetacalcu=-p*(1-(eta/etaf))^(-1/alpha);
+        zetamax=max(zetamax,zetacalcu);
     
-    HDM=(zetamax/zetacalcu)^ganma;
+        HDM=(zetamax/zetacalcu)^ganma;
+    end
     
     Hf=(1-(eta/etaf))^4;
     Hv=1-(eta/Mg);
