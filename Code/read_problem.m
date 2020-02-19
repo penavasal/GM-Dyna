@@ -1,5 +1,5 @@
 
-function MAT_POINT=read_problem
+function MAT_POINT=read_problem(str)
 
 % File: read_problem
 %   Read some important problem parameters from problem.txt
@@ -47,7 +47,7 @@ function MAT_POINT=read_problem
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Read problem.txt
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    fid = fopen('problem.txt', 'rt'); % opción rt para abrir en modo texto
+    fid = fopen(str, 'rt'); % opción rt para abrir en modo texto
     formato = '%s %s %s %s %s %s %s %s %s'; % formato de cada línea 
     data = textscan(fid, formato, 'HeaderLines', 1);
     a = data{1};
