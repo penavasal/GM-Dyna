@@ -27,12 +27,12 @@ function read_material(filetxt,BLCK)
     
     %FILE
 
-    fid = fopen(filetxt, 'rt'); % opciï¿½n rt para abrir en modo texto
-    formato = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s '; % formato de cada lï¿½nea 
+    fid = fopen(filetxt, 'rt'); % opción rt para abrir en modo texto
+    formato = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s '; % formato de cada línea 
     data = textscan(fid, formato, 'HeaderLines', 1);
 
     a = data{1};
-    % Convertir a vector numï¿½rico
+    % Convertir a vector numérico
     bb = data{2};
     bb2=str2double(bb);
     long=length(bb);
@@ -53,7 +53,7 @@ function read_material(filetxt,BLCK)
         stop
     end
     
-    MATERIAL(BLCK).MAT=cell(42,mats);   % Numero mï¿½ximo de propiedades reconocidas
+    MATERIAL(BLCK).MAT=cell(42,mats);   % Numero máximo de propiedades reconocidas
     MATERIAL(BLCK).MODEL=zeros(mats,1);
     %RANGE=zeros(sp,2*mats); % Range of for materials
 

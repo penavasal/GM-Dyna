@@ -22,12 +22,12 @@ function read_load(filetxt,BLCK,NODE_LIST)
     
     %FILE
 
-    fid = fopen(filetxt, 'rt'); % opciï¿½n rt para abrir en modo texto
-    formato = '%s %s %s %s'; % formato de cada lï¿½nea 
+    fid = fopen(filetxt, 'rt'); % opción rt para abrir en modo texto
+    formato = '%s %s %s %s'; % formato de cada línea 
     data = textscan(fid, formato, 'HeaderLines', 1);
     
     a = data{1};
-    % Convertir a vector numï¿½rico
+    % Convertir a vector numérico
     [long,~]=size(a);
     bb = data{2};
     c = data{3};
