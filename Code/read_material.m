@@ -391,45 +391,45 @@ function Mat=elastic_tools(Mat)
 
     global SOLVER
     
-    if Mat(4)==0 && Mat(5)==0 && Mat{29}==0
-        Mat(4)=Mat(1)/2/(1+Mat(2));             % G 
-        Mat(5)=2*Mat(4)*Mat(2)/(1-2*Mat(2));    % Lambda
-        Mat{29}=Mat(5)+2*Mat(4);                % K 
-    elseif Mat(1)==0 && Mat(5)==0 && Mat{29}==0
-        Mat(1)=2*Mat(4)*(1+Mat(2));             % E
-        Mat(5)=2*Mat(4)*Mat(2)/(1-2*Mat(2));    % Lambda
-        Mat{29}=Mat(5)+2*Mat(4);                % K 
-    elseif Mat(1)==0 && Mat(4)==0 && Mat(29)==0
-        Mat(1)=Mat(5)*(1+Mat(2))*(1-2*Mat(2))/Mat(2);% E
-        Mat(4)=Mat(1)/2/(1+Mat(2));                  % G
-        Mat(29)=Mat(5)+2*Mat(4);                     % K
-    elseif Mat(1)==0 && Mat(2)==0 && Mat(29)==0
-        Mat(1)=Mat(4)*(3*Mat(5)+2*Mat(4))/(Mat(4)+Mat(5)); % E
-        Mat(2)=Mat(5)/2/(Mat(5)+Mat(4));                   %nu
-        Mat(29)=Mat(5)+2*Mat(4);                           % K
-    elseif Mat(1)==0 && Mat(2)==0 && Mat(5)==0
-        Mat(5)=Mat(29)-2/3*Mat(4);                         % Lambda
-        Mat(1)=Mat(4)*(3*Mat(5)+2*Mat(4))/(Mat(4)+Mat(5)); % E
-        Mat(2)=Mat(5)/2/(Mat(5)+Mat(4));                   %nu
-    elseif Mat(1)==0 && Mat(4)==0 && Mat(5)==0
-        Mat(1)=3*Mat(29)*(1-2*Mat(2));  % E
-        Mat(4)=Mat(1)/2/(1+Mat(2));     % G 
-        Mat(5)=Mat(29)-2/3*Mat(4);      % Lambda
-    elseif Mat(1)==0 && Mat(2)==0 && Mat(4)==0
-        Mat(4)=3/2*(Mat(29)-Mat(5));     % G
-        Mat(2)=Mat(5)/2/(Mat(5)+Mat(4)); %nu
-        Mat(1)=3*Mat(29)*(1-2*Mat(2));   % E
+    if isempty(Mat{4}) && isempty(Mat{5}) && isempty(Mat{29})
+        Mat(4)={Mat{1}/2/(1+Mat{2})};             % G 
+        Mat(5)={2*Mat{4}*Mat{2}/(1-2*Mat{2})};    % Lambda
+        Mat(29)={Mat{5}+2*Mat{4}};                % K 
+    elseif isempty(Mat{1}) && isempty(Mat{5}) && isempty(Mat{29})
+        Mat(1)={2*Mat{4}*(1+Mat{2})};             % E
+        Mat(5)={2*Mat{4}*Mat{2}/(1-2*Mat{2})};    % Lambda
+        Mat(29)={Mat{5}+2*Mat{4}};                % K 
+    elseif isempty(Mat{1}) && isempty(Mat{4}) && isempty(Mat{29})
+        Mat(1)={Mat{5}*(1+Mat{2})*(1-2*Mat{2})/Mat{2}};% E
+        Mat(4)={Mat{1}/2/(1+Mat{2})};             % G 
+        Mat(29)={Mat{5}+2*Mat{4}};                % K
+    elseif isempty(Mat{1}) && isempty(Mat{2}) && isempty(Mat{29})
+        Mat(1)={Mat{4}*(3*Mat{5}+2*Mat{4})/(Mat{4}+Mat{5})}; % E
+        Mat(2)={Mat{5}/2/(Mat{5}+Mat{4})}; %nu
+        Mat(29)={Mat{5}+2*Mat{4}};                % K
+    elseif isempty(Mat{1}) && isempty(Mat{5}) && isempty(Mat{2})
+        Mat(5)={Mat{29}-2/3*Mat{4}};                         % Lambda
+        Mat(1)={Mat{4}*(3*Mat{5}+2*Mat{4})/(Mat{4}+Mat{5})}; % E
+        Mat(2)={Mat{5}/2/(Mat{5}+Mat{4})}; %nu
+    elseif isempty(Mat{1}) && isempty(Mat{5}) && isempty(Mat{4})
+        Mat(1)={3*Mat{29}*(1-2*Mat{2})};  % E
+        Mat(4)={Mat{1}/2/(1+Mat{2})};   % G  
+        Mat(5)={Mat{29}-2/3*Mat{4}};      % Lambda
+    elseif isempty(Mat{1}) && isempty(Mat{2}) && isempty(Mat{4})
+        Mat(4)={3/2*(Mat{29}-Mat{5})};     % G
+        Mat(2)={Mat{5}/2/(Mat{5}+Mat{4})}; %nu
+        Mat(1)={3*Mat{29}*(1-2*Mat{2})};  % E
     end
     
     
     % Wave velocity
-    Mat(17)=Mat(1)*(1-Mat(2))/((1+Mat(2))*(1-2*Mat(2)));
+    Mat(17)={Mat{1}*(1-Mat{2})/((1+Mat{2})*(1-2*Mat{2}))};
     if SOLVER.UW
-        M=Mat(17)+Mat{18};
+        M=Mat{17}+Mat{18};
     else
-        M=Mat(17);
+        M=Mat{17};
     end
-    Mat(6)=sqrt(M/Mat(3));     % cp
+    Mat(6)={sqrt(M/Mat{3})};     % cp
     
 end
 

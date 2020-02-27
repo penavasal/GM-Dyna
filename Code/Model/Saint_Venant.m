@@ -7,9 +7,9 @@ function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
     Material=GEOMETRY.material;
     MAT=MATERIAL(BLCK).MAT;
     
-    G  = MAT(4,Material(e));
-    Lam= MAT(5,Material(e));  
-    P0 = MAT(25,Material(e));%P0;
+    G  = MAT{4,Material(e)};
+    Lam= MAT{5,Material(e)};  
+    %P0 = MAT{25,Material(e)};%P0;
     I=eye(3);
 
     A=0;
@@ -19,7 +19,8 @@ function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
     %Ee(2,1)=Ee(2,1)/2;
     %Ee(1,2)=Ee(1,2)/2;
 
-    T=(P0+Lam*trace(Ee))*I+2*G*Ee;
+    %T=(P0+Lam*trace(Ee))*I+2*G*Ee;
+    T=(Lam*trace(Ee))*I+2*G*Ee;
     
     if Kt==1 || Kt==2 || Kt==4
         

@@ -392,11 +392,11 @@ classdef DYN_MATRIX
             for i=1:GEOMETRY.mat_points
                 volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
                 if SOLVER.UW
-                    rho_w=MAT(42,Material(i));
-                    n=1-(1-MAT(16,Material(i)))/MAT_POINT(i).J;
-                    dens=n*rho_w+(1-n)*MAT(3,Material(i));
+                    rho_w=MAT{42,Material(i)};
+                    n=1-(1-MAT{16,Material(i)})/MAT_POINT(i).J;
+                    dens=n*rho_w+(1-n)*MAT{3,Material(i)};
                 else
-                    dens=MAT(3,Material(i))/MAT_POINT(i).J;
+                    dens=MAT{3,Material(i)}/MAT_POINT(i).J;
                 end
                 
                 if SOLVER.AXI

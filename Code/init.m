@@ -115,22 +115,28 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     % VECTORS OF PARAMETERS
     %----------------------------------------------------------------------
     mmat=MATERIAL(STEP.BLCK).MAT;
+    MODEL=MATERIAL(STEP.BLCK).MODEL;
+
     for i=1:elements
         mati=GEOMETRY.material(i);
-        % Yield stress
-        if isempty(mmat{7,mati})
-           Int_var.Sy(i,2)=0;
-        else
-            Int_var.Sy(i,2) = mmat{7,mati};
-        end
-        % P0
-        p0=str2double(mmat{25,mati});
-        ev0=str2double(mmat{23,mati});
-        es0=str2double(mmat{26,mati});
-        if isnan(p0)
-            Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
-        else
-            Int_var.P0(i,1:3)=[p0 ev0 es0]; 
+        if MODEL(mati)>=2 && MODEL(mati)<5
+            % Yield stress
+            if isempty(mmat{7,mati})
+               Int_var.Sy(i,2)=0;
+            else
+                Int_var.Sy(i,2) = mmat{7,mati};
+            end
+            if MODEL(mati)>=3 && MODEL(mati)<5
+                % P0
+                p0=str2double(mmat{25,mati});
+                ev0=str2double(mmat{23,mati});
+                es0=str2double(mmat{26,mati});
+                if isnan(p0)
+                    Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
+                else
+                    Int_var.P0(i,1:3)=[p0 ev0 es0]; 
+                end
+            end
         end
         if SOLVER.UW>0
             Mat_state.k(i) = ...
@@ -280,7 +286,7 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
     for e=1:GEOMETRY.mat_points
 
         % MATRIX B and F
-        b1=exp(MAT(23,Mat(e))/3)^2;
+        b1=exp(MAT{23,Mat(e)}/3)^2;
         Be=[b1 1e-15 0; 1e-15 b1 0; 0 0 b1];
         
         for i=1:dimf
