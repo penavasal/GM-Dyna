@@ -85,15 +85,15 @@ function [K_mat]=Mat_UW(b,n,i,D,J,sp,df,BLCK)
     Material=GEOMETRY.material;
     MAT=MATERIAL(BLCK).MAT;
     
-    K_w=MAT(28,Material(i));
-    K_s=MAT(27,Material(i));
+    K_w=MAT{28,Material(i)};
+    K_s=MAT{27,Material(i)};
 
     if SOLVER.AXI
         m=[1 1 0 1 1 1 1];
     else
         m=[1 1 0 1 1];
     end
-    nn=1-(1-MAT(16,Material(i)))/J;
+    nn=1-(1-MAT{16,Material(i)})/J;
     Q=1/(nn/K_w+(1-nn)/K_s);
 
     if SOLVER.AXI
@@ -193,7 +193,7 @@ function [K_geo]=Geo_UW(e,Mat_state,MAT_POINT,b,n,nb,T,sp,df,BLCK)
     end
     
     %Water
-    nn=1-(1-MAT(16,Material(e)))/MAT_POINT(e).J;
+    nn=1-(1-MAT{16,Material(e)})/MAT_POINT(e).J;
     [M4]=linearization(nn,b,nb,sp);
     
     %Solid

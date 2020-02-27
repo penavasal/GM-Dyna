@@ -22,12 +22,12 @@ function read_load(filetxt,BLCK,NODE_LIST)
     
     %FILE
 
-    fid = fopen(filetxt, 'rt'); % opción rt para abrir en modo texto
-    formato = '%s %s %s %s'; % formato de cada línea 
+    fid = fopen(filetxt, 'rt'); % opciï¿½n rt para abrir en modo texto
+    formato = '%s %s %s %s'; % formato de cada lï¿½nea 
     data = textscan(fid, formato, 'HeaderLines', 1);
     
     a = data{1};
-    % Convertir a vector numérico
+    % Convertir a vector numï¿½rico
     [long,~]=size(a);
     bb = data{2};
     c = data{3};
@@ -347,7 +347,7 @@ function calculate_forces...
         ll=str2double(NLIST(m));
         if isnan(ll)
             if strcmp(NLIST(m),'FULL') && (TYPE(m)~=2 || TYPE(m)~=5)
-                nod_f=linspace(1,nodes);
+                nod_f=linspace(1,nodes,nodes)';
             else
                 fprintf('Error, unrecognized list of nodes: %s !! \n',ll)
                 stop

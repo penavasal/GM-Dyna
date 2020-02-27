@@ -15,13 +15,13 @@ classdef Time_Scheme
          
             global SOLVER
                      
-            if SOLVER.DYN(i)==0 && TIS(i)~=0
+            if SOLVER.DYN(i)==0 && TIS~=0
                 disp('error with the time integration scheme,')
                 disp('changed to STATIC, beta and gamma zero');
                 %TIS(i)=0;
                 alpha=0;
                 delta=0;
-            elseif TIS(i)==1 && alpha~=0
+            elseif TIS==1 && alpha~=0
                 disp('error time integration scheme, Newmark 1')
                 disp('no inertial terms: beta changed to zero')
                 alpha=0; 
@@ -114,11 +114,11 @@ classdef Time_Scheme
             material=GEOMETRY.material;
             for e=1:GEOMETRY.mat_points
                 if SOLVER.UW
-                    tt(e,1)=min(h(e)/MATERIAL(i).MAT(6,material(e)),...
-                    h(e)/sqrt(MATERIAL(i).MAT(28,material(e))/...
-                    MATERIAL(i).MAT(42,material(e))));
+                    tt(e,1)=min(h(e)/MATERIAL(i).MAT{6,material(e)},...
+                    h(e)/sqrt(MATERIAL(i).MAT{28,material(e)}/...
+                    MATERIAL(i).MAT{42,material(e)}));
                 else
-                    tt(e,1)=h(e)/MATERIAL(i).MAT(6,material(e));
+                    tt(e,1)=h(e)/MATERIAL(i).MAT{6,material(e)};
                 end
             end
             TT=min(tt);

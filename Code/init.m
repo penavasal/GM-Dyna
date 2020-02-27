@@ -56,7 +56,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     Int_var.Sy_r= zeros(elements,2);
     Int_var.H   = zeros(elements,2);
     Int_var.eta = zeros(elements,2);
-    %Int_var.P0  = zeros(elements,1);
+    Int_var.P0  = zeros(elements,1);
        
     Mat_state.title='Material state: material point information';
 
@@ -117,11 +117,25 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     mmat=MATERIAL(STEP.BLCK).MAT;
     for i=1:elements
         mati=GEOMETRY.material(i);
-        Int_var.Sy(i,2) = mmat(7,mati);
+        % Yield stress
+        if isempty(mmat{7,mati})
+           Int_var.Sy(i,2)=0;
+        else
+            Int_var.Sy(i,2) = mmat{7,mati};
+        end
+        % P0
+        p0=str2double(mmat{25,mati});
+        ev0=str2double(mmat{23,mati});
+        es0=str2double(mmat{26,mati});
+        if isnan(p0)
+            Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
+        else
+            Int_var.P0(i,1:3)=[p0 ev0 es0]; 
+        end
         if SOLVER.UW>0
             Mat_state.k(i) = ...
-                mmat(15,mati)/...
-                mmat(42,mati)/VARIABLE.g;
+                mmat{15,mati}/...
+                mmat{42,mati}/VARIABLE.g;
         end
     end
     
@@ -207,8 +221,10 @@ function [dim,STEP]=fix_time(tp,ste_p)
         stop
     elseif BLK==1
         tp0=0;
+        stini=0;
     else
         tp0=SOLVER.Time_final(BLK-1);
+        stini=SOLVER.step_final(BLK-1);
     end
     
     dt=SOLVER.time_step(BLK);
@@ -233,7 +249,7 @@ function [dim,STEP]=fix_time(tp,ste_p)
     fprintf('Save %i times before the final\n',round(dim/SOLVER.SAVE_F));
     
     STEP.BLCK=BLK;
-    STEP.ste=ste_aux;
+    STEP.ste=ste_aux+stini;
     STEP.dt=dt;
     STEP.t=tb+tp0;
 end

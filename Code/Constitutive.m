@@ -57,18 +57,18 @@ function [stiff_mtx,Int_var,Mat_state]=...
                     [A,T,Gamma,dgamma,Sy,Be]=...
                         Drucker_prager(Kt,e,Gamma,dgamma,Sy,F,Be,Fold,BLCK);
                 elseif MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
-                    %P0      = Int_var.P0(e);
+                    P0      = Int_var.P0(e,1:3);
                     Sy_r    = Int_var.Sy_r(e,2);
                     [A,T,Gamma,dgamma,Sy,Sy_r,Be]=...
-                        M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,BLCK);
+                        M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,P0,BLCK);
                     Int_var.Sy_r(e,1) = Sy_r;
                 elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
-                    %P0      = Int_var.P0(e);
+                    P0      = Int_var.P0(e,1:3);
                     H       = Int_var.H(e,2);
                     etaB    = Int_var.eta(e,2);
                     epsvol  = Int_var.epsv(e,2);
                     [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
-                            PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,F,Fold,Be,BLCK);
+                            PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,F,Fold,Be,P0,BLCK);
                     Int_var.epsv(e,1)= epsvol;
                     Int_var.H(e,1)   = H;
                     Int_var.eta(e,1) = etaB;
@@ -81,9 +81,9 @@ function [stiff_mtx,Int_var,Mat_state]=...
             
             if SOLVER.UW==1
                 % Q calculation
-                n=1-(1-MAT(16,Mat(e)))/MAT_POINT(e).J;
-                K_w=MAT(28,Mat(e));
-                K_s=MAT(27,Mat(e));
+                n=1-(1-MAT{16,Mat(e)})/MAT_POINT(e).J;
+                K_w=MAT{28,Mat(e)};
+                K_s=MAT{27,Mat(e)};
                 Q=1/(n/K_w+(1-n)/K_s);
                 % Pressure
                 bw=F_w*F_w';

@@ -27,13 +27,14 @@ function read_material(filetxt,BLCK)
     
     %FILE
 
-    fid = fopen(filetxt, 'rt'); % opción rt para abrir en modo texto
-    formato = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s '; % formato de cada línea 
+    fid = fopen(filetxt, 'rt'); % opciï¿½n rt para abrir en modo texto
+    formato = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s '; % formato de cada lï¿½nea 
     data = textscan(fid, formato, 'HeaderLines', 1);
 
     a = data{1};
-    % Convertir a vector numérico
+    % Convertir a vector numï¿½rico
     bb = data{2};
+    bb2=str2double(bb);
     long=length(bb);
     c = data{3};
     
@@ -52,7 +53,7 @@ function read_material(filetxt,BLCK)
         stop
     end
     
-    MATERIAL(BLCK).MAT=zeros(42,mats);   % Numero máximo de propiedades reconocidas
+    MATERIAL(BLCK).MAT=cell(42,mats);   % Numero mï¿½ximo de propiedades reconocidas
     MATERIAL(BLCK).MODEL=zeros(mats,1);
     %RANGE=zeros(sp,2*mats); % Range of for materials
 
@@ -183,151 +184,154 @@ function read_material(filetxt,BLCK)
         end
         switch s1
             case 'YOUNG'
-                MATERIAL(BLCK).MAT(1,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(1,M)={bb2(t)};
                 continue
             case 'POISSON'
-                MATERIAL(BLCK).MAT(2,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(2,M)={bb2(t)};
                 continue
             case 'DENSITY'
-                MATERIAL(BLCK).MAT(3,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(3,M)={bb2(t)};
                 continue
             case 'SHEAR_MODULUS'
-                MATERIAL(BLCK).MAT(4,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(4,M)={bb2(t)};
                 continue
             case 'GHAR'
-                MATERIAL(BLCK).MAT(4,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(4,M)={bb2(t)};
                 continue
             case 'LAME_CONSTANT'
-                MATERIAL(BLCK).MAT(5,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(5,M)={bb2(t)};
                 continue
             case 'BULK_MODULUS'
-                MATERIAL(BLCK).MAT(29,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(29,M)={bb2(t)};
                 continue
             case 'KHAR'
-                MATERIAL(BLCK).MAT(29,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(29,M)={bb2(t)};
                 continue
             case 'CONSTRAINED_MODULUS'
-                MATERIAL(BLCK).MAT(17,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(17,M)={bb2(t)};
                 continue
             case 'WAVE_SPEED'
-                MATERIAL(BLCK).MAT(6,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(6,M)={bb2(t)};
                 continue
             case 'YIELD_STRESS'
-                MATERIAL(BLCK).MAT(7,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(7,M)={bb2(t)};
                 continue
             case 'COHESION'
-                MATERIAL(BLCK).MAT(7,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(7,M)={bb2(t)};
                 continue
             case 'PRECONSOLIDATION'
-                MATERIAL(BLCK).MAT(7,M)=str2double(bb{t});     % Preconsolidation, before OCR
+                MATERIAL(BLCK).MAT(7,M)={bb2(t)};    % Preconsolidation, before OCR
                 continue
             case 'INITIAL_PRESSURE'
-                MATERIAL(BLCK).MAT(25,M)=str2double(bb{t});    % Initial pressure
+                MATERIAL(BLCK).MAT(25,M)=bb(t);%str2double(bb{t});    % Initial pressure
                 continue
             case 'P0'
-                MATERIAL(BLCK).MAT(25,M)=str2double(bb{t});    % Initial pressure
+                MATERIAL(BLCK).MAT(25,M)=bb(t);%str2double(bb{t});    % Initial pressure
                 continue
             case 'HARDENING'
-                MATERIAL(BLCK).MAT(8,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(8,M)={bb2(t)};
                 continue
             case 'HARDENING_EXPONENT'
-                MATERIAL(BLCK).MAT(9,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(9,M)={bb2(t)};
                 continue
             case 'EPSILON0'
-                MATERIAL(BLCK).MAT(10,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(10,M)={bb2(t)};
                 continue
             case 'FRICTION_ANGLE'
-                MATERIAL(BLCK).MAT(11,M)=str2double(bb{t})* pi/180;
+                MATERIAL(BLCK).MAT(11,M)={bb2(t)* pi/180};
                 continue
             case 'DILATANCY_ANGLE'
-                MATERIAL(BLCK).MAT(12,M)=str2double(bb{t})* pi/180;
+                MATERIAL(BLCK).MAT(12,M)={bb2(t)* pi/180};
                 continue
             case 'VISCOSITY'
-                MATERIAL(BLCK).MAT(13,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(13,M)={bb2(t)};
                 continue
             case 'GAMMA0'
-                MATERIAL(BLCK).MAT(13,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(13,M)={bb2(t)};
                 continue
             case 'VISCOSITY_EXPONENT'
-                MATERIAL(BLCK).MAT(14,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(14,M)={bb2(t)};
                 continue
             case 'N'
-                MATERIAL(BLCK).MAT(14,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(14,M)={bb2(t)};
                 continue
             case 'PERMEABILITY'
-                MATERIAL(BLCK).MAT(15,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(15,M)={bb2(t)};
                 continue
             case 'POROSITY'
-                MATERIAL(BLCK).MAT(16,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(16,M)={bb2(t)};
                 continue
             case 'WATER_BULK_MODULUS'
-                MATERIAL(BLCK).MAT(18,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(18,M)={bb2(t)};
                 continue
             case 'CRITICAL_STATE_LINE'
-                MATERIAL(BLCK).MAT(19,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(19,M)={bb2(t)};
                 continue
             case 'MF'
-                MATERIAL(BLCK).MAT(19,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(19,M)={bb2(t)};
                 continue
             case 'ALPHA_PARAMETER'
-                MATERIAL(BLCK).MAT(20,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(20,M)={bb2(t)};
                 continue
             case 'LAMBDA'
-                MATERIAL(BLCK).MAT(21,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(21,M)={bb2(t)};
                 continue
             case 'KAPPA'
-                MATERIAL(BLCK).MAT(22,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(22,M)={bb2(t)};
                 continue
             case 'INITIAL_VOLUMETRIC_STRAIN'
-                MATERIAL(BLCK).MAT(23,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(23,M)=bb(t);%str2double(bb{t});
+                continue
+            case 'INITIAL_DEVIATORIC_STRAIN'
+                MATERIAL(BLCK).MAT(26,M)=bb(t);%str2double(bb{t});
                 continue
             case 'OCR'
-                MATERIAL(BLCK).MAT(24,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(24,M)={bb2(t)};
                 continue
             case 'KS'
-                ks=str2double(bb{t});
+                ks=bb2(t);
                 continue
             case 'KW'
-                kw=str2double(bb{t});
+                kw=bb2(t);
                 continue
             case 'CREEP_INDEX'
-                MATERIAL(BLCK).MAT(30,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(30,M)={bb2(t)};
                 continue
             case 'REFERENCE_TIME'
-                MATERIAL(BLCK).MAT(31,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(31,M)={bb2(t)};
                 continue
             case 'MG'
-                MATERIAL(BLCK).MAT(32,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(32,M)={bb2(t)};
                 continue
             case 'ALPHA_F'
-                MATERIAL(BLCK).MAT(33,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(33,M)={bb2(t)};
                 continue
             case 'ALPHA_G'
-                MATERIAL(BLCK).MAT(34,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(34,M)={bb2(t)};
                 continue
             case 'BETA0'
-                MATERIAL(BLCK).MAT(35,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(35,M)={bb2(t)};
                 continue
             case 'BETA1'
-                MATERIAL(BLCK).MAT(36,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(36,M)={bb2(t)};
                 continue
             case 'H0'
-                MATERIAL(BLCK).MAT(37,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(37,M)={bb2(t)};
                 continue
             case 'GAMMA_HDM'
-                MATERIAL(BLCK).MAT(38,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(38,M)={bb2(t)};
                 continue
             case 'HU0'
-                MATERIAL(BLCK).MAT(39,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(39,M)={bb2(t)};
                 continue
             case 'GAMMA_U'
-                MATERIAL(BLCK).MAT(40,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(40,M)={bb2(t)};
                 continue
             case 'GAMMA_VOL'
-                MATERIAL(BLCK).MAT(41,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(41,M)={bb2(t)};
                 continue
             case 'WATER_DENSITY'
-                MATERIAL(BLCK).MAT(42,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(42,M)={bb2(t)};
                 continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)
@@ -342,26 +346,26 @@ function read_material(filetxt,BLCK)
     
     for i=1:mats
         if SOLVER.UW
-            n=MATERIAL(BLCK).MAT(16,i);
+            n=MATERIAL(BLCK).MAT{16,i};
             if n==0
                 fprintf('Error, no porosity !! \n')
             end
             if ks==0
                 ks=1e40;       % Pa
-                MATERIAL(BLCK).MAT(27,i)=ks;
+                MATERIAL(BLCK).MAT(27,i)={ks};
             else
-                MATERIAL(BLCK).MAT(27,i)=ks;
+                MATERIAL(BLCK).MAT(27,i)={ks};
             end
-            if MATERIAL(BLCK).MAT(18,i)==0
+            if isempty(MATERIAL(BLCK).MAT{18,i})
                 if kw==0
                     fprintf('Error, no water bulk modulus !! \n')
                 else
-                    MATERIAL(BLCK).MAT(28,i)=kw;
-                    MATERIAL(BLCK).MAT(18,i)=1/(n/kw+(1-n)/ks);
+                    MATERIAL(BLCK).MAT(28,i)={kw};
+                    MATERIAL(BLCK).MAT(18,i)={1/(n/kw+(1-n)/ks)};
                 end
             else
                 if kw==0
-                    MATERIAL(BLCK).MAT(28,i)=1/(1/MATERIAL(BLCK).MAT(18,i)+(1-n)/n/ks);
+                    MATERIAL(BLCK).MAT(28,i)={1/(1/MATERIAL(BLCK).MAT{18,i})+(1-n)/n/ks};
                 else
                     fprintf(...
                     'Error, two different values of the water bulk modulus !! \n')
@@ -387,14 +391,14 @@ function Mat=elastic_tools(Mat)
 
     global SOLVER
     
-    if Mat(4)==0 && Mat(5)==0 && Mat(29)==0
+    if Mat(4)==0 && Mat(5)==0 && Mat{29}==0
         Mat(4)=Mat(1)/2/(1+Mat(2));             % G 
         Mat(5)=2*Mat(4)*Mat(2)/(1-2*Mat(2));    % Lambda
-        Mat(29)=Mat(5)+2*Mat(4);                % K 
-    elseif Mat(1)==0 && Mat(5)==0 && Mat(29)==0
+        Mat{29}=Mat(5)+2*Mat(4);                % K 
+    elseif Mat(1)==0 && Mat(5)==0 && Mat{29}==0
         Mat(1)=2*Mat(4)*(1+Mat(2));             % E
         Mat(5)=2*Mat(4)*Mat(2)/(1-2*Mat(2));    % Lambda
-        Mat(29)=Mat(5)+2*Mat(4);                % K 
+        Mat{29}=Mat(5)+2*Mat(4);                % K 
     elseif Mat(1)==0 && Mat(4)==0 && Mat(29)==0
         Mat(1)=Mat(5)*(1+Mat(2))*(1-2*Mat(2))/Mat(2);% E
         Mat(4)=Mat(1)/2/(1+Mat(2));                  % G
@@ -421,7 +425,7 @@ function Mat=elastic_tools(Mat)
     % Wave velocity
     Mat(17)=Mat(1)*(1-Mat(2))/((1+Mat(2))*(1-2*Mat(2)));
     if SOLVER.UW
-        M=Mat(17)+Mat(18);
+        M=Mat(17)+Mat{18};
     else
         M=Mat(17);
     end
@@ -447,91 +451,97 @@ end
 function Mat=pz_tools(Mat)
 
     global SOLVER
+    
 
     % Mf
-    if Mat(19)==0 && Mat(11)==0
+    if isempty(Mat{19}) && isempty(Mat{11})
         disp('Error, no critical state line!')
         stop
-    elseif Mat(19)==0
-        Mat(19)=6*sin(Mat(11))/(3-sin(Mat(11)));
-    elseif Mat(11)==0
-        Mat(11)=asin((3*Mat(19))/(6+Mat(19)));
+    elseif isempty(Mat{19})
+        Mat(19)={6*sin(Mat{11})/(3-sin(Mat{11}))};
+    elseif isempty(Mat{11})
+        Mat(11)={asin((3*Mat{19})/(6+Mat{19}))};
     end
     
     %Mg
-    if Mat(32)==0 && Mat(12)==0
+    if isempty(Mat{32}) && isempty(Mat{12})
         disp('Error, no critical state line!')
         stop
-    elseif Mat(32)==0
-        Mat(32)=6*sin(Mat(12))/(3-sin(Mat(12)));
-    elseif Mat(12)==0
-        Mat(12)=asin((3*Mat(32))/(6+Mat(32)));
+    elseif isempty(Mat(32))
+        Mat(32)={6*sin(Mat(12))/(3-sin(Mat(12)))};
+    elseif isempty(Mat(12))
+        Mat(12)={asin((3*Mat(32))/(6+Mat(32)))};
     end
     
-    % OCR
-    if Mat(25) && Mat(7)
-        Mat(24) = Mat(7)/Mat(25);
-    elseif Mat(25) && Mat(24)
-        Mat(7) = Mat(25)*Mat(24);
-    elseif Mat(7) && Mat(24)
-        Mat(25) = Mat(7)/Mat(24);
-    elseif Mat(7)
-        Mat(25)=Mat(7);
-        Mat(24)=1;
-    elseif Mat(25)
-        Mat(7)=Mat(25);
-        Mat(24)=1;
-    elseif Mat(24)
-        disp('We need more PZ parameters!')
-        stop
-    end
+%     % OCR
+%     if Mat(25} && Mat(7}
+%         Mat(24} = Mat(7}/Mat(25};
+%     elseif Mat(25} && Mat(24}
+%         Mat(7} = Mat(25}*Mat(24};
+%     elseif Mat(7} && Mat(24}
+%         Mat(25} = Mat(7}/Mat(24};
+%     elseif Mat(7}
+%         Mat(25}=Mat(7};
+%         Mat(24}=1;
+%     elseif Mat(25}
+%         Mat(7}=Mat(25};
+%         Mat(24}=1;
+%     elseif Mat(24}
+%         disp('We need more PZ parameters!')
+%         stop
+%     end
     
     %H0
-    if Mat(37)==0
-        if Mat(21)==0 || Mat(22)==0
+    if isempty(Mat{37})
+        if isempty(Mat{21}) || isempty(Mat{22})
             disp('We need more PZ parameters!')
             stop
         else
-            Mat(37)=1/(Mat(21)-Mat(22));
+            Mat(37)={1/(Mat{21}-Mat{22})};
         end
     end
     
     %Hu0
-    if Mat(39)==0
-        if Mat(37)==0 && Mat(22)==0
+    if isempty(Mat{39})
+        if isempty( Mat{37}) && isempty(Mat{22})
             disp('We need more PZ parameters!')
             stop
         else
-            if Mat(22)==0
+            if isempty(Mat{22})
                 Mat(39)=Mat(37);
             else
-                Mat(39)=1/Mat(22);
+                Mat(39)={1/Mat{22}};
             end
         end
     end
     
-    %Khar Ghar
-    Mat(29)=-Mat(29)/Mat(25);
-    Mat(4) =-Mat(4)/Mat(25);
+%     %Khar Ghar
+%     Mat(29)={-Mat(29}/Mat(25}};
+%     Mat(4) ={-Mat(4}/Mat(25}};
     
     % Non zero
-    if Mat(33)==0
+    if isempty(Mat{33})
         disp('We need more PZ parameters!')
         stop
-    elseif Mat(34)==0
+    elseif isempty(Mat{34})
         Mat(34)=Mat(33); % Alpha g = alpha f
     end
     
     %%% E
-    Mat(1)=2*Mat(4)*(1+Mat(2)); 
+    Mat(2)={(3*Mat{29}-2*Mat{4})/(6*Mat{29}+2*Mat{4})};
+    Mat(1)={2*Mat{4}*(1+Mat{2})};
     % Wave velocity
-    Mat(17)=Mat(1)*(1-Mat(2))/((1+Mat(2))*(1-2*Mat(2)));
+    Mat(17)={Mat{1}*(1-Mat{2})/((1+Mat{2})*(1-2*Mat{2}))};
     if SOLVER.UW
-        M=Mat(17)+Mat(18);
+        M=Mat{17}+Mat{18};
     else
-        M=Mat(17);
+        M=Mat{17};
     end
-    Mat(6)=sqrt(M/Mat(3));     % cp
+    Mat(6)={sqrt(M/Mat{3})};     % cp
+    
+    if isempty(Mat{41})
+        Mat(41)={0};     % gamma vol
+    end
     
 end
 
@@ -539,13 +549,13 @@ function Mat=mcc_tools(Mat)
 
     global SOLVER
 
-    if Mat(19)==0 && Mat(11)==0
+    if Mat{19}==0 && Mat{11}==0
         disp('Error, no critical state line!')
         stop
-    elseif Mat(19)==0
-        Mat(19)=6*sin(Mat(11))/(3-sin(Mat(11)));
-    elseif Mat(11)==0
-        Mat(11)=asin((3*Mat(19))/(6+Mat(19)));
+    elseif Mat{19}==0
+        Mat{19}=6*sin(Mat{11})/(3-sin(Mat{11}));
+    elseif Mat{11}==0
+        Mat{11}=asin((3*Mat{19})/(6+Mat{19}));
     end
     
     % OCR
@@ -567,7 +577,7 @@ function Mat=mcc_tools(Mat)
     end
     
     
-    if Mat(21)==0 || Mat(22)==0
+    if Mat(21)==0 || Mat{22}==0
         disp('We need more MCC parameters!')
         stop
     end
@@ -577,7 +587,7 @@ function Mat=mcc_tools(Mat)
     % Wave velocity
     Mat(17)=Mat(1)*(1-Mat(2))/((1+Mat(2))*(1-2*Mat(2)));
     if SOLVER.UW
-        M=Mat(17)+Mat(18);
+        M=Mat(17)+Mat{18};
     else
         M=Mat(17);
     end

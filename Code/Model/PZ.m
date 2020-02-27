@@ -1,6 +1,6 @@
 
 function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
-    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,BLCK)
+    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,P0,BLCK)
 
 
     global MATERIAL GEOMETRY
@@ -34,20 +34,26 @@ function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
     
     Ge(13)=0;
     
-    Ge(1) = MAT(29,Mat(e));%khar;
-    Ge(2) = MAT(4,Mat(e));%ghar;
-    Ge(3) = MAT(33,Mat(e));%alpha;
-    Ge(4) = MAT(34,Mat(e));%alphag;
-    Ge(5) = MAT(19,Mat(e));%Mf;
-    Ge(6) = MAT(32,Mat(e));%Mg;
-    Ge(7) = MAT(25,Mat(e));%P0;
-    Ge(8) = MAT(35,Mat(e));%beta0;
-    Ge(9) = MAT(36,Mat(e));%beta1;
-    Ge(10)= MAT(37,Mat(e));%H0;
-    Ge(11)= MAT(38,Mat(e));%ganma;
-    Ge(12)= MAT(39,Mat(e));%Hu0;
-    Ge(13)= MAT(40,Mat(e));%ganmau;
-    Ge(14)= MAT(41,Mat(e));%ganma_vol;
+    Ge(1) = MAT{29,Mat(e)}/P0(1);%khar;
+    Ge(2) = MAT{4,Mat(e)}/P0(1);%ghar;
+    Ge(3) = MAT{33,Mat(e)};%alpha;
+    Ge(4) = MAT{34,Mat(e)};%alphag;
+    Ge(5) = MAT{19,Mat(e)};%Mf;
+    Ge(6) = MAT{32,Mat(e)};%Mg;
+    Ge(7) = P0(1);%P0;
+    Ge(8) = MAT{35,Mat(e)};%beta0;
+    Ge(9) = MAT{36,Mat(e)};%beta1;
+    Ge(10)= MAT{37,Mat(e)};%H0;
+    Ge(11)= MAT{38,Mat(e)};%ganma;
+    Ge(12)= MAT{39,Mat(e)};%Hu0;
+    Ge(13)= MAT{40,Mat(e)};%ganmau;
+    Ge(14)= MAT{41,Mat(e)};%ganma_vol;
+    Ge(15)= P0(2);%Ev0
+    Ge(16)= P0(3);%Es0
+    
+    if e==16 && ste==2723
+        e;
+    end
     
     % Compute principal Kirchhoff tension 
     if MODEL==4.1
@@ -63,6 +69,9 @@ function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
     
     Be = expm(2*Ee);
     Sc = TTe/det(F);
+    if isnan(Sc)
+        fprintf('Error in Cauchy stress tensor of elem e %i \n',e);
+    end
     %Sc = TTe;%/det(F);
 
 end
@@ -449,11 +458,16 @@ function [n,d]=build_vector(alpha,Mf,eta,q,signq)
 
 end
 
-function [De,p,q,eta]=Delast(Ge,ees,eev)
+function [De,p,q,eta]=Delast(Ge,ees1,eev1)
 
     khar  = Ge(1);
     ghar  = Ge(2);
     p0    = Ge(7);
+    ev0    = Ge(15);
+    es0    = Ge(16);
+    
+    eev = eev1-ev0;
+    ees = ees1-es0;
 
     p=p0*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
     q=-p0*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));

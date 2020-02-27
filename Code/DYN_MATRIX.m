@@ -55,15 +55,15 @@ classdef DYN_MATRIX
                     SOLVER.DYN(BLCK)==1
                 for i=1:GEOMETRY.mat_points
                     
-                    rho_w=MATERIAL(BLCK).MAT(42,mati(i));
+                    rho_w=MATERIAL(BLCK).MAT{42,mati(i)};
                     
                     %Volume & density
                     volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
                     if SOLVER.UW
-                        n=1-(1-MATERIAL(BLCK).MAT(16,mati(i)))/MAT_POINT(i).J;
-                        dens=n*rho_w+(1-n)*MATERIAL(BLCK).MAT(3,mati(i));
+                        n=1-(1-MATERIAL(BLCK).MAT{16,mati(i)})/MAT_POINT(i).J;
+                        dens=n*rho_w+(1-n)*MATERIAL(BLCK).MAT{3,mati(i)};
                     else
-                        dens=MATERIAL(BLCK).MAT(3,mati(i))/MAT_POINT(i).J;
+                        dens=MATERIAL(BLCK).MAT{3,mati(i)}/MAT_POINT(i).J;
                     end
 
                     if SOLVER.AXI
@@ -85,8 +85,8 @@ classdef DYN_MATRIX
                         end
                         Qt=(b'*mm'*sh')';
 
-                        K_w=MATERIAL(BLCK).MAT(28,mati(i));
-                        K_s=MATERIAL(BLCK).MAT(27,mati(i));
+                        K_w=MATERIAL(BLCK).MAT{28,mati(i)};
+                        K_s=MATERIAL(BLCK).MAT{27,mati(i)};
 
                         Q=1/(n/K_w+(1-n)/K_s);
                         
@@ -438,11 +438,11 @@ classdef DYN_MATRIX
             for i=1:GEOMETRY.mat_points
                 volume=GEOMETRY.Area(i)*MAT_POINT(i).J;
                 if SOLVER.UW
-                    rho_w=MAT(42,Material(i));
-                    n=1-(1-MAT(16,Material(i)))/MAT_POINT(i).J;
-                    dens=n*rho_w+(1-n)*MAT(3,Material(i));
+                    rho_w=MAT{42,Material(i)};
+                    n=1-(1-MAT{16,Material(i)})/MAT_POINT(i).J;
+                    dens=n*rho_w+(1-n)*MAT{3,Material(i)};
                 else
-                    dens=MAT(3,Material(i))/MAT_POINT(i).J;
+                    dens=MAT{3,Material(i)}/MAT_POINT(i).J;
                 end
                 
                 if SOLVER.AXI

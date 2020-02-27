@@ -42,6 +42,7 @@ function SOLVER(MAT_POINT)
                 Implicit_solver(STEP,MAT_POINT,Disp_field,Int_var,...
                 Mat_state,GLOBAL,stiff_mtx,MATRIX,load_s);
         end
+        GLOBAL.final_block(STEP.BLCK)=GLOBAL.ste_p;
         STEP.BLCK=STEP.BLCK+1;
         
         if STEP.BLCK>SOLVER.BLOCKS
