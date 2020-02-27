@@ -46,7 +46,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
                 if MODEL(Mat(e))==0
                     [A,T,Be]=Saint_Venant(Kt,e,F,BLCK);
                 elseif MODEL(Mat(e))<2 && MODEL(Mat(e))>=1
-                    [A,T,Be]=Neo_Hookean(Kt,e,F,MAT_POINT(e).J,BLCK);
+                    [A,T,Be]=Neo_Hookean(Kt,e,F,MAT_POINT{1}(e).J,BLCK);
                 end
             else        
                 Sy      = Int_var.Sy(e,2);
@@ -81,7 +81,7 @@ function [stiff_mtx,Int_var,Mat_state]=...
             
             if SOLVER.UW==1
                 % Q calculation
-                n=1-(1-MAT(16,Mat(e)))/MAT_POINT(e).J;
+                n=1-(1-MAT(16,Mat(e)))/MAT_POINT{1}(e).J;
                 K_w=MAT(28,Mat(e));
                 K_s=MAT(27,Mat(e));
                 Q=1/(n/K_w+(1-n)/K_s);

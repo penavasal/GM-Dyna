@@ -1,7 +1,7 @@
 
 function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
 
-    global GEOMETRY SOLVER
+    global GEOMETRY SOLVER LME_param
     
     REM_T=0;
               
@@ -10,28 +10,52 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
     if INITIAL==1
 
         % Measurement of remapping
-        for i=1:GEOMETRY.mat_points
-            for j=1:3
-                MAT_POINT(i).EP(j,1)=1;
-                MAT_POINT(i).EP(j,2)=1;
+        [phases,~]=size(SOLVER.PHASES);
+        for k=1:phases
+            for i=1:GEOMETRY.mat_points
+                for j=1:3
+                    MAT_POINT{k}(i).EP(j,1)=1;
+                    MAT_POINT{k}(i).EP(j,2)=1;
+                end  
             end  
-        end  
+        end
        
         % Only for LME shape function
         if strcmp(SOLVER.TYPE{2},'LME')
             
             MAT_POINT=LME.initialize(MAT_POINT);
             
-            for i=1:GEOMETRY.mat_points
-                xg=GEOMETRY.xg_0(i,:);
-                n_sp=LME.nodalspacing(MAT_POINT);
-                [MAT_POINT]=LME.near(i,GEOMETRY.x_0,xg,...
-                    n_sp,MAT_POINT); 
-                [MAT_POINT,SOLVER.FAIL]=LME.shapef...
-                    (i,GEOMETRY.x_0,n_sp,xg,MAT_POINT);
-                if SOLVER.FAIL
-                    fprintf('FAIL in the initial calculation of Shape function \n');
-                    stop;
+            [phases,~]=size(SOLVER.PHASES);
+            [shf,~]=size(LME_param);
+            for sh=1:shf
+                for ph=1:phases
+                    if SOLVER.PHASES{ph,2}==sh
+                        break;
+                    end
+                end
+            
+                for i=1:GEOMETRY.mat_points
+                    xg=GEOMETRY.xg_0(i,:);
+                    n_sp=LME.nodalspacing(MAT_POINT{ph});
+                    [MAT_POINT{ph}]=LME.near(i,GEOMETRY.x_0,xg,...
+                        n_sp,MAT_POINT{ph},sh); 
+                    [MAT_POINT{ph},SOLVER.FAIL]=LME.shapef...
+                        (i,GEOMETRY.x_0,n_sp,xg,MAT_POINT{ph},sh);
+                    if SOLVER.FAIL
+                        fprintf('FAIL in the initial calculation of Shape function \n');
+                        stop;
+                    end
+                end
+                
+                for ph1=ph+1:phases
+                    if SOLVER.PHASES{ph1,2}==sh
+                        for i=1:GEOMETRY.mat_points
+                            MAT_POINT{ph1}(i).N = MAT_POINT{ph}(i).N;
+                            MAT_POINT{ph1}(i).B = MAT_POINT{ph}(i).B;
+                            MAT_POINT{ph1}(i).xi= MAT_POINT{ph}(i).xi;
+                            MAT_POINT{ph1}(i).near= MAT_POINT{ph}(i).near;
+                        end
+                    end
                 end
             end
             
@@ -178,18 +202,20 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
     
     if REM_T || INITIAL
         if SOLVER.TYPE{1}==0 %OTM
-            [jacobians]=LIB.S2list(MAT_POINT,'J');
+            [jacobians]=LIB.S2list(MAT_POINT{1},'J');
             volume=GEOMETRY.Area.*jacobians;
         elseif SOLVER.TYPE{1}==1 || INITIAL %MPM || 
             volume=GEOMETRY.Area;
         end
         
         % MAKE Bbar - Patch
-        if SOLVER.B_BAR==1
-            [MAT_POINT]=bbar_matrix(GEOMETRY.patch_con,GEOMETRY.patch_el,...
-                GEOMETRY.mat_points,MAT_POINT,volume,SOLVER.B_BAR);
-        else
-            [MAT_POINT]=b_m(GEOMETRY.mat_points,GEOMETRY.sp,MAT_POINT);
+        for ph=1:phases
+            if SOLVER.B_BAR==1
+                [MAT_POINT{ph}]=bbar_matrix(GEOMETRY.patch_con,GEOMETRY.patch_el,...
+                    GEOMETRY.mat_points,MAT_POINT{ph},volume,SOLVER.B_BAR);
+            else
+                [MAT_POINT{ph}]=b_m(GEOMETRY.mat_points,GEOMETRY.sp,MAT_POINT{ph});
+            end
         end
     end
     

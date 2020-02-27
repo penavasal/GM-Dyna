@@ -286,20 +286,22 @@ function [MAT_POINT,NODE_LIST]=...
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Creation of MAT_POINT object
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
-    
-    MAT_POINT(1:GEOMETRY.mat_points)=...
-              struct('xg', zeros(GEOMETRY.sp,1),...
-                     'element', zeros(1),...
-                     'near', zeros(NNE_f,1),...
-                     'N', zeros(NNE_f,1),...
-                     'B', zeros(GEOMETRY.b_dim,GEOMETRY.sp*NNE_f),...
-                     'EP', zeros(3,2),...
-                     'J', ones(1),...
-                     'w', zeros(1),...
-                     'xi', zeros(GEOMETRY.sp,1)...
-                 );
+    [phases,~]=size(SOLVER.PHASES);
+    for i=1:phases
+        MAT_POINT{i}(1:GEOMETRY.mat_points)=...
+                  struct('xg', zeros(GEOMETRY.sp,1),...
+                         'element', zeros(1),...
+                         'near', zeros(NNE_f,1),...
+                         'N', zeros(NNE_f,1),...
+                         'B', zeros(GEOMETRY.b_dim,GEOMETRY.sp*NNE_f),...
+                         'EP', zeros(3,2),...
+                         'J', ones(1),...
+                         'w', zeros(1),...
+                         'xi', zeros(GEOMETRY.sp,1)...
+                     );
+    end
              
-    [MAT_POINT]=LIB.list2S(MAT_POINT,'xg',xg);
+    [MAT_POINT{1}]=LIB.list2S(MAT_POINT{1},'xg',xg);
     
     %-----------------------------------------
     % NODE CONNECTIVITY
@@ -346,8 +348,8 @@ function [MAT_POINT,NODE_LIST]=...
                             GEOMETRY.x_a,GEOMETRY.elem(e,:));  
                 end 
             end
-            MAT_POINT(mp).element=e;
-            MAT_POINT(mp).near=GEOMETRY.elem(e,:);
+            MAT_POINT{1}(mp).element=e;
+            MAT_POINT{1}(mp).near=GEOMETRY.elem(e,:);
         end
     else
         if strcmp(ELEMENT,'Q4-4')
@@ -355,15 +357,23 @@ function [MAT_POINT,NODE_LIST]=...
             for e=1:GEOMETRY.elements
                 for j=1:4
                     mp=mp+1;
-                    MAT_POINT(mp).element=e;
-                    MAT_POINT(mp).near=GEOMETRY.elem(e,:);
+                    MAT_POINT{1}(mp).element=e;
+                    MAT_POINT{1}(mp).near=GEOMETRY.elem(e,:);
                 end
             end
         else
             for mp=1:GEOMETRY.mat_points
-                MAT_POINT(mp).element=mp;
-                MAT_POINT(mp).near=GEOMETRY.elem(mp,:);
+                MAT_POINT{1}(mp).element=mp;
+                MAT_POINT{1}(mp).near=GEOMETRY.elem(mp,:);
             end
+        end
+    end
+    
+    for i=2:phases
+        for mp=1:GEOMETRY.mat_points
+            MAT_POINT{i}(mp).element=MAT_POINT{1}(mp).element;
+            MAT_POINT{i}(mp).near=MAT_POINT{1}(mp).near;
+            MAT_POINT{i}(mp).xg=MAT_POINT{1}(mp).xg;
         end
     end
     
@@ -382,7 +392,7 @@ function [MAT_POINT,NODE_LIST]=...
         elseif strcmp(ELEMENT,'Q4-4')||strcmp(ELEMENT,'Q4')
             GEOMETRY.h_ini(e)=sqrt(GEOMETRY.Area(e));
         end
-        near=MAT_POINT(e).near;
+        near=MAT_POINT{1}(e).near;
         for i=1:length(near)
             aux(near(i))=aux(near(i))+1;
             GEOMETRY.h_nds(near(i))=...

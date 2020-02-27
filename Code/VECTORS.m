@@ -179,8 +179,8 @@
             Gamma_nds=zeros(GEOMETRY.nodes,1);
 
             for i=1:GEOMETRY.mat_points
-                sh=MAT_POINT(i).N;
-                nds=MAT_POINT(i).near;
+                sh=MAT_POINT{1}(i).N;
+                nds=MAT_POINT{1}(i).near;
                 n=length(nds);
                 for j=1:n
                     Gamma_nds(nds(j),1)=Gamma_nds(nds(j),1)+sh(j)*Gamma_tot(i,ste_p);

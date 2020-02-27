@@ -1,5 +1,5 @@
 function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
-        stiff_mtx]=init(MAT_POINT)
+        stiff_mtx]=init(MAT_PPOINT)
     
     global GEOMETRY VARIABLE MATERIAL SOLVER
     
@@ -132,9 +132,12 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     if SOLVER.INIT_file~=0
 
         % MAT_POINT
-        [MAT_POINT]=LIB.list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
-        [MAT_POINT]=LIB.list2S(MAT_POINT,'xg',...
-            reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
+        [phases,~]=size(SOLVER.PHASES);
+        for i=1:phases
+            [MAT_POINT{i}]=LIB.list2S(MAT_POINT{i},'J',GLOBAL.J(:,ste_p));
+            [MAT_POINT{i}]=LIB.list2S(MAT_POINT{i},'xg',...
+                reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
+        end
         MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
         
         [Disp_field,Mat_state,Int_var,stiff_mtx]=VECTORS.Update_ini(...
@@ -326,7 +329,7 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
             Mat_state.Be((e-1)*dimf+i,2)=be(i,1);
             Mat_state.F((e-1)*dimf+i,2)=f(i,1);
         end 
-        MAT_POINT(e).J    =   jacobians;
+        MAT_POINT{1}(e).J    =   jacobians;
         
         if SOLVER.UW>0
             Pw=SOLVER.INITIAL_PORE_PRESSURE;

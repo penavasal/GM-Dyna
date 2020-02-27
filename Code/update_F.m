@@ -24,36 +24,28 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
     for j=1:aa
         for k=1:bb
             e=GEOMETRY.patch_con(j,k);
-            nd = MAT_POINT(e).near;
-            nn = length(nd);         
 
-            b=MAT_POINT(e).B;
+            % SOLID PHASE
+            nd = MAT_POINT{1}(e).near;
+            nn = length(nd);         
+            b  = MAT_POINT{1}(e).B;
             if SOLVER.AXI
                 bs=zeros(5,nn*2);
-                bw=zeros(5,nn*2);
                 for i=2:2:nn*2
                     bs(1,i-1)=b(1,i-1);
                     bs(2,i-1)=b(2,i);
                     bs(3,i)=b(3,i);
                     bs(4,i)=b(3,i-1);
                     bs(5,i-1)=b(4,i-1);
-
-                    bw(1,i-1)=bs(1,i-1);
-                    bw(4,i)=bs(4,i);
-                    bw(5,i-1)=bs(5,i-1);
                 end
                 
             else
                 bs=zeros(4,nn*2);
-                bw=zeros(4,nn*2);
                 for i=2:2:nn*2
                     bs(1,i-1)=b(1,i-1);
                     bs(2,i-1)=b(2,i);
                     bs(3,i)=b(3,i);
                     bs(4,i)=b(3,i-1);
-
-                    bw(1,i-1)=bs(1,i-1);
-                    bw(4,i)=bs(4,i);
                 end
             end
             
@@ -83,11 +75,29 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
             
             
             if SOLVER.UW==1
-                uw=zeros(nn*sp,1);     %Incremental displacements _ water
-                for i=1:nn
+                ndw = MAT_POINT{2}(e).near;
+                nn2 = length(ndw);         
+                b2  = MAT_POINT{2}(e).B;
+                if SOLVER.AXI
+                    bw=zeros(5,nn2*2);
+                    for i=2:2:nn2*2
+                        bw(1,i-1)=b2(1,i-1);
+                        bw(4,i)=b2(3,i-1);
+                        bw(5,i-1)=b2(4,i-1);
+                    end
+
+                else
+                    bw=zeros(4,nn2*2);
+                    for i=2:2:nn2*2
+                        bw(1,i-1)=b2(1,i-1);
+                        bw(4,i)=b2(3,i-1);
+                    end
+                end
+                uw=zeros(nn2*sp,1);     %Incremental displacements _ water
+                for i=1:nn2
                     for l=1:sp
-                        uw((i-1)*sp+l,1)=d((nd(i)-1)*df+sp+l,1)...
-                            -d((nd(i)-1)*df+sp+l,2);
+                        uw((i-1)*sp+l,1)=d((ndw(i)-1)*df+sp+l,1)...
+                            -d((ndw(i)-1)*df+sp+l,2);
                     end
                 end
 
@@ -106,7 +116,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 F_w=dFw*F_w;
                 
             elseif SOLVER.UW==2
-                N=MAT_POINT(e).N;
+                N=MAT_POINT{2}(e).N;
                 dN=zeros(2,nn);
                 pwv=zeros(nn,1);     %Incremental displacements _ solid
                 for i=1:nn
@@ -128,7 +138,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 logJ(j)=logJ(j) + GEOMETRY.Area(e)*log(jacobians(e));%*jacobians(e);
             else
                 % New jaco
-                MAT_POINT(e).J=jacobians(e);
+                MAT_POINT{1}(e).J=jacobians(e);
                 
                 %Storage of vector F
                 [f]=LIB.m2v(F);
@@ -144,7 +154,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                     %Principal strecht
                     C=F_'*F_;
                     [EP_]=Principal(C);
-                    MAT_POINT(e).EP(:,1)=EP_(:);
+                    MAT_POINT{1}(e).EP(:,1)=EP_(:);
                 end
             end
             if SOLVER.UW==1
@@ -195,7 +205,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 
                 % New vol, dens, jaco
                 jaco_new=det(F_);
-                MAT_POINT(e).J=jaco_new;
+                MAT_POINT{1}(e).J=jaco_new;
                 
                 %Storage of vector F
                 [f]=LIB.m2v(F_);
@@ -207,7 +217,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                     %Principal strecht
                     C=F_'*F_;
                     [EP_]=Principal(C);
-                    MAT_POINT(e).EP(:,1)=EP_(:);
+                    MAT_POINT{1}(e).EP(:,1)=EP_(:);
                 end
             end
         end

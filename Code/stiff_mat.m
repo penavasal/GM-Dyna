@@ -11,15 +11,15 @@ function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A,BLCK)
     b=MAT_POINT(e).B;
     n =length(nb);
     
-    volume=GEOMETRY.Area(e)*MAT_POINT(e).J;
+    volume=GEOMETRY.Area(e)*MAT_POINT{1}(e).J;
     if SOLVER.AXI
         dim=4;
         if SOLVER.UW==0 || SOLVER.UW==2
             d2=dim;
-            vol=-2*pi*MAT_POINT(e).xg(1)*volume; % Por que negativo??
+            vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume; % Por que negativo??
         elseif SOLVER.UW==1
             d2=7;
-            vol=2*pi*MAT_POINT(e).xg(1)*volume;
+            vol=2*pi*MAT_POINT{1}(e).xg(1)*volume;
         end
         
     else

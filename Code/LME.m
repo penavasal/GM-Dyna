@@ -7,7 +7,7 @@
         % Date:
         %   Version 2.0   10.04.2019
 
-        function [MAT_POINT]=near(i,x_a,x,h,MAT_POINT)
+        function [MAT_POINT]=near(i,x_a,x,h,MAT_POINT,sh)
 
             global GEOMETRY LME_param 
 
@@ -15,9 +15,9 @@
 
             ndim=GEOMETRY.sp;
 
-            target_zero= LME_param(2);
+            target_zero= LME_param(sh,2);
 
-            nbg=LME_param(8);
+            nbg=LME_param(sh,8);
             % Range of search
             range_aux=h(i)*sqrt(-log(target_zero)/MAT_POINT(i).w);
             range=max(range_aux, nbg*h(i));
@@ -74,7 +74,7 @@
             MAT_POINT(i).near=near_;
         end
 
-        function [MAT_POINT,FAIL]=shapef(i,x_a,h,x,MAT_POINT)
+        function [MAT_POINT,FAIL]=shapef(i,x_a,h,x,MAT_POINT,sh)
         
     % Calculation of the local maximum-entropy shape functions with Newton's
     % method as described in section 4.2 of [1]
@@ -106,8 +106,8 @@
             
             ndim = GEOMETRY.sp;
     
-            TolLag= LME_param(3);
-            Nelder=LME_param(4); 
+            TolLag= LME_param(sh,3);
+            Nelder=LME_param(sh,4); 
     
             FAIL=0;
 
@@ -500,7 +500,7 @@
 
         function read
 
-                global LME_param
+                global LME_param SOLVER
 
 
                 % As described in [1], gamma measures the degree of locality, the larger,
@@ -522,11 +522,12 @@
                 prop = 0.1;             % Proportion of gamma decreasing
 
 
-
+                str= SOLVER.TYPE{3};
+                
                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                % Read LME.txt
                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                fid = fopen('LME.txt', 'rt'); % opción rt para abrir en modo texto
+                fid = fopen(str, 'rt'); % opción rt para abrir en modo texto
                 formato = '%s %s %s %s %s %s %s %s %s'; % formato de cada línea 
                 data = textscan(fid, formato, 'HeaderLines', 1);
                 a = data{1};
@@ -543,11 +544,49 @@
                     end
                 end
                 t=0;
-                while (t<l)
+                
+                shfs=str2double(b2{1});
+                if isnan(shfs)
+                    shfs=0;
+                end
+                while shfs==0
+                    t=t+1;
+                    if strcmp(a{t},'SHAPE_FUNCTIONS')
+                        shfs=str2double(b2{t});
+                    end
+                end
+                [phases,~]=size(SOLVER.PHASES);
+                
+                M=0;
+                while (M<shfs+1) &&(t<l)
                     t=t+1;
                     s1=a{t};
                     switch s1
                         case '//'
+                            continue
+                        case 'PHASE'
+                            if (M+1)>shfs
+                                break;
+                            elseif M>0
+                                LME_param(M,1)=gamma_lme;
+                                LME_param(M,2)=target_zero;
+                                LME_param(M,3)=max(2*eps,TolLag);
+                                LME_param(M,4)=Nelder;
+                                LME_param(M,5)=tol_search;
+                                LME_param(M,6)=prop;
+                                LME_param(M,7)=gamma_top;
+                                LME_param(M,8)=nb_grade;
+                            end
+                            M=M+1;
+                            ph=b2{t};
+                            
+                            for i=1:length(ph)
+                                for k=1:phases
+                                    if strcmp(ph(i),SOLVER.PHASES{k,1})
+                                        SOLVER.PHASES{k,2}=M;
+                                    end
+                                end
+                            end
                             continue
                         case 'GAMMA_LME'
                             gamma_lme=b(t); 
@@ -584,43 +623,57 @@
                 end
 
                 fclose(fid); 
-
-
-               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-               % Save LME_param
-               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-                LME_param(1)=gamma_lme;
-                LME_param(2)=target_zero;
-                LME_param(3)=max(2*eps,TolLag);
-                LME_param(4)=Nelder;
-                LME_param(5)=tol_search;
-                LME_param(6)=prop;
-                LME_param(7)=gamma_top;
-                LME_param(8)=nb_grade;
-
+                
+                %SAVE the last parameters
+                
+                LME_param(M,1)=gamma_lme;
+                LME_param(M,2)=target_zero;
+                LME_param(M,3)=max(2*eps,TolLag);
+                LME_param(M,4)=Nelder;
+                LME_param(M,5)=tol_search;
+                LME_param(M,6)=prop;
+                LME_param(M,7)=gamma_top;
+                LME_param(M,8)=nb_grade;
 
         end
 
         function MAT_POINT=initialize(MAT_POINT)
             
-            global GEOMETRY LME_param
+            global GEOMETRY LME_param SOLVER
             
             LME.read;
-
-            gamma_lme = LME_param(1);
-            gamma_=gamma_lme*ones(GEOMETRY.mat_points,1);
-
-            n_sp=LME.nodalspacing(MAT_POINT);
             
-            lam_LME=zeros(GEOMETRY.mat_points,GEOMETRY.sp);
-            for i=1:GEOMETRY.mat_points
-                beta_=gamma_(i)/n_sp(i)^2;
-                [lam_LME(i,:)]=LME.first_lambda(i,MAT_POINT(i).near,...
-                    GEOMETRY.xg_0,GEOMETRY.x_0,beta_);%First lambda
-                MAT_POINT(i).w=gamma_(i);
-                MAT_POINT(i).xi=lam_LME(i,:);
-            end   
+            [phases,~]=size(SOLVER.PHASES);
+            [shf,~]=size(LME_param);
+            for sh=1:shf
+                for ph=1:phases
+                    if SOLVER.PHASES{ph,2}==sh
+                        break;
+                    end
+                end
+                gamma_lme = LME_param(sh,1);
+                gamma_=gamma_lme*ones(GEOMETRY.mat_points,1);
+
+                n_sp=LME.nodalspacing(MAT_POINT{ph});
+
+                lam_LME=zeros(GEOMETRY.mat_points,GEOMETRY.sp);
+                for i=1:GEOMETRY.mat_points
+                    beta_=gamma_(i)/n_sp(i)^2;
+                    [lam_LME(i,:)]=LME.first_lambda(i,MAT_POINT{ph}(i).near,...
+                        GEOMETRY.xg_0,GEOMETRY.x_0,beta_);%First lambda
+                    MAT_POINT{ph}(i).w=gamma_(i);
+                    MAT_POINT{ph}(i).xi=lam_LME(i,:);
+                end  
+                
+                for ph1=ph+1:phases
+                    if SOLVER.PHASES{ph1,2}==sh
+                        for i=1:GEOMETRY.mat_points
+                            MAT_POINT{ph1}(i).w = MAT_POINT{ph}(i).w;
+                            MAT_POINT{ph1}(i).xi= MAT_POINT{ph}(i).xi;
+                        end
+                    end
+                end
+            end
         end
          
         function [MAT_POINT,REMAP]=REMAPPING(MAT_POINT,i)

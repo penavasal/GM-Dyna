@@ -41,6 +41,8 @@ function MAT_POINT=read_problem(str)
     
     SOLVER.BLOCKS = 1;
     
+    SOLVER.PHASES = {'' ''};
+    
     % VARIABLES
     VARIABLE.g=0;
 
@@ -55,6 +57,7 @@ function MAT_POINT=read_problem(str)
     b1= cellfun(@str2num, data{2}, 'UniformOutput', false);
     b2= data{2};
     b3= data{3};
+    b4= data{4};
     [l,~] = size(b1);
     b=zeros(l,1);
     for i=1:l
@@ -154,18 +157,42 @@ function MAT_POINT=read_problem(str)
                     stop
                 end
                 if b3{t}
-                    SOLVER.TYPE{2}=b3{t};    
+                    SOLVER.TYPE{2}=b3{t};
+                    if SOLVER.TYPE{2}=='LME'
+                        if b4{t}
+                           SOLVER.TYPE{3}=b4{t};
+                        else
+                           fprintf('Check LME file, by Default LME.txt !!\n') 
+                           SOLVER.TYPE{3}='LME.txt';
+                        end
+                    end
                 end
                 continue
             case 'FORMULATION'
                 if strcmp(b2{t},'U')
                     SOLVER.UW=0;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
                 elseif strcmp(b2{t},'UW')
                     SOLVER.UW=1;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
+                    SOLVER.PHASES{2,1}='W';
+                    SOLVER.PHASES{2,2}=1;
                 elseif strcmp(b2{t},'UPw')
                     SOLVER.UW=2;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
+                    SOLVER.PHASES{2,1}='Pw';
+                    SOLVER.PHASES{2,2}=1;
                 elseif strcmp(b2{t},'UWPw')
                     SOLVER.UW=3;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
+                    SOLVER.PHASES{2,1}='W';
+                    SOLVER.PHASES{2,2}=1;
+                    SOLVER.PHASES{3,1}='Pw';
+                    SOLVER.PHASES{3,2}=1;
                 end
                 if SOLVER.UW>=1
                     if VARIABLE.g==0
