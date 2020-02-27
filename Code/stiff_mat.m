@@ -46,7 +46,8 @@ function [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A,BLCK)
         
         if SOLVER.UW==2
             N = MAT_POINT(e).N;
-            [K]=Mat_UPw(b,n,N,K_mat+K_geo,Mat_state.k(e),sp,df);
+            [K]=Mat_UPw(...
+                b,n,N,K_mat+K_geo,Mat_state.k(e),sp,df,e,BLCK,MAT_POINT(e).J);
             K_el=K*vol;
         else
             K_el=vol*(K_mat+K_geo);
@@ -117,9 +118,9 @@ function [K_mat]=Mat_UW(b,n,i,D,J,sp,df,BLCK)
 
 end
 
-function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
+function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df,e,BLCK,J)
 
-    global SOLVER
+    global SOLVER GEOMETRY MATERIAL
 
     if SOLVER.AXI
         m=[1 1 0 1];
@@ -136,6 +137,25 @@ function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
     end
     
     H=k*(dN'*dN);
+    
+%     % stab
+%     if SOLVER.Pstab
+%         MAT=MATERIAL(BLCK).MAT;
+%               
+%         K_w=MAT(28,GEOMETRY.material(e));
+%         K_s=MAT(27,GEOMETRY.material(e));
+%         nn=1-(1-MAT(16,GEOMETRY.material(e)))/J;
+%         rho_w=MATERIAL(BLCK).MAT(42,GEOMETRY.material(e));
+%         dens=nn*rho_w+(1-nn)*MATERIAL(BLCK).MAT(3,GEOMETRY.material(e));
+%         Qw=1/(nn/K_w+(1-nn)/K_s);
+%         M=MAT(17,GEOMETRY.material(e));
+%         h=GEOMETRY.h_ini(e);
+%         Vc=sqrt((Qw+M)/dens);
+%         tau=SOLVER.Pstab*h/Qw;
+%         Hs=tau*Vc*(dN'*dN);
+%     else
+%         Hs=zeros(size(H));
+%     end
 
     % ----------------------------
     % Material stiffness
@@ -147,6 +167,7 @@ function [K_mat]=Mat_UPw(b,n,N,K,k,sp,df)
                 -K((j-1)*sp+1:j*sp,(k-1)*sp+1:k*sp);
             K_mat((j-1)*df+1:j*df-1,k*df)=...
                 +Q((j-1)*sp+1:j*sp,k);
+            %K_mat(j*df,k*df)=-H(j,k)+Hs(j,k);
             K_mat(j*df,k*df)=-H(j,k);
         end
     end

@@ -1,6 +1,6 @@
 function [Mat_state]=internal_forces(MAT_POINT,Mat_state,BLCK)
 
-    global GEOMETRY SOLVER
+    global GEOMETRY SOLVER MATERIAL
     
     sig=zeros(4,1);
     Mat_state.fint(:,1) = zeros(GEOMETRY.nodes*GEOMETRY.df,1);
@@ -93,6 +93,22 @@ function [Mat_state]=internal_forces(MAT_POINT,Mat_state,BLCK)
             int_forces_2=div*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol;
             dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
             int_forces_3=Mat_state.k(e)*dN'*dPw*vol;
+            
+%                 if SOLVER.Pstab
+%                     MAT=MATERIAL(BLCK).MAT;
+% 
+%                     K_w=MAT(28,GEOMETRY.material(e));
+%                     K_s=MAT(27,GEOMETRY.material(e));
+%                     nn=1-(1-MAT(16,GEOMETRY.material(e)))/MAT_POINT(e).J;
+%                     rho_w=MATERIAL(BLCK).MAT(42,GEOMETRY.material(e));
+%                     dens=nn*rho_w+(1-nn)*MATERIAL(BLCK).MAT(3,GEOMETRY.material(e));
+%                     Qw=1/(nn/K_w+(1-nn)/K_s);
+%                     M=MAT(17,GEOMETRY.material(e));
+%                     h=GEOMETRY.h_ini(e);
+%                     Vc=sqrt((Qw+M)/dens);
+%                     tau=SOLVER.Pstab*h/Qw;
+%                     int_forces_3=int_forces_3 - tau*Vc*dN'*dPw*vol;
+%                 end
             
             for i=1:nn
                nod=nd(i);

@@ -91,6 +91,22 @@ classdef DYN_MATRIX
                         Q=1/(n/K_w+(1-n)/K_s);
                         
                         [A]=DYN_MATRIX.A_mat(m,sh,b);
+                        
+                        
+                        % stab
+                        if SOLVER.Pstab
+                            dN=zeros(2,m);
+                            for j=1:m
+                                dN(1,j)=b(1,(j-1)*sp+1);
+                                dN(2,j)=b(2,(j-1)*sp+2);
+                            end
+                            h=GEOMETRY.h_ini(i);
+                            tau=SOLVER.Pstab*h*h/Q;
+                            Hs=tau*(dN'*dN);
+                        else
+                            Hs=zeros(m);
+                        end   
+                        
                     end
 
                     for t1=1:m
@@ -106,7 +122,7 @@ classdef DYN_MATRIX
                                         t*Qt(t1,t2*sp+1-k);
                                     damp_mtx(nd(t1)*df,nd(t2)*df)=...
                                         damp_mtx(nd(t1)*df,nd(t2)*df)-...
-                                        t*sh(t1)*sh(t2)/Q;
+                                        t*sh(t1)*sh(t2)/Q-t*Hs(t1,t2);
                                 end
                                 if SOLVER.UW==1 && alpha
                                     mass_mtx(nd(t1)*df-1-k,nd(t2)*df-1-k)=...

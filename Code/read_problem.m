@@ -188,6 +188,9 @@ function MAT_POINT=read_problem
             case 'F_BAR_W'
                 SOLVER.F_BAR_W=b(t);  
                 continue
+            case 'PW_STAB'
+                SOLVER.Pstab=b(t);  
+                continue
             case 'SAVE_FREQUENCY'
                 SOLVER.SAVE_I=b(t); % Save info each XX steps
                 continue
