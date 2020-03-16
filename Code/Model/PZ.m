@@ -1,6 +1,6 @@
 
-function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
-    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,F,Fold,Be,BLCK)
+function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee]=...
+    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,Ee_tr,deps,BLCK)
 
 
     global MATERIAL GEOMETRY
@@ -9,30 +9,7 @@ function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
     MODEL=MATERIAL(BLCK).MODEL(Mat(e));
     MAT=MATERIAL(BLCK).MAT;
         
-    
-    % Initial values
-    
-    Fincr=F/Fold;
-    
-    % Compute Trial left cauchy-Green
-    BeTr = Fincr*Be*Fincr';
-    
-    if isnan(BeTr)
-        fprintf('Error in Green-Lagrange tensor of elem e %i \n',e);
-    end
-    %Ee_0  = logm(Be)/2;
-    Ee_tr  = logm(BeTr)/2;
-    E_tot = logm(F*F')/2;
-    E_0   = logm(Fold*Fold')/2;
-    deps =  E_tot- E_0;
-
-    if isnan(Ee_tr)
-        error('Error in small strain tensor of elem e %i \n',e);
-    elseif isreal(Ee_tr)==0
-        error('Complex in small strain tensor of elem e %i \n',e);
-    end
-    
-    Ge(13)=0;
+    Ge(14)=0;
     
     Ge(1) = MAT(29,Mat(e));%khar;
     Ge(2) = MAT(4,Mat(e));%ghar;
@@ -61,10 +38,6 @@ function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
             PZ_modified_Euler(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
     end
     
-    Be = expm(2*Ee);
-    Sc = TTe/det(F);
-    %Sc = TTe;%/det(F);
-
 end
 
 function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...

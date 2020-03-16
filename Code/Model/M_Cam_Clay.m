@@ -1,5 +1,5 @@
-function [A,Sc,gamma,dgamma,Pcd,Pcs,Be]=...
-    M_Cam_Clay(Kt,ste,e,gamma,dgamma_,Pcd,Pcs,F,Fold,Be,P0,BLCK)
+function [A,Sc,gamma,dgamma,Pcd,Pcs,Ee]=...
+    M_Cam_Clay(Kt,ste,e,gamma,dgamma_,Pcd,Pcs,Ee_tr,P0,BLCK)
 
     global MATERIAL GEOMETRY
     
@@ -7,24 +7,8 @@ function [A,Sc,gamma,dgamma,Pcd,Pcs,Be]=...
     Mat=GEOMETRY.material;
     MAT=MATERIAL(BLCK).MAT;
     
-    % Initial values
-    
-    Fincr=F/Fold;
-    
-    % Compute Trial left cauchy-Green
-    BeTr = Fincr*Be*Fincr';
-    
-    if isnan(BeTr)
-        fprintf('Error in Green-Lagrange tensor of elem e %i \n',e);
-    end
-    Ee_tr = logm(BeTr)/2;
-    if isnan(Ee_tr)
-        error('Error in small strain tensor of elem e %i \n',e);
-    elseif isreal(Ee_tr)==0
-        error('Complex in small strain tensor of elem e %i \n',e);
-    end
 
-    % Compute principal Kirchhoff tension 
+    % Compute principal Cauchy / Kirchhoff tension 
     Ge(10)=0;
     
     Ge(2) = MAT(4,Mat(e));   %mu0
@@ -38,16 +22,13 @@ function [A,Sc,gamma,dgamma,Pcd,Pcs,Be]=...
     
 
     if MODEL(Mat(e))==3.0 || ste==1
-        [TTe,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcs,Kt,P0,dgamma_);
+        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcs,Kt,P0,dgamma_);
         Pcd=Pcs;
     elseif MODEL(Mat(e))==3.1
-        [TTe,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0,dgamma_,ste,BLCK);
+        [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0,dgamma_,ste,BLCK);
     end
     
-    gamma=gamma-dgamma*2*Q/P/Ge(6)^2;
-    
-    Be = expm(2*Ee);
-    Sc = TTe/det(F);
+    gamma=gamma-dgamma*2*Q/P/Ge(6)^2;   
 
 end
 

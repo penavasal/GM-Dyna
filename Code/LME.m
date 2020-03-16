@@ -7,7 +7,7 @@
         % Date:
         %   Version 2.0   10.04.2019
 
-        function [MAT_POINT]=near(i,x_a,x,h,MAT_POINT,sh)
+        function [MAT_POINT]=near(i,x_a,x,h,MAT_POINT,sh,ph)
 
             global GEOMETRY LME_param 
 
@@ -27,7 +27,12 @@
             if nbg==1
                 el_near=GEOMETRY.element_near{e};
                 for j=1:length(el_near)
-                    elem=GEOMETRY.elem(el_near(j),:);
+                    if ph==2 && (strcmp(GEOMETRY.ELEMENT,'Q8P4') || ...
+                        strcmp(GEOMETRY.ELEMENT,'Q8P4-4'))
+                        elem=GEOMETRY.elem_c(el_near(j),:);
+                    else
+                        elem=GEOMETRY.elem(el_near(j),:);
+                    end
                     C = setdiff(elem,nds_search);
                     if C
                         nds_search=cat(2,nds_search,C);
@@ -38,13 +43,20 @@
                 for k=1:length(el_near)
                     el_near_2=GEOMETRY.element_near{el_near(k)};
                     for j=1:length(el_near_2)
-                        elem=GEOMETRY.elem(el_near_2(j),:);
+                        if ph==2 && (strcmp(GEOMETRY.ELEMENT,'Q8P4') || ...
+                            strcmp(GEOMETRY.ELEMENT,'Q8P4-4'))
+                            elem=GEOMETRY.elem_c(el_near_2(j),:);
+                        else
+                            elem=GEOMETRY.elem(el_near_2(j),:);
+                        end
                         C = setdiff(elem,nds_search);
                         if C
                             nds_search=cat(2,nds_search,C);
                         end
                     end
                 end
+            elseif nbg==0
+                nds_search=[];
             else
                 disp('Error, not defined so many neighborhood ranges')
                 stop
@@ -63,10 +75,18 @@
             end
             dist=sqrt(dist);
 
-            near_=GEOMETRY.elem(e,:);
+            if ph==2 && (strcmp(GEOMETRY.ELEMENT,'Q8P4') || ...
+                    strcmp(GEOMETRY.ELEMENT,'Q8P4-4'))
+                corner=GEOMETRY.elem_c;
+                near_=GEOMETRY.elem_c(e,:);
+            else
+                corner=GEOMETRY.elem;
+                near_=GEOMETRY.elem(e,:);
+            end
             for j=1:length(nds_search)
               %if dist(j)<range(i)
-              if  (dist(j)<range) && not(ismember(nds_search(j),near_)) %...
+              if  (dist(j)<range) && not(ismember(nds_search(j),near_))...
+                      && any(ismember(corner(:),nds_search(j)))%...
                       % &&(Mat(i)==Mat_nds(nds_search(j)))
                   near_=cat(2,nds_search(j),near_);
               end

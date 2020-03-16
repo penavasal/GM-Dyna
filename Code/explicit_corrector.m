@@ -23,9 +23,10 @@ function [Disp_field]=explicit_corrector...
 
 
     Inv=zeros(nodes*sp,nodes*sp);
-    [vs,as,load_s,int_Fs]=deal(zeros(nodes*sp,2));
+    [us,vs,as,load_s,int_Fs]=deal(zeros(nodes*sp,2));
     if SOLVER.UW==1
-        [vw,aw,load_w,int_Fw]=deal(zeros(nodes*sp,2));
+        [uw,vw,aw,load_w,int_Fw]=deal(zeros(nodes*sp,2));
+        [us(:,2),uw(:,2)]=split_vector(d0(:,2),us(:,2),uw(:,2));
         [vs(:,2),vw(:,2)]=split_vector(v0(:,2),vs(:,2),vw(:,2));
         [vs(:,1),vw(:,1)]=split_vector(v0(:,1),vs(:,1),vw(:,1));
         [as(:,2),aw(:,2)]=split_vector(a0(:,2),as(:,2),aw(:,2));
@@ -132,6 +133,8 @@ function [Disp_field]=explicit_corrector...
                 if (boundary((i-1)*df+sp+j)==0)
                     vw((i-1)*sp+j,1)=vw((i-1)*sp+j,1)+gamma*time_step*...
                     aw((i-1)*sp+j,1);
+                    uw((i-1)*sp+j,1)=uw((i-1)*sp+j,1)+beta*time_step*...
+                    time_step*aw((i-1)*sp+j,1);
                 end
             end
         end

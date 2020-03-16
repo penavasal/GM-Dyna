@@ -1,4 +1,4 @@
-function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
+function [A,T]=Saint_Venant(Kt,e,Ee,BLCK)
     
     % St. Venant Material
 
@@ -14,11 +14,6 @@ function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
 
     A=0;
     
-    Be=F*F';
-    Ee=logm(Be)/2;
-    %Ee(2,1)=Ee(2,1)/2;
-    %Ee(1,2)=Ee(1,2)/2;
-
     T=(P0+Lam*trace(Ee))*I+2*G*Ee;
     
     if Kt==1 || Kt==2 || Kt==4
@@ -30,13 +25,4 @@ function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
             
     end
     
-%      E_vec(1,1)=Ee(1,1);
-%      E_vec(2,1)=Ee(2,2);
-%      E_vec(4,1)=Ee(3,3);
-%      E_vec(3,1)=Ee(2,1);
-%      T2=A*E_vec;
-%      e;
-
-
-
 end

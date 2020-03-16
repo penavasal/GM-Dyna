@@ -1,4 +1,4 @@
-function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
+function [A,T]=Neo_Hookean(Kt,e,b,J,BLCK)
 
     global MATERIAL GEOMETRY
     
@@ -16,7 +16,6 @@ function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
         J2=J^2;
 
         I=eye(3);
-        b=F*F';
 
         T=Lam/2*(J2-1)*I+G*(b-I);
         T=T/J;
@@ -39,7 +38,6 @@ function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
         Lam= MAT(5,Material(e)); 
 
         I=eye(3);
-        b=F*F';
 
         T=Lam*log(J)*I+G*(b-I);
         T=T/J;
@@ -70,7 +68,6 @@ function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
         end
 
         I=eye(3);
-        b=F*F';
 
         T=Lam*n0^2*(J/n0-J/(J-1+n0))*I+G*(b-I);
         T=T/J;

@@ -28,6 +28,7 @@ function MAT_POINT=read_problem(str)
     SOLVER.B_BAR=0;
     SOLVER.F_BAR=0;
     SOLVER.F_BAR_W=0;
+    SOLVER.Pstab=0;
     
     SOLVER.INITIAL_PORE_PRESSURE=0;
     
@@ -40,6 +41,8 @@ function MAT_POINT=read_problem(str)
     SOLVER.FAIL = 0;
     
     SOLVER.BLOCKS = 1;
+    
+    SOLVER.SMALL = 0;
     
     SOLVER.PHASES = {'' ''};
     
@@ -146,15 +149,18 @@ function MAT_POINT=read_problem(str)
             case 'LINEARIZATION'
                 SOLVER.LIN=b(t);   
                 continue
+            case 'FRAMEWORK'
+                if strcmp(b2{t},'SMALL_STRAIN')
+                    SOLVER.SMALL=1;
+                end
+                continue
             case 'PROBLEM'
                 if strcmp(b2{t},'OTM')
                     SOLVER.TYPE{1}=0;
                 elseif strcmp(b2{t},'MPM')
                     SOLVER.TYPE{1}=1;
-                elseif strcmp(b2{t},'FEM')
+                elseif strcmp(b2{t},'FE')
                     SOLVER.TYPE{1}=2;
-                    fprintf('Error, NOT IMPLEMENTED FEM YET!!\n')
-                    stop
                 end
                 if b3{t}
                     SOLVER.TYPE{2}=b3{t};

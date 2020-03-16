@@ -11,8 +11,6 @@
 
         end
 
-
-
         function [xilist]=search_xilist(coord,int_point_pos,xilist,i)
 
             [dxidx_0,~,~,~,~] = FEM.elem_driver(coord,xilist(i-1,:));
@@ -26,13 +24,13 @@
 
             [NNE,~]=size(coord_xi);
 
-            if NNE==3
+            if NNE==3 || NNE==6
                 elem=[1 2 3];
             else
                 elem=[1 2 3 4];
             end
 
-            tol = 1e-3;
+            tol = 1e-7;
             xi=xi_0;
             norm_f(1)=1000;
             norm_r_f(1)=1000;
@@ -132,7 +130,8 @@
               end
 
               Dxdxi=transpose(dxdxi);
-              dxidx = inv(transpose(dxdxi));
+              %dxidx = inv(transpose(dxdxi));
+              dxidx = inv(dxdxi);
               dt = det(dxdxi);
 
               %

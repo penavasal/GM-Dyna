@@ -24,6 +24,8 @@ function [MAT_POINT]=update_mp(d,MAT_POINT)
     %% Other phases
     [phases,~]=size(SOLVER.PHASES);
     for ph=2:phases
-        MAT_POINT{ph}(mp).xg=MAT_POINT{1}(mp).xg;
+        for mp=1:GEOMETRY.mat_points
+            MAT_POINT{ph}(mp).xg=MAT_POINT{1}(mp).xg;
+        end
     end
 end

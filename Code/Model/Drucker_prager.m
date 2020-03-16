@@ -1,6 +1,6 @@
 
-function [A,Sc,gamma,dgamma,sy,Be]=...
-    Drucker_prager(Kt,e,gamma,dgamma,sy,F,Be,Fold,BLCK)
+function [A,Sc,gamma,dgamma,sy,Ee]=...
+    Drucker_prager(Kt,e,gamma,dgamma,sy,Ee,BLCK)
 
     global MATERIAL GEOMETRY
     
@@ -15,21 +15,6 @@ function [A,Sc,gamma,dgamma,sy,Be]=...
     K=MAT(5,Mat(e))+2*MAT(4,Mat(e))/3;  % Bulk modulus
     G = MAT(4,Mat(e));                  % Shear modulus
     
-    % Predictor tensors
-    Fincr=F/Fold;
-    
-    % Compute Trial left cauchy-Green
-    BeTr = Fincr*Be*Fincr';   
-
-    if isnan(BeTr)
-        fprintf('Error in Green-Lagrange tensor of elem e %i \n',e);
-    end
-    Ee = logm(BeTr)/2;
-    if isnan(Ee)
-        fprintf('Error in small strain tensor of elem e %i \n',e);
-    end
-
-
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                     RADIAL RETURN MAPPING                       %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,15 +249,13 @@ function [A,Sc,gamma,dgamma,sy,Be]=...
     %-----------------------------------------------
     % Update tensors and plastic variables
     %-----------------------------------------------  
-    if isnan(dEp) | (abs(rcond(dEp)))<1e-8 | isnan(rcond(dEp))
+    if isnan(dEp) || (abs(rcond(dEp)))<1e-8 || isnan(rcond(dEp))
         e;
     end
 
     %Update strain
     Ee = Ee - dEp;
-    Be = expm(2*Ee); 
     
-  
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                    CONSISTENT TANGENT MATRIX                    %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -329,10 +312,6 @@ function [A,Sc,gamma,dgamma,sy,Be]=...
         M4=s_vec*s_vec';
         
         A=(D3*I1+D2*M1-D5*M2-D6*M3-D4*M4)*D7;
-
-        if isnan(A)
-            e;
-        end
         
     end
     

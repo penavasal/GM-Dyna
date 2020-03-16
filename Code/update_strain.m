@@ -1,4 +1,16 @@
 
+function [Mat_state,MAT_POINT]=update_strain(d,Mat_state,MAT_POINT,STEP)
+    
+    global SOLVER
+    
+    if SOLVER.SMALL==0
+        [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP);
+    else
+        [Mat_state,MAT_POINT]=update_E(d,Mat_state,MAT_POINT);
+    end
+    
+end
+
 function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
     
     global GEOMETRY SOLVER MATERIAL VARIABLE
@@ -117,12 +129,15 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 
             elseif SOLVER.UW==2
                 N=MAT_POINT{2}(e).N;
-                dN=zeros(2,nn);
-                pwv=zeros(nn,1);     %Incremental displacements _ solid
-                for i=1:nn
-                    dN(1,i)=b(1,(i-1)*sp+1);
-                    dN(2,i)=b(2,(i-1)*sp+2);
-                    pwv(i,1)=d(nd(i)*df,1);
+                ndw = MAT_POINT{2}(e).near;
+                nn2 = length(ndw);         
+                b2  = MAT_POINT{2}(e).B;
+                pwv=zeros(nn2,1);     %Incremental displacements _ solid
+                dN=zeros(2,nn2);
+                for i=1:nn2
+                    dN(1,i)=b2(1,(i-1)*sp+1);
+                    dN(2,i)=b2(2,(i-1)*sp+2);
+                    pwv(i,1)=d(ndw(i)*df,1);
                 end
                 %Pw=N'*pwv;
                 Mat_state.pw(e,1)=Mat_state.pw(e,3)+N'*pwv;
@@ -263,6 +278,96 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
 end
 
 
+
+function [Mat_state,MAT_POINT]=update_E(d,Mat_state,MAT_POINT)
+    
+    global GEOMETRY SOLVER
+    
+    sp=GEOMETRY.sp;
+    df=GEOMETRY.df;
+    dims=GEOMETRY.s_dim;
+    
+        
+    % Update **********************
+    for e=1:GEOMETRY.mat_points
+
+        % SOLID PHASE
+        nd = MAT_POINT{1}(e).near;
+        nn = length(nd);         
+        b  = MAT_POINT{1}(e).B;
+        
+        us=zeros(nn*sp,1);     %Incremental displacements _ solid
+        for i=1:nn
+            for l=1:sp
+                us((i-1)*sp+l,1)=d((nd(i)-1)*df+l,1);
+            end
+        end
+
+        E_=b*us; 
+        if SOLVER.AXI==0
+            E=zeros(dims,1);
+            E(1:2)=E_(1:2);
+            E(4)=E_(3);
+        else
+            E=E_;
+        end
+        
+        for i=1:dims
+            Mat_state.Es((e-1)*dims+i,1)=E(i,1);
+        end
+                
+        if SOLVER.UW==1
+            ndw = MAT_POINT{2}(e).near;
+            nn2 = length(ndw);         
+            b2  = MAT_POINT{2}(e).B;
+
+            uw=zeros(nn2*sp,1);     %Incremental displacements _ water
+            for i=1:nn2
+                for l=1:sp
+                    uw((i-1)*sp+l,1)=d((ndw(i)-1)*df+sp+l,1);
+                end
+            end
+
+            Ew_=b2*uw;
+            
+            if SOLVER.AXI==0
+                Ew=zeros(dims,1);
+                Ew(1:2)=Ew_(1:2);
+                Ew(4)=Ew_(3);
+            else
+                Ew=Ew_;
+            end
+
+            for i=1:dims
+                Mat_state.Esw((e-1)*dims+i,1)=Ew(i,1);
+            end
+
+        elseif SOLVER.UW==2
+            N=MAT_POINT{2}(e).N;
+            ndw = MAT_POINT{2}(e).near;
+            nn2 = length(ndw);         
+            b2  = MAT_POINT{2}(e).B;
+            pwv=zeros(nn2,1);     %Incremental displacements _ solid
+            dN=zeros(2,nn2);
+            for i=1:nn2
+                dN(1,i)=b2(1,(i-1)*sp+1);
+                dN(2,i)=b2(2,(i-1)*sp+2);
+                pwv(i,1)=d(ndw(i)*df,1);
+            end
+            %Pw=N'*pwv;
+            Mat_state.pw(e,1)=Mat_state.pw(e,3)+N'*pwv;
+            dPw=dN*pwv;
+            Mat_state.dpw((e-1)*sp+1:e*sp,1)=dPw;
+        end
+        
+        if SOLVER.REMAPPING
+            %Principal strecht
+            [EP_]=Principal(E_);
+            MAT_POINT{1}(e).EP(:,1)=EP_(:);
+        end
+
+    end        
+end
 
 function [EP]=Principal(C)
 

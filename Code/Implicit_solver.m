@@ -43,7 +43,7 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
         
         % 4. Constitutive & Stiffness_mat
         [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(2,STEP,Int_var,Mat_state,MAT_POINT);
+                Constitutive.update(2,STEP,Int_var,Mat_state,MAT_POINT);
         
         % 5. Storage
         if rem(STEP.ste,SOLVER.SAVE_I)==0

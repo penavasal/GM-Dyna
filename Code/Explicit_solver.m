@@ -34,7 +34,7 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
 
         % 4. Constitutive &/O Stiffness_mat
         [~,Int_var,Mat_state]=...
-            Constitutive(3,STEP,Int_var,Mat_state,MAT_POINT);
+            Constitutive.update(3,STEP,Int_var,Mat_state,MAT_POINT);
 
         % 5. Final conditions: corrector
         

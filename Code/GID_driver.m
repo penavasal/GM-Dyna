@@ -10,7 +10,7 @@ function GID_driver(str,str2,steps,rt,folder)
         mkdir(folder,'GID')
     end
 
-    [~,NNE]=size(GEOMETRY.elem);
+    %[~,NNE]=size(GEOMETRY.elem);
     
     if strcmp(steps,'FULL')
         steps=SOLVER.dim;
@@ -19,7 +19,7 @@ function GID_driver(str,str2,steps,rt,folder)
     print_file_1(str,str2);
     print_file_2(str,str2,steps,rt);
     
-    NNE;
+    %NNE;
 
 
 
@@ -37,6 +37,8 @@ function print_file_1(str,str2)
     if NNE==3
         elemtype='Triangle';
     elseif NNE==4
+        elemtype='Quadrilateral';
+    elseif NNE==8
         elemtype='Quadrilateral';
     elseif NNE==2
         elemtype='Linear';
@@ -81,9 +83,17 @@ function print_file_2(str,str2,steps,dd)
 
     load(str,'-mat','GLOBAL','GEOMETRY','SOLVER');
     [elements,NNE]=size(GEOMETRY.elem);
+    
     x_a=GEOMETRY.x_0;
     [nodes,sp]=size(x_a);
     df=GEOMETRY.df;
+    
+    if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')
+        nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
+    else
+        nodes_p = linspace(1,GEOMETRY.nodes)';
+    end
+    
     
     type=SOLVER.Element;
 
@@ -125,12 +135,12 @@ function print_file_2(str,str2,steps,dd)
     myfile = fopen(flnm,'w');
 
     fprintf( myfile , '%25s  \n' , 'GiD Post Results File 1.0');
-    if NNE==4
+    if NNE==4 || NNE==8
         fprintf( myfile , '%44s  \n' , 'GaussPoints Group1   ElemType  Quadrilateral');
     else
         fprintf( myfile , '%44s  \n' , 'GaussPoints Group1   ElemType  Triangle');
     end
-    if NNE==4 && strcmp(type,'Q4-4')
+    if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
         fprintf( myfile , '%26s  \n' , 'Number Of Gauss Points:  4');
     else
         fprintf( myfile , '%26s  \n' , 'Number Of Gauss Points:  1');
@@ -153,8 +163,9 @@ function print_file_2(str,str2,steps,dd)
             % W disp
             fprintf(myfile, ['Result  Displacement_water WATER_PHASE ' num2str(GLOBAL.tp(cont)) ' Vector  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
-            for i=1:nodes
-                fprintf(myfile,[num2str(i,'%10i') ' ' num2str(d((i-1)*df+3,cont)) ' ' num2str(d((i-1)*df+4,cont)) ' 0\n']);
+            for j=1:length(nodes_p)
+                i=nodes_p(j);
+                fprintf(myfile,[num2str(j,'%10i') ' ' num2str(d((i-1)*df+3,cont)) ' ' num2str(d((i-1)*df+4,cont)) ' 0\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
         end
@@ -162,7 +173,8 @@ function print_file_2(str,str2,steps,dd)
             % Pw
             fprintf(myfile, ['Result  Pore_water_Pressure PORE_PRESSURE ' num2str(GLOBAL.tp(cont)) ' Scalar  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
-            for i=1:nodes
+            for j=1:length(nodes_p)
+                i=nodes_p(j);
                 fprintf(myfile,[num2str(i,'%10i') ' ' num2str(d((i-1)*df+3,cont)) '\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
@@ -181,7 +193,8 @@ function print_file_2(str,str2,steps,dd)
             % W velo
             fprintf(myfile, ['Result  Velocity_water WATER_PHASE ' num2str(GLOBAL.tp(cont)) ' Vector  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
-            for i=1:nodes
+            for j=1:length(nodes_p)
+                i=nodes_p(j);
                 fprintf(myfile,[num2str(i,'%10i') ' ' num2str(v((i-1)*df+3,cont)) ' ' num2str(v((i-1)*df+4,cont)) ' 0\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
@@ -190,7 +203,8 @@ function print_file_2(str,str2,steps,dd)
             % Pw velo
             fprintf(myfile, ['Result  Pore_water_Pressure_velocity PORE_PRESSURE ' num2str(GLOBAL.tp(cont)) ' Scalar  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
-            for i=1:nodes
+            for j=1:length(nodes_p)
+                i=nodes_p(j);
                 fprintf(myfile,[num2str(i,'%10i') ' ' num2str(v((i-1)*df+3,cont)) '\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
@@ -209,7 +223,8 @@ function print_file_2(str,str2,steps,dd)
             % W velo
             fprintf(myfile, ['Result  Acceleration_water WATER_PHASE ' num2str(GLOBAL.tp(cont)) ' Vector  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
-            for i=1:nodes
+            for j=1:length(nodes_p)
+                i=nodes_p(j);
                 fprintf(myfile,[num2str(i,'%10i') ' ' num2str(a((i-1)*df+3,cont)) ' ' num2str(a((i-1)*df+4,cont)) ' 0\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
@@ -218,7 +233,8 @@ function print_file_2(str,str2,steps,dd)
             % Pw acce
             fprintf(myfile, ['Result  Pore_water_Pressure_acce PORE_PRESSURE ' num2str(GLOBAL.tp(cont)) ' Scalar  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
-            for i=1:nodes
+            for j=1:length(nodes_p)
+                i=nodes_p(j);
                 fprintf(myfile,[num2str(i,'%10i') ' ' num2str(a((i-1)*df+3,cont)) '\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
@@ -236,7 +252,7 @@ function print_file_2(str,str2,steps,dd)
         fprintf( myfile , '%6s  \n' ,  'Values');
         for i=1:elements
             fprintf(myfile,[num2str(i,'%10i') '\t']);
-            if NNE==4 && strcmp(type,'Q4-4')
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Qs((i-1)*4+j,cont)) '\n']);
@@ -255,7 +271,7 @@ function print_file_2(str,str2,steps,dd)
         fprintf( myfile , '%6s  \n' ,  'Values');
         for i=1:elements
             fprintf(myfile,[num2str(i,'%10i') '\t']);
-            if NNE==4 && strcmp(type,'Q4-4')
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Ps((i-1)*4+j,cont)) '\n']);
@@ -274,7 +290,7 @@ function print_file_2(str,str2,steps,dd)
         fprintf( myfile , '%6s  \n' ,  'Values');
         for i=1:elements
             fprintf(myfile,[num2str(i,'%10i') '\t']);
-            if NNE==4 && strcmp(type,'Q4-4')
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Sy_tot((i-1)*4+j,cont)) '\n']);
@@ -293,7 +309,7 @@ function print_file_2(str,str2,steps,dd)
         fprintf( myfile , '%6s  \n' ,  'Values');
         for i=1:elements
             fprintf(myfile,[num2str(i,'%10i') '\t']);
-            if NNE==4 && strcmp(type,'Q4-4')
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(gamma((i-1)*4+j,cont)) '\n']);
@@ -313,7 +329,7 @@ function print_file_2(str,str2,steps,dd)
             fprintf( myfile , '%6s  \n' ,  'Values');
             for i=1:elements
                 fprintf(myfile,[num2str(i,'%10i') '\t']);
-                if NNE==4 && strcmp(type,'Q4-4')
+                if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                     for j=1:4
                         if j==1
                             fprintf( myfile ,[num2str(Pw((i-1)*4+j,cont)) '\n']);
@@ -332,7 +348,7 @@ function print_file_2(str,str2,steps,dd)
                 fprintf( myfile , '%6s  \n' ,  'Values');
                 for i=1:elements
                     fprintf(myfile,[num2str(i,'%10i') '\t']);
-                    if NNE==4 && strcmp(type,'Q4-4')
+                    if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                         for j=1:4
                             if j==1
                                 fprintf( myfile ,[num2str(dPw(((i-1)*4+j-1)*sp+1,cont)) ' ' num2str(dPw(((i-1)*4+j-1)*sp+2,cont)) ' 0\n']);
@@ -353,7 +369,7 @@ function print_file_2(str,str2,steps,dd)
         fprintf( myfile , '%6s  \n' ,  'Values');
         for i=1:elements
             fprintf(myfile,[num2str(i,'%10i') '\t']);
-            if NNE==4 && strcmp(type,'Q4-4')
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Ss((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Ss((((i-1)*4+j)-1)*4+2,cont))...
@@ -375,7 +391,7 @@ function print_file_2(str,str2,steps,dd)
         fprintf( myfile , '%6s  \n' ,  'Values');
         for i=1:elements
             fprintf(myfile,[num2str(i,'%10i') '\t']);
-            if NNE==4 && strcmp(type,'Q4-4')
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Es((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Es((((i-1)*4+j)-1)*4+2,cont))...
@@ -397,7 +413,7 @@ function print_file_2(str,str2,steps,dd)
         fprintf( myfile , '%6s  \n' ,  'Values');
         for i=1:elements
             fprintf(myfile,[num2str(i,'%10i') '\t']);
-            if NNE==4 && strcmp(type,'Q4-4')
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Es_p((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Es_p((((i-1)*4+j)-1)*4+2,cont))...
