@@ -44,6 +44,8 @@ function MAT_POINT=read_problem(str)
     
     SOLVER.SMALL = 0;
     
+    SOLVER.FRAC = 0;
+    
     SOLVER.PHASES = {'' ''};
     
     % VARIABLES
@@ -147,7 +149,7 @@ function MAT_POINT=read_problem(str)
                 SOLVER.thickness=b(t);  
                 continue
             case 'LINEARIZATION'
-                SOLVER.LIN=b(t);   
+                SOLVER.LIN=b(t);
                 continue
             case 'FRAMEWORK'
                 if strcmp(b2{t},'SMALL_STRAIN')
@@ -416,7 +418,7 @@ function MAT_POINT=read_problem(str)
     % Add shape function parameters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    [MAT_POINT]=shape_function_calculation(1,MAT_POINT);
+    [MAT_POINT]=shape_function_calculation(1,MAT_POINT,0,NODE_LIST);
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

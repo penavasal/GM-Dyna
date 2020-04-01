@@ -34,7 +34,9 @@ function [MAT_POINT,NODE_LIST]=...
                         stop
                     else
                         if strcmp(ELEMENT,'T3') || strcmp(ELEMENT,'T3-inverse')...
-                                || strcmp(ELEMENT,'T3-diamond')
+                                || strcmp(ELEMENT,'T3-diamond') 
+                            GRID='T3';
+                        elseif strcmp(ELEMENT,'T3-3')
                             GRID='T3';
                         elseif strcmp(ELEMENT,'Q4') || strcmp(ELEMENT,'Q4-4')
                             GRID='Q4';
@@ -154,14 +156,17 @@ function [MAT_POINT,NODE_LIST]=...
             GEOMETRY.elem=elem;
             GEOMETRY.elem_c=elem;
             if grid==0
-                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
-                [elements,~]=size(GEOMETRY.elem);
+                if strcmp(ELEMENT,'T3-3')
+                    [xg,GEOMETRY.Area,GEOMETRY.patch_el,...
+                        GEOMETRY.patch_con,materials]=tri3xg(x_a,elem,materials);
+                else
+                    [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
+                     [elements,~]=size(GEOMETRY.elem);
+                    GEOMETRY.patch_el=(1:elements)';  
+                    GEOMETRY.patch_con=(1:elements)'; 
+                end
                 GEOMETRY.x_0=x_a;
-                GEOMETRY.patch_el=(1:elements)';  
-                GEOMETRY.patch_con=(1:elements)'; 
             end
-            fprintf('Error, wrong definition of grid type!!\n')
-            stop
         end
             
     elseif strcmp(GRID,'T6')
@@ -372,7 +377,8 @@ function [MAT_POINT,NODE_LIST]=...
                          'EP', zeros(3,2),...
                          'J', ones(1),...
                          'w', zeros(1),...
-                         'xi', zeros(GEOMETRY.sp,1)...
+                         'xi', zeros(GEOMETRY.sp,1),...
+                         'near_p',zeros(1)...
                      );
     end
              
@@ -436,7 +442,7 @@ function [MAT_POINT,NODE_LIST]=...
                     MAT_POINT{1}(mp).near=GEOMETRY.elem(e,:);
                 end
             end
-        elseif strcmp(ELEMENT,'T6-3') || strcmp(ELEMENT,'T6P3-3')
+        elseif strcmp(ELEMENT,'T3-3') || strcmp(ELEMENT,'T6-3') || strcmp(ELEMENT,'T6P3-3')
             mp=0;
             for e=1:GEOMETRY.elements
                 for j=1:3
@@ -476,8 +482,8 @@ function [MAT_POINT,NODE_LIST]=...
     GEOMETRY.h_nds(GEOMETRY.nodes,1)=0;
     aux=zeros(GEOMETRY.nodes,1);
     for e=1:GEOMETRY.mat_points
-        if strcmp(ELEMENT,'T3') || strcmp(ELEMENT,'T3-inverse') || ...
-                strcmp(ELEMENT,'T3-diamond') || strcmp(ELEMENT,'T6')...
+        if strcmp(ELEMENT,'T3') || strcmp(ELEMENT,'T3-inverse') || strcmp(ELEMENT,'T3-3')...
+                || strcmp(ELEMENT,'T3-diamond') || strcmp(ELEMENT,'T6')...
                 ||strcmp(ELEMENT,'T6-3') ||strcmp(ELEMENT,'T6P3-3') ||strcmp(ELEMENT,'T6P3')
             GEOMETRY.h_ini(e)=sqrt(2*GEOMETRY.Area(e));
         elseif strcmp(ELEMENT,'Q4-4')||strcmp(ELEMENT,'Q4') ||strcmp(ELEMENT,'Q8')...
@@ -494,12 +500,13 @@ function [MAT_POINT,NODE_LIST]=...
     end
     
     GEOMETRY.h_nds=GEOMETRY.h_nds./aux;
+    GEOMETRY.Area=GEOMETRY.Area*SOLVER.thickness;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Plot
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if PLOT_ini
-        plot_nb(0,0,x_a,xg,GEOMETRY.elem_c,0,0)
+        plot_nb(0,0,x_a,GEOMETRY.elem_c,0,0)
     end
 
 
@@ -1031,13 +1038,18 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
     end
     
     % CONNECTIVITY
-    for i=1:elements
+    i=0;
+    for e=1:elements
         t=t+1;
-        material(i)=str2double(data{t,2});
-        for j=1:NNE
-            elem(i,j)=str2double(data{t,2+j});
+        if str2double(data{t,2})~=0
+            i=i+1;
+            material(i)=str2double(data{t,2});
+            for j=1:NNE
+                elem(i,j)=str2double(data{t,2+j});
+            end
         end
     end
+    elem=elem(1:i,:);
     
     % CHECK
     t=t+2;
@@ -1069,10 +1081,13 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
         pls=0;
         lls=0;
         vls=0;
+        rbs=0;
+        rbs_nds=[];
         BC={};
         PL={};
         LL={};
         VL={};
+        RB={};
     end
     
     while fin==0
@@ -1093,6 +1108,28 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
                         clear num list
                     else
                         fprintf('Error, bad numbering of set of BC!!\n')
+                        stop
+                    end
+                end
+                continue
+            case 'RIGID_BODY'
+                num=str2double(data{t,3});
+                if num~=0
+                    rbs=rbs+1;
+                    if rbs==str2double(data{t,2})
+                        list=zeros(num,3);
+                        for i=1:num
+                            t=t+1;
+                            list(i,1)=x(str2double(data{t,1}),1);
+                            list(i,2)=x(str2double(data{t,1}),2);
+                            list(i,3)=x(str2double(data{t,2}),1);
+                            list(i,4)=x(str2double(data{t,2}),2);
+                        end
+                        rbs_nds=union(rbs_nds,[str2double(data{t,1}) str2double(data{t,2})]);
+                        RB{rbs}=list;
+                        clear num list
+                    else
+                        fprintf('Error, bad numbering of set of LOADs!!\n')
                         stop
                     end
                 end
@@ -1172,7 +1209,64 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
                 stop
         end
     end
+    
+    if isempty(rbs_nds)==0
+       [a,b]=size(elem);
+       for i=length(rbs_nds):-1:1
+           x=[x(1:rbs_nds(i)-1,:);x(rbs_nds(i)+1:end,:)];
+           for j=1:a
+               for k=1:b
+                   if elem(j,k)>rbs_nds(i)
+                       elem(j,k)=elem(j,k)-1;
+                   end
+               end
+           end
+           %BCS
+           for j=1:bcs
+               list=BC{j};
+               for k=1:length(list)
+                   if list(k)>rbs_nds(i)
+                        list(k)=list(k)-1;
+                   end
+               end 
+               BC{j}=list;
+           end
+           %PLS
+           for j=1:pls
+               list=PL{j};
+               for k=1:length(list)
+                   if list(k)>rbs_nds(i)
+                        list(k)=list(k)-1;
+                   end
+               end
+               PL{j}=list;
+           end
+           %VLS
+           for j=1:vls
+               list=VL{j};
+               for k=1:length(list)
+                   if list(k)>rbs_nds(i)
+                        list(k)=list(k)-1;
+                   end
+               end  
+               VL{j}=list;
+           end
+           %LLS
+           for j=1:lls
+               list=LL{j};
+               [a1,b1]=size(list);
+               for k=1:a1
+                   for l=1:b1
+                        if list(k,l)>rbs_nds(i)
+                            list(k,l)=list(k,l)-1;
+                        end
+                   end
+               end
+               LL{j}=list;
+           end
+       end
+    end
 
-    NODE_LIST=struct('bcs',bcs,'pls',pls,'lls',lls,'vls',vls,...
-        'BC',{BC},'PL',{PL},'LL',{LL},'VL',{VL});
+    NODE_LIST=struct('bcs',bcs,'pls',pls,'lls',lls,'vls',vls,'rbs',rbs,...
+        'BC',{BC},'PL',{PL},'LL',{LL},'VL',{VL},'RB',{RB});
 end

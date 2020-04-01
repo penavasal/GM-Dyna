@@ -86,6 +86,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         Mat_state.dpw=zeros(GEOMETRY.sp*elements,2);
     end
     
+    
     %----------------------------------------------------------------------
     % GLOBAL VECTORS
     %----------------------------------------------------------------------
@@ -146,6 +147,28 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     end
     
     %----------------------------------------------------------------------
+    % FRACTURE
+    %----------------------------------------------------------------------
+    if SOLVER.FRAC
+        Mat_state.w=zeros(elements,1);
+        Mat_state.status=zeros(elements,2);
+        GLOBAL.w(elements,dim) = 0;
+        GLOBAL.status(elements,dim) = 0;
+        if SOLVER.FRAC>1
+            Mat_state.e_ini=zeros(elements,1);
+            GLOBAL.e_ini(elements,dim) = 0;
+        end
+        
+        [MAT_POINT]=FRAC.eps_nb(MAT_POINT,STEP.BLCK);
+        
+        GLOBAL.Force(dim,SOLVER.BODIES*GEOMETRY.sp)=0;
+        GLOBAL.E.D(dim,1)=0;
+        GLOBAL.E.W(dim,SOLVER.BODIES)=0;
+        GLOBAL.E.K(dim,SOLVER.BODIES)=0;
+        STEP.ENERGY.D=0;
+    end
+    
+    %----------------------------------------------------------------------
     % VECTORS OF ZEROS and ONES or taken from FILE
     %----------------------------------------------------------------------
     
@@ -179,7 +202,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         Disp_field.a(:,2)=GLOBAL.a(:,1);
         Disp_field.d(:,2)=GLOBAL.d(:,1);
         
-        [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=initial_constitutive...
+        [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=initial_constitutive...
         (GLOBAL,MAT_POINT,Mat_state,Int_var,STEP);
     
     end 
@@ -262,7 +285,7 @@ function [dim,STEP]=fix_time(tp,ste_p)
     STEP.t=tb+tp0;
 end
 
-function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
+function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
     initial_constitutive(GLOBAL,MAT_POINT,Mat_state,Int_var,STEP)
 
     global GEOMETRY SOLVER  MATERIAL
@@ -292,11 +315,12 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
         if MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
             Int_var.H(e,2)=MAT(37,Mat(e));
         end
-
-        % Constitutive calculation
-        [stiff_mtx,Int_var,Mat_state]=Constitutive.strain2const(...
-            e,STEP,Mat_state,Int_var,stiff_mtx,Kt,MAT_POINT);
-            
+    end
+    % Constitutive calculation
+    [stiff_mtx,Int_var,Mat_state,STEP]=Constitutive.strain2const(...
+            STEP,Mat_state,Int_var,stiff_mtx,Kt,MAT_POINT);
+    
+    for e=1:GEOMETRY.mat_points        
         for i=1:dims
             Mat_state.Sigma((e-1)*dims+i,3)=Mat_state.Sigma((e-1)*dims+i,1);
             GLOBAL.Sigma((e-1)*dims+i,1)=Mat_state.Sigma((e-1)*dims+i,1);

@@ -1,5 +1,6 @@
 
-function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
+function MAT_POINT=shape_function_calculation(...
+    INITIAL,MAT_POINT,Disp_field,NODE_LIST)
 
     global GEOMETRY SOLVER LME_param
     
@@ -23,7 +24,7 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
         % Only for LME shape function
         if strcmp(SOLVER.TYPE{2},'LME')
             
-            MAT_POINT=LME.initialize(MAT_POINT);
+            MAT_POINT=LME.initialize(MAT_POINT,NODE_LIST);
             
             [phases,~]=size(SOLVER.PHASES);
             [shf,~]=size(LME_param);
@@ -34,9 +35,9 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
                     end
                 end
             
+                n_sp=LME.nodalspacing(MAT_POINT{ph});
                 for i=1:GEOMETRY.mat_points
                     xg=GEOMETRY.xg_0(i,:);
-                    n_sp=LME.nodalspacing(MAT_POINT{ph});
                     [MAT_POINT{ph}]=LME.near(i,GEOMETRY.x_0,xg,...
                         n_sp,MAT_POINT{ph},sh,ph); 
                     [MAT_POINT{ph},SOLVER.FAIL]=LME.shapef...

@@ -56,6 +56,22 @@
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
                 GLOBAL.dpw(:,ste_p) = Mat_state.dpw(:,1);
             end
+            
+            if SOLVER.FRAC
+                GLOBAL.w(:,ste_p)      = Mat_state.w(:,1);
+                GLOBAL.status(:,ste_p) = Mat_state.status(:,1);
+                if SOLVER.FRAC>1
+                    GLOBAL.e_ini(:,ste_p) = Mat_state.e_ini(:,1);
+                end
+                GLOBAL.E.K(ste_p,SOLVER.BODIES)=0;
+                GLOBAL.E.W(ste_p,SOLVER.BODIES)=0;
+                GLOBAL.E.D(ste_p,1)=STEP.ENERGY.D;
+                [GLOBAL.E]=FRAC.compute_energy(...
+                    MAT_POINT,STEP,Mat_state,GLOBAL.E,Disp_field.v);
+                
+                GLOBAL.Force(ste_p,SOLVER.BODIES*GEOMETRY.sp)=0;
+                [GLOBAL.Force]=FRAC.forces(MAT_POINT,STEP,GLOBAL.Force,Disp_field.v);
+            end
 
             GLOBAL.tp(ste_p,1)=STEP.t;
             GLOBAL.ste_p=ste_p;
@@ -94,6 +110,10 @@
             elseif SOLVER.UW==2
                 Mat_state.pw(:,2)=Mat_state.pw(:,1);
                 Mat_state.dpw(:,2)=Mat_state.dpw(:,1);
+            end
+            
+            if SOLVER.FRAC
+                Mat_state.status(:,2)=Mat_state.status(:,1);
             end
 
             Int_var.gamma(:,2)  = Int_var.gamma(:,1);
@@ -168,11 +188,20 @@
                 Mat_state.pw(:,3)=GLOBAL.pw(:,1);
             end
             
+            if SOLVER.FRAC
+                Mat_state.w(:,1)=GLOBAL.w(:,ste_p);
+                Mat_state.status(:,2)=GLOBAL.status(:,ste_p);
+                if SOLVER.FRAC>1
+                    Mat_state.e_ini(:,1)=GLOBAL.e_ini(:,ste_p);
+                end
+                STEP.ENERGY.D=GLOBAL.E.D(ste_p,1);
+            end
+            
             % Recalculate shape functions
             MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
             
             % Constitutive
-            [stiff_mtx,Int_var,Mat_state]=...
+            [stiff_mtx,Int_var,Mat_state,STEP]=...
                 Constitutive.update(1,STEP,Int_var,Mat_state,MAT_POINT);
             Mat_state.fint(:,2)=Mat_state.fint(:,1);
         end

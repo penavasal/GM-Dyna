@@ -12,6 +12,12 @@
             global GEOMETRY LME_param 
 
             e=MAT_POINT(i).element; %Element where is the material point
+            
+            no=MAT_POINT(i).near_p;
+            nn=length(no);
+            if no==0
+                nn=0;
+            end
 
             ndim=GEOMETRY.sp;
 
@@ -83,15 +89,29 @@
                 corner=GEOMETRY.elem;
                 near_=GEOMETRY.elem(e,:);
             end
+            T=0;
             for j=1:length(nds_search)
               %if dist(j)<range(i)
               if  (dist(j)<range) && not(ismember(nds_search(j),near_))...
                       && any(ismember(corner(:),nds_search(j)))%...
                       % &&(Mat(i)==Mat_nds(nds_search(j)))
-                  near_=cat(2,nds_search(j),near_);
+                  t=0;
+                  for k=1:nn
+                    if nds_search(j)==no(k)
+                        t=1;
+                        T=1;
+                    end
+                  end   
+                  
+                  if t==0
+                    near_=cat(2,nds_search(j),near_);
+                  end
               end
             end
             MAT_POINT(i).near=near_;
+            if T==1
+                plot_nb(i,near_,x_a,GEOMETRY.elem_c,1,0);
+            end
         end
 
         function [MAT_POINT,FAIL]=shapef(i,x_a,h,x,MAT_POINT,sh)
@@ -518,7 +538,7 @@
             [LL2,f_m,f_mm,f_w]=LME.order(LL2,f_2);
         end
 
-        function read
+        function SEP=read
 
                 global LME_param SOLVER
 
@@ -544,6 +564,7 @@
 
                 str= SOLVER.TYPE{3};
                 
+                
                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                % Read LME.txt
                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -554,6 +575,7 @@
                 % Convertir a vector numérico
                 b1= cellfun(@str2num, data{2}, 'UniformOutput', false);
                 b2= data{2};
+                b3= data{3};
                 [l,~] = size(b1);
                 b=zeros(l,1);
                 for i=1:l
@@ -577,6 +599,9 @@
                 end
                 [phases,~]=size(SOLVER.PHASES);
                 
+                SEP(shfs).l=0;
+                SEP(shfs).h=0;
+                
                 M=0;
                 while (M<shfs+1) &&(t<l)
                     t=t+1;
@@ -597,6 +622,7 @@
                                 LME_param(M,7)=gamma_top;
                                 LME_param(M,8)=nb_grade;
                             end
+                            ss=0;
                             M=M+1;
                             ph=b2{t};
                             
@@ -636,6 +662,11 @@
                         case 'NEIGHBORHOOD_GRADE'
                             nb_grade=b(t);  
                             continue
+                        case 'SEPARATION'
+                            ss=ss+1;
+                            SEP(M).l(ss)=b(t);
+                            SEP(M).h(ss)=str2double(b3{t});
+                            continue
                         otherwise
                             fprintf('Error, unrecognized parameter: %s !!\n',s1)
                             stop
@@ -657,11 +688,160 @@
 
         end
 
-        function MAT_POINT=initialize(MAT_POINT)
+        function MAT_POINT=separation(MAT_POINT,ph,SEP,NODE_LIST)
+            
+            global GEOMETRY
+            
+            rbs=NODE_LIST.rbs;
+            RB=NODE_LIST.RB;
+            
+            l=SEP(ph).l;
+            h=SEP(ph).h*6;
+            
+            if l~=0
+                
+                elements=GEOMETRY.mat_points;
+                nodes=GEOMETRY.nodes;
+                x_a=GEOMETRY.x_0;
+                
+                for s=1:length(l)
+    
+                    if l<=rbs
+                        rlist=RB{l(s)};
+                        x0=[rlist(1),rlist(2)];
+                        x1=[rlist(3),rlist(4)];
+                        M=(x0(2)-x1(2))/(x0(1)-x1(1));
+                        if isinf(M)
+                            M1=0;
+                        else
+                            M1=-1/M;
+                        end
+                        
+                        rM=sqrt(M^2+1);
+                        rM1=sqrt(M1^2+1);
+                        
+                        %Allocate
+                        d=zeros(nodes,1);
+                        d1=zeros(nodes,1);
+                        d2=zeros(nodes,1);
+                        clas=zeros(nodes,1);
+                        dg=zeros(elements,1);
+                        dg1=zeros(elements,1);
+                        dg2=zeros(elements,1);
+                        clasg=zeros(elements,1);
+                        
+                        for i=1:nodes
+                            % Identify side of the nodes
+                            if isinf(M) || abs(M)>1e2 
+                                d(i)=x_a(i,1)-x0(1);
+                            else
+                                
+                                d(i)=(M*x_a(i,1)-x_a(i,2)+x0(2)-M*x0(1))/rM;
+                            end
+                            
+                            if isinf(M1) || abs(M1)>1e2 
+                                d1(i)=x0(1)-x_a(i,1);
+                                d2(i)=x1(1)-x_a(i,1);
+                            else
+                                d1(i)=(M1*x0(1)-x0(2)+x_a(i,2)-M1*x_a(i,1))/rM1;
+                                d2(i)=(M1*x1(1)-x1(2)+x_a(i,2)-M1*x_a(i,1))/rM1;
+                            end
+                            
+                            if d1(i)==0 || d2(i)==0
+                                in=1;
+                            elseif sign(d1(i))~= sign(d2(i))
+                                in=1;
+                            else
+                                in=0;
+                            end
+                            
+                            if abs(d(i))>h/2 || in==0
+                                clas(i)=0;
+                            elseif d(i)>=0
+                                clas(i)=1;
+                            else
+                                clas(i)=2;
+                            end
+                        end
+                        
+                        for i=1:elements
+                            
+                            x_g=MAT_POINT{ph}(i).xg;
+        
+                            % Identify side of the material point
+                            if isinf(M) || abs(M)>1e2 
+                                dg(i)=x_g(1)-x0(1);
+                            else
+                                dg(i)=(M*x_g(1)-x_g(2)+x0(2)-M*x0(1))/rM;
+                            end
+                            
+                            if isinf(M1) || abs(M1)>1e2 
+                                dg1(i)=x0(1)-x_g(1);
+                                dg2(i)=x1(1)-x_g(1);
+                            else
+                                dg1(i)=(M1*x0(1)-x0(2)+x_g(2)-M1*x_g(1))/rM1;
+                                dg2(i)=(M1*x1(1)-x1(2)+x_g(2)-M1*x_g(1))/rM1;
+                            end
+                            
+                            if dg1(i)==0 || dg2(i)==0
+                                in=1;
+                            elseif sign(dg1(i))~= sign(dg2(i))
+                                in=1;
+                            else
+                                in=0;
+                            end
+                            
+                            if abs(dg(i))>h/2 || in==0
+                                clasg(i)=0;
+                            elseif dg(i)>=0
+                                clasg(i)=1;
+                            else
+                                clasg(i)=2;
+                            end
+
+                            % Initialize list of incompatible nodes
+                            no=MAT_POINT{ph}(i).near_p;
+                            t=length(no);
+                            if no==0
+                                t=0;
+                            end
+                            % Exclude nodes in the other side
+                            if clasg(i)~=0
+                                for j=1:nodes
+                                    if clas(j)~=0 && clas(j)~=clasg(i)
+                                        l=0;
+                                        for k=1:t
+                                            if j==no(k)
+                                                l=1;
+                                            end
+                                        end
+                                        if l==0
+                                            t=t+1;
+                                            no(t)=j;
+                                        end
+                                    end
+                                end
+                                MAT_POINT{ph}(i).near_p=no;
+                                %plot_nb(i,no,x_a,GEOMETRY.elem_c,1,0);
+                                %i;
+                            end
+
+                            clear no
+                        end
+
+                    else
+                        error('Unrecognized Rigid Body')
+                    end
+                end
+            end
+            
+        end
+        
+        function MAT_POINT=initialize(MAT_POINT,NODE_LIST)
             
             global GEOMETRY LME_param SOLVER
             
-            LME.read;
+            SEP=LME.read;
             
             [phases,~]=size(SOLVER.PHASES);
             [shf,~]=size(LME_param);
@@ -671,6 +851,9 @@
                         break;
                     end
                 end
+                
+                MAT_POINT=LME.separation(MAT_POINT,ph,SEP,NODE_LIST);
+                
                 gamma_lme = LME_param(sh,1);
                 gamma_=gamma_lme*ones(GEOMETRY.mat_points,1);
 

@@ -110,7 +110,7 @@ classdef Time_Scheme
             % CFL CALCULATION
             %------------------------------------------------
             h=GEOMETRY.h_ini;
-            tt(GEOMETRY.elements,1)=0;
+            tt(GEOMETRY.mat_points,1)=0;
             material=GEOMETRY.material;
             for e=1:GEOMETRY.mat_points
                 if SOLVER.UW

@@ -34,7 +34,7 @@ function print_file_1(str,str2)
     x_a=GEOMETRY.x_0;
     [nodes,sp]=size(x_a);
     
-    if NNE==3
+    if NNE==3 || NNE==6
         elemtype='Triangle';
     elseif NNE==4
         elemtype='Quadrilateral';
@@ -90,6 +90,8 @@ function print_file_2(str,str2,steps,dd)
     
     if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')
         nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
+    elseif strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
+        nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
     else
         nodes_p = linspace(1,GEOMETRY.nodes)';
     end
@@ -128,6 +130,10 @@ function print_file_2(str,str2,steps,dd)
     Sy_tot=GLOBAL.Sy;
     gamma=GLOBAL.gamma;
 
+    if SOLVER.FRAC>0
+    	W=GLOBAL.w;
+        xi=GLOBAL.status; 
+    end
 
     %Output file name
     flnm=(['GID/' str2 '.post.res']);
@@ -142,6 +148,8 @@ function print_file_2(str,str2,steps,dd)
     end
     if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
         fprintf( myfile , '%26s  \n' , 'Number Of Gauss Points:  4');
+    elseif strcmp(type,'T3-3') || strcmp(type,'T6P3-3') || strcmp(type,'T6-3') 
+        fprintf( myfile , '%26s  \n' , 'Number Of Gauss Points:  3');
     else
         fprintf( myfile , '%26s  \n' , 'Number Of Gauss Points:  1');
     end
@@ -260,6 +268,14 @@ function print_file_2(str,str2,steps,dd)
                         fprintf( myfile ,['\t' num2str(Qs((i-1)*4+j,cont)) '\n']);
                     end
                 end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(Qs((i-1)*3+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(Qs((i-1)*3+j,cont)) '\n']);
+                    end
+                end
             else
                 fprintf( myfile ,[num2str(Qs(i,cont)) '\n']);
             end
@@ -277,6 +293,14 @@ function print_file_2(str,str2,steps,dd)
                         fprintf( myfile ,[num2str(Ps((i-1)*4+j,cont)) '\n']);
                     else
                         fprintf( myfile ,['\t' num2str(Ps((i-1)*4+j,cont)) '\n']);
+                    end
+                end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(Ps((i-1)*3+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(Ps((i-1)*3+j,cont)) '\n']);
                     end
                 end
             else
@@ -298,6 +322,14 @@ function print_file_2(str,str2,steps,dd)
                         fprintf( myfile ,['\t' num2str(Sy_tot((i-1)*4+j,cont)) '\n']);
                     end
                 end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(Sy_tot((i-1)*3+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(Sy_tot((i-1)*3+j,cont)) '\n']);
+                    end
+                end
             else
                 fprintf( myfile ,[num2str(Sy_tot(i,cont)) '\n']);
             end
@@ -317,11 +349,76 @@ function print_file_2(str,str2,steps,dd)
                         fprintf( myfile ,['\t' num2str(gamma((i-1)*4+j,cont)) '\n']);
                     end
                 end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(gamma((i-1)*3+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(gamma((i-1)*3+j,cont)) '\n']);
+                    end
+                end    
             else
                 fprintf( myfile ,[num2str(gamma(i,cont)) '\n']);
             end
         end
         fprintf( myfile , '%10s  \n' , 'End Values');
+        
+        if SOLVER.FRAC>0
+        % Ep
+        fprintf(myfile, ['Result  Damage Fracture ' num2str(GLOBAL.tp(cont)) ' Scalar  OnGaussPoints Group1\n']);
+        fprintf( myfile , '%6s  \n' ,  'Values');
+        for i=1:elements
+            fprintf(myfile,[num2str(i,'%10i') '\t']);
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
+                for j=1:4
+                    if j==1
+                        fprintf( myfile ,[num2str(xi((i-1)*4+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(xi((i-1)*4+j,cont)) '\n']);
+                    end
+                end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(xi((i-1)*3+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(xi((i-1)*3+j,cont)) '\n']);
+                    end
+                end    
+            else
+                fprintf( myfile ,[num2str(xi(i,cont)) '\n']);
+            end
+        end
+        fprintf( myfile , '%10s  \n' , 'End Values');
+
+                % Ep
+        fprintf(myfile, ['Result  Strain_energy Fracture ' num2str(GLOBAL.tp(cont)) ' Scalar  OnGaussPoints Group1\n']);
+        fprintf( myfile , '%6s  \n' ,  'Values');
+        for i=1:elements
+            fprintf(myfile,[num2str(i,'%10i') '\t']);
+            if strcmp(type,'Q4-4') || strcmp(type,'Q8-4') || strcmp(type,'Q8P4-4') 
+                for j=1:4
+                    if j==1
+                        fprintf( myfile ,[num2str(W((i-1)*4+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(W((i-1)*4+j,cont)) '\n']);
+                    end
+                end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(W((i-1)*3+j,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(W((i-1)*3+j,cont)) '\n']);
+                    end
+                end    
+            else
+                fprintf( myfile ,[num2str(W(i,cont)) '\n']);
+            end
+        end
+        fprintf( myfile , '%10s  \n' , 'End Values');
+
+        end
         
         if UW
             % Pw
@@ -337,6 +434,14 @@ function print_file_2(str,str2,steps,dd)
                             fprintf( myfile ,['\t' num2str(Pw((i-1)*4+j,cont)) '\n']);
                         end
                     end
+                elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                    for j=1:3
+                        if j==1
+                            fprintf( myfile ,[num2str(Pw((i-1)*3+j,cont)) '\n']);
+                        else
+                            fprintf( myfile ,['\t' num2str(Pw((i-1)*3+j,cont)) '\n']);
+                        end
+                    end 
                 else
                     fprintf( myfile ,[num2str(Pw(i,cont)) '\n']);
                 end
@@ -356,6 +461,14 @@ function print_file_2(str,str2,steps,dd)
                                 fprintf( myfile ,['\t' num2str(dPw(((i-1)*4+j-1)*sp+1,cont)) ' ' num2str(dPw(((i-1)*4+j-1)*sp+2,cont)) ' 0\n']);
                             end
                         end
+                    elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                        for j=1:3
+                            if j==1
+                                fprintf( myfile ,[num2str(dPw(((i-1)*3+j-1)*sp+1,cont)) ' ' num2str(dPw(((i-1)*3+j-1)*sp+2,cont)) ' 0\n']);
+                            else
+                                fprintf( myfile ,['\t' num2str(dPw(((i-1)*3+j-1)*sp+1,cont)) ' ' num2str(dPw(((i-1)*3+j-1)*sp+2,cont)) ' 0\n']);
+                            end
+                        end 
                     else
                         fprintf( myfile ,[num2str(dPw((i-1)*sp+1,cont)) ' ' num2str(dPw((i-1)*sp+2,cont)) ' 0\n']);
                     end
@@ -373,12 +486,22 @@ function print_file_2(str,str2,steps,dd)
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Ss((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Ss((((i-1)*4+j)-1)*4+2,cont))...
-                            ' ' num2str(Ss((((i-1)*4+j)-1)*4+3,cont)) ' ' num2str(Ss((((i-1)*4+j)-1)*4+4,cont)) '\n']);
+                            ' ' num2str(Ss((((i-1)*4+j)-1)*4+4,cont)) ' ' num2str(Ss((((i-1)*4+j)-1)*4+3,cont)) '\n']);
                     else
                         fprintf( myfile ,['\t' num2str(Ss((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Ss((((i-1)*4+j)-1)*4+2,cont))...
-                            ' ' num2str(Ss((((i-1)*4+j)-1)*4+3,cont)) ' ' num2str(Ss((((i-1)*4+j)-1)*4+4,cont)) '\n']);
+                            ' ' num2str(Ss((((i-1)*4+j)-1)*4+4,cont)) ' ' num2str(Ss((((i-1)*4+j)-1)*4+3,cont)) '\n']);
                     end
                 end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(Ss((((i-1)*3+j)-1)*4+1,cont)) ' ' num2str(Ss((((i-1)*3+j)-1)*4+2,cont))...
+                            ' ' num2str(Ss((((i-1)*3+j)-1)*4+4,cont)) ' ' num2str(Ss((((i-1)*3+j)-1)*4+3,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(Ss((((i-1)*3+j)-1)*4+1,cont)) ' ' num2str(Ss((((i-1)*3+j)-1)*4+2,cont))...
+                            ' ' num2str(Ss((((i-1)*3+j)-1)*4+4,cont)) ' ' num2str(Ss((((i-1)*3+j)-1)*4+3,cont)) '\n']);
+                    end
+                end 
             else
                 fprintf( myfile ,[num2str(Ss((i-1)*4+1,cont)) ' ' num2str(Ss((i-1)*4+2,cont))...
                     ' ' num2str(Ss((i-1)*4+3,cont)) ' ' num2str(Ss((i-1)*4+4,cont)) '\n']);
@@ -395,15 +518,25 @@ function print_file_2(str,str2,steps,dd)
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Es((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Es((((i-1)*4+j)-1)*4+2,cont))...
-                            ' ' num2str(Es((((i-1)*4+j)-1)*4+3,cont)) ' ' num2str(Es((((i-1)*4+j)-1)*4+4,cont)) '\n']);
+                            ' ' num2str(Es((((i-1)*4+j)-1)*4+4,cont)) ' ' num2str(Es((((i-1)*4+j)-1)*4+3,cont)) '\n']);
                     else
                         fprintf( myfile ,['\t' num2str(Es((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Es((((i-1)*4+j)-1)*4+2,cont))...
-                            ' ' num2str(Es((((i-1)*4+j)-1)*4+3,cont)) ' ' num2str(Es((((i-1)*4+j)-1)*4+4,cont)) '\n']);
+                            ' ' num2str(Es((((i-1)*4+j)-1)*4+4,cont)) ' ' num2str(Es((((i-1)*4+j)-1)*4+3,cont)) '\n']);
+                    end
+                end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(Es((((i-1)*3+j)-1)*4+1,cont)) ' ' num2str(Es((((i-1)*3+j)-1)*4+2,cont))...
+                            ' ' num2str(Es((((i-1)*3+j)-1)*4+4,cont)) ' ' num2str(Es((((i-1)*3+j)-1)*4+3,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(Es((((i-1)*3+j)-1)*4+1,cont)) ' ' num2str(Es((((i-1)*3+j)-1)*4+2,cont))...
+                            ' ' num2str(Es((((i-1)*3+j)-1)*4+4,cont)) ' ' num2str(Es((((i-1)*3+j)-1)*4+3,cont)) '\n']);
                     end
                 end
             else
                 fprintf( myfile ,[num2str(Es((i-1)*4+1,cont)) ' ' num2str(Es((i-1)*4+2,cont))...
-                    ' ' num2str(Es((i-1)*4+3,cont)) ' ' num2str(Es((i-1)*4+4,cont)) '\n']);
+                    ' ' num2str(Es((i-1)*4+4,cont)) ' ' num2str(Es((i-1)*4+3,cont)) '\n']);
             end
         end
         fprintf( myfile , '%10s  \n' , 'End Values');
@@ -417,10 +550,20 @@ function print_file_2(str,str2,steps,dd)
                 for j=1:4
                     if j==1
                         fprintf( myfile ,[num2str(Es_p((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Es_p((((i-1)*4+j)-1)*4+2,cont))...
-                            ' ' num2str(Es_p((((i-1)*4+j)-1)*4+3,cont)) ' ' num2str(Es_p((((i-1)*4+j)-1)*4+4,cont)) '\n']);
+                            ' ' num2str(Es_p((((i-1)*4+j)-1)*4+4,cont)) ' ' num2str(Es_p((((i-1)*4+j)-1)*4+3,cont)) '\n']);
                     else
                         fprintf( myfile ,['\t' num2str(Es_p((((i-1)*4+j)-1)*4+1,cont)) ' ' num2str(Es_p((((i-1)*4+j)-1)*4+2,cont))...
-                            ' ' num2str(Es_p((((i-1)*4+j)-1)*4+3,cont)) ' ' num2str(Es_p((((i-1)*4+j)-1)*4+4,cont)) '\n']);
+                            ' ' num2str(Es_p((((i-1)*4+j)-1)*4+4,cont)) ' ' num2str(Es_p((((i-1)*4+j)-1)*4+3,cont)) '\n']);
+                    end
+                end
+            elseif strcmp(type,'T3-3') || strcmp(type,'T6-3') || strcmp(type,'T6P3-3') 
+                for j=1:3
+                    if j==1
+                        fprintf( myfile ,[num2str(Es_p((((i-1)*3+j)-1)*4+1,cont)) ' ' num2str(Es_p((((i-1)*3+j)-1)*4+2,cont))...
+                            ' ' num2str(Es_p((((i-1)*3+j)-1)*4+4,cont)) ' ' num2str(Es_p((((i-1)*3+j)-1)*4+3,cont)) '\n']);
+                    else
+                        fprintf( myfile ,['\t' num2str(Es_p((((i-1)*3+j)-1)*4+1,cont)) ' ' num2str(Es_p((((i-1)*3+j)-1)*4+2,cont))...
+                            ' ' num2str(Es_p((((i-1)*3+j)-1)*4+4,cont)) ' ' num2str(Es_p((((i-1)*3+j)-1)*4+3,cont)) '\n']);
                     end
                 end
             else

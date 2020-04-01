@@ -17,7 +17,7 @@ function perturbated(MAT_POINT,Mat_state,Disp_field,Int_var,stiff_mtx,STEP)
         d1(i,1)=d1(i,1)+du;
         [Mat_state1,MAT_POINT]=update_strain(d1,Mat_state,MAT_POINT,STEP);
         
-        [~,Int_var,Mat_state2]=...
+        [~,Int_var,Mat_state2,STEP]=...
             Constitutive.update(3,STEP,Int_var,Mat_state1,MAT_POINT);
         
         dfint=Mat_state2.fint-fint0;
