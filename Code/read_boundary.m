@@ -229,10 +229,35 @@ function read_boundary(filetxt,BLCK,NODE_LIST)
     
     fclose(fid);
     
+    % BC for Mixed element
+    if (strcmp(GEOMETRY.ELEMENT,'Q8P4') || strcmp(GEOMETRY.ELEMENT,'Q8P4-4'))...
+        || (strcmp(GEOMETRY.ELEMENT,'T6P3') || strcmp(GEOMETRY.ELEMENT,'T6P3-3'))
+        loads=loads+1;
+        NLIST(loads)='Q8';
+        VALUE(loads)='0';
+        if BLCK>1
+            INTERVAL(1,loads)=SOLVER.Time_final(BLCK-1);
+        else
+            INTERVAL(1,loads)=0;
+        end
+        INTERVAL(2,loads)=SOLVER.Time_final(BLCK);
+        TIED(loads)=0;
+        OUT(loads)=0;
+        if SOLVER.UW==1
+            TYPE(loads)=2;
+            VECTOR(:,loads)=[1; 1];
+        elseif SOLVER.UW==2
+            TYPE(loads)=6;
+            VECTOR(:,loads)=[0; 0];
+        end
+    end
+    
+    
     interval(INTERVAL,VALUE,loads,BLCK);
     %[b_nds]=localization(RANGE,loads,TIED,TYPE);
     
     calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK);
+   
     
     % OUTPUT
     for i=1:loads
@@ -321,6 +346,8 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK)
         if isnan(ll)
             if strcmp(NLIST(m),'FULL')
                 nod_f=linspace(1,nodes);
+            elseif strcmp(NLIST(m),'Q8')
+                nod_f=setdiff(GEOMETRY.elem,GEOMETRY.elem_c,'sorted');
             else
                 fprintf('Error, unrecognized list of nodes: %s !! \n',ll)
                 stop

@@ -1,6 +1,10 @@
 
 
-function plot_nb(NODO,near,x_0,xg,elem,ds,h)
+function plot_nb(NODO,nds,x_0,elem,ds,h)
+
+global GEOMETRY
+
+xg=GEOMETRY.xg_0;
 
 [~,NNE]=size(elem);
 [nodes,sp]=size(x_0);
@@ -14,7 +18,6 @@ end
 
 
 if NODO
-    nds=near{NODO};
     XX=zeros(length(nds),2);
     for i=1:length(nds)
         XX(i,1)=x_a(nds(i),1);

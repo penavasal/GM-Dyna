@@ -394,26 +394,40 @@ function calculate_forces...
                     area(k)=(x_0(nod_f(j,1),k)-x_0(nod_f(j,2),k))^2;
                 end
                 d=sqrt(sum(area));
-                if SOLVER.AXI
-                    f=2*pi*rr*V*d/2;
+                if nod_f(j,3)==0
+                    if SOLVER.AXI
+                        f=2*pi*rr*V*d/2;
+                    else
+                        f=V*d/2;
+                    end
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)+f(2);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)+f(2);
                 else
-                    f=V*d/2;
+                    if SOLVER.AXI
+                        f=2*pi*rr*V*d/6;
+                    else
+                        f=V*d/6;
+                    end
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)+f(2);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)+f(2);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,3)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,3)*sp-1,m)+4*f(1);
+                    LOAD{BLCK}.ext_forces_s(nod_f(j,3)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_s(nod_f(j,3)*sp,m)+4*f(2);
                 end
-                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
-                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)+f(1);
-                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)=...
-                    LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)+f(2);
-                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)=...
-                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)+f(1);
-                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)=...
-                    LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)+f(2);
-%             if RANGE(1,m*2)-RANGE(1,m*2-1)==0
-%                 [LOAD.ext_forces_s(:,m)]=dist_f(nod_f,x_0,V,SOLVER.AXI);
-%             elseif RANGE(2,m*2)-RANGE(2,m*2-1)==0
-%                 [LOAD.ext_forces_s(:,m)]=dist_f_x(nod_f,x_0,V,SOLVER.AXI);
-%             else
-%                 disp('not yet implemented, sorry');
-%             end
+
             elseif TYPE(m)==3
                 nn=nod_f(j);
                 if SOLVER.UW==0
@@ -444,19 +458,40 @@ function calculate_forces...
                     area(k)=(x_0(nod_f(j,1),1)+x_0(nod_f(j,2),1))^2;
                 end
                 d=sqrt(sum(area));
-                if SOLVER.AXI
-                    f=2*pi*rr*V*d/2;
+                if nod_f(j,3)==0
+                    if SOLVER.AXI
+                        f=2*pi*rr*V*d/2;
+                    else
+                        f=V*d/2;
+                    end
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp,m)+f(2);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp,m)+f(2);
                 else
-                    f=V*d/2;
+                    if SOLVER.AXI
+                        f=2*pi*rr*V*d/6;
+                    else
+                        f=V*d/6;
+                    end
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp,m)+f(2);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp-1,m)+f(1);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp,m)+f(2);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,3)*sp-1,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,3)*sp-1,m)+4*f(1);
+                    LOAD{BLCK}.ext_forces_w(nod_f(j,3)*sp,m)=...
+                        LOAD{BLCK}.ext_forces_w(nod_f(j,3)*sp,m)+4*f(2);
                 end
-                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
-                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)+f(1);
-                LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp,m)=...
-                    LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp,m)+f(2);
-                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp-1,m)=...
-                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp-1,m)+f(1);
-                LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)=...
-                    LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp,m)+f(2);
+
             end
         end     
     end

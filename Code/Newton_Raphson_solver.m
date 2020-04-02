@@ -1,5 +1,5 @@
 
-function [Disp_field,Mat_state,MAT_POINT]=...
+function [Disp_field,Mat_state,MAT_POINT,STEP]=...
             Newton_Raphson_solver(STEP,stiff_mtx,mass_mtx,damp_mtx,load_s,...
             MAT_POINT,Disp_field,Int_var,Mat_state)
         
@@ -61,11 +61,11 @@ function [Disp_field,Mat_state,MAT_POINT]=...
             % 2. Update
             %--------------------------------------------------------------
             % 2.1 Deformation gradient
-            [Mat_state,MAT_POINT]=update_F(d0,Mat_state,MAT_POINT,STEP);
+            [Mat_state,MAT_POINT]=update_strain(d0,Mat_state,MAT_POINT,STEP);
             
             % 2.2 Stress and Internal Forces
-            [~,Int_var,Mat_state]=...
-                Constitutive(0,STEP,Int_var,Mat_state,MAT_POINT);
+            [~,Int_var,Mat_state,STEP]=...
+                Constitutive.update(0,STEP,Int_var,Mat_state,MAT_POINT);
             
             % 2.3 Residuum
             [GT]=Time_Scheme.calculation(d0,a0,v0,Mat_state.fint,mass_mtx,...
@@ -82,10 +82,10 @@ function [Disp_field,Mat_state,MAT_POINT]=...
                     RTOL,iter,SOLVER.NR_iterations(BLCK));
                 if CONVER==1     
                     break;
-                elseif iter>8 && norm(du(:,iter))/norm(d0(:,1)) < DTOL
+                elseif iter>6 && norm(du(:,iter))/norm(d0(:,1)) < DTOL
                     CONVER=1;
                     break;
-                elseif iter>8 && ...
+                elseif iter>6 && ...
                         norm(du(:,iter)) < 10*eps
                     CONVER=1;
                     break;
@@ -120,11 +120,11 @@ function [Disp_field,Mat_state,MAT_POINT]=...
         end
         if CONVER==0 && rem(iter,NR1)==0
              if STEP.ste==1
-                 [stiff_mtx,Int_var,Mat_state]=...
-                 Constitutive(4,STEP,Int_var,Mat_state,MAT_POINT);
+                 [stiff_mtx,Int_var,Mat_state,STEP]=...
+                 Constitutive.update(4,STEP,Int_var,Mat_state,MAT_POINT);
              else
-                [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(1,STEP,Int_var,Mat_state,MAT_POINT);
+                [stiff_mtx,Int_var,Mat_state,STEP]=...
+                Constitutive.update(1,STEP,Int_var,Mat_state,MAT_POINT);
             end
             [matrix]=Time_Scheme.matrix(mass_mtx,stiff_mtx,damp_mtx,STEP);
             [InvK,~]=apply_conditions(0,STEP,matrix,0);

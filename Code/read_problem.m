@@ -1,5 +1,5 @@
 
-function MAT_POINT=read_problem
+function MAT_POINT=read_problem(str)
 
 % File: read_problem
 %   Read some important problem parameters from problem.txt
@@ -28,6 +28,7 @@ function MAT_POINT=read_problem
     SOLVER.B_BAR=0;
     SOLVER.F_BAR=0;
     SOLVER.F_BAR_W=0;
+    SOLVER.Pstab=0;
     
     SOLVER.INITIAL_PORE_PRESSURE=0;
     
@@ -41,13 +42,19 @@ function MAT_POINT=read_problem
     
     SOLVER.BLOCKS = 1;
     
+    SOLVER.SMALL = 0;
+    
+    SOLVER.FRAC = 0;
+    
+    SOLVER.PHASES = {'' ''};
+    
     % VARIABLES
     VARIABLE.g=0;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Read problem.txt
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    fid = fopen('problem.txt', 'rt'); % opción rt para abrir en modo texto
+    fid = fopen(str, 'rt'); % opción rt para abrir en modo texto
     formato = '%s %s %s %s %s %s %s %s %s'; % formato de cada línea 
     data = textscan(fid, formato, 'HeaderLines', 1);
     a = data{1};
@@ -55,6 +62,7 @@ function MAT_POINT=read_problem
     b1= cellfun(@str2num, data{2}, 'UniformOutput', false);
     b2= data{2};
     b3= data{3};
+    b4= data{4};
     [l,~] = size(b1);
     b=zeros(l,1);
     for i=1:l
@@ -141,31 +149,58 @@ function MAT_POINT=read_problem
                 SOLVER.thickness=b(t);  
                 continue
             case 'LINEARIZATION'
-                SOLVER.LIN=b(t);   
+                SOLVER.LIN=b(t);
+                continue
+            case 'FRAMEWORK'
+                if strcmp(b2{t},'SMALL_STRAIN')
+                    SOLVER.SMALL=1;
+                end
                 continue
             case 'PROBLEM'
                 if strcmp(b2{t},'OTM')
                     SOLVER.TYPE{1}=0;
                 elseif strcmp(b2{t},'MPM')
                     SOLVER.TYPE{1}=1;
-                elseif strcmp(b2{t},'FEM')
+                elseif strcmp(b2{t},'FE')
                     SOLVER.TYPE{1}=2;
-                    fprintf('Error, NOT IMPLEMENTED FEM YET!!\n')
-                    stop
                 end
                 if b3{t}
-                    SOLVER.TYPE{2}=b3{t};    
+                    SOLVER.TYPE{2}=b3{t};
+                    if SOLVER.TYPE{2}=='LME'
+                        if b4{t}
+                           SOLVER.TYPE{3}=b4{t};
+                        else
+                           fprintf('Check LME file, by Default LME.txt !!\n') 
+                           SOLVER.TYPE{3}='LME.txt';
+                        end
+                    end
                 end
                 continue
             case 'FORMULATION'
                 if strcmp(b2{t},'U')
                     SOLVER.UW=0;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
                 elseif strcmp(b2{t},'UW')
                     SOLVER.UW=1;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
+                    SOLVER.PHASES{2,1}='W';
+                    SOLVER.PHASES{2,2}=1;
                 elseif strcmp(b2{t},'UPw')
                     SOLVER.UW=2;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
+                    SOLVER.PHASES{2,1}='Pw';
+                    SOLVER.PHASES{2,2}=1;
                 elseif strcmp(b2{t},'UWPw')
                     SOLVER.UW=3;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
+                    SOLVER.PHASES{2,1}='W';
+                    SOLVER.PHASES{2,2}=1;
+                    SOLVER.PHASES{3,1}='Pw';
+                    SOLVER.PHASES{3,2}=1;
                 end
                 if SOLVER.UW>=1
                     if VARIABLE.g==0
@@ -383,7 +418,7 @@ function MAT_POINT=read_problem
     % Add shape function parameters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    [MAT_POINT]=shape_function_calculation(1,MAT_POINT);
+    [MAT_POINT]=shape_function_calculation(1,MAT_POINT,0,NODE_LIST);
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

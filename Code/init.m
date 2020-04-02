@@ -33,10 +33,12 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     % DEFINITION OF LENGTHS
     %----------------------------------------------------------------------        
     l0          = GEOMETRY.df*GEOMETRY.nodes;
-    l1          = GEOMETRY.f_dim;
     l2          = GEOMETRY.s_dim;
     elements    = GEOMETRY.mat_points;
     nodes       = GEOMETRY.nodes;
+    if SOLVER.SMALL==0
+        l1          = GEOMETRY.f_dim;
+    end
 
     %----------------------------------------------------------------------
     % DEFINITION OF STRUCTURES
@@ -60,20 +62,30 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
        
     Mat_state.title='Material state: material point information';
 
-    Mat_state.F=zeros(l1*elements,2);
-    Mat_state.Be=zeros(l1*elements,2);
+    if SOLVER.SMALL==0
+        Mat_state.F=zeros(l1*elements,2);
+        Mat_state.Be=zeros(l1*elements,2);
+    else
+        Mat_state.Es=zeros(l2*elements,2);
+        Mat_state.Es_e=zeros(l2*elements,2);
+    end
     Mat_state.Sigma=zeros(l2*elements,2);
     Mat_state.fint=zeros(l0,2);
     
     if SOLVER.UW==1
         Mat_state.k=zeros(elements,1);
         Mat_state.pw=zeros(elements,3);
-        Mat_state.Fw=zeros(l1*elements,2);
+        if SOLVER.SMALL==0
+            Mat_state.Fw=zeros(l1*elements,2);
+        else
+            Mat_state.Esw=zeros(l2*elements,2);
+        end
     elseif SOLVER.UW==2
         Mat_state.k=zeros(elements,1);
         Mat_state.pw=zeros(elements,3);
         Mat_state.dpw=zeros(GEOMETRY.sp*elements,2);
     end
+    
     
     %----------------------------------------------------------------------
     % GLOBAL VECTORS
@@ -96,16 +108,25 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     
     GLOBAL.Ps(elements,dim)=0;
     GLOBAL.Qs(elements,dim)=0;
-       
-    GLOBAL.F(l1*elements,dim) = 0;
-    GLOBAL.Be(l1*elements,dim) = 0;
+    
+    if SOLVER.SMALL==0
+        GLOBAL.F(l1*elements,dim) = 0;
+        GLOBAL.Be(l1*elements,dim) = 0;
+    end
     GLOBAL.Sigma(l2*elements,dim) = 0;
     GLOBAL.Es(l2*elements,dim) = 0;
     GLOBAL.Es_p(l2*elements,dim) = 0;
     GLOBAL.xg(elements*GEOMETRY.sp,dim)=0;
     if SOLVER.UW==1
         GLOBAL.pw(elements,dim)=0;
-        GLOBAL.Fw(l1*elements,dim)=0;
+        if SOLVER.SMALL==0
+            GLOBAL.Fw(l1*elements,dim)=0;
+        else
+            GLOBAL.Esw(l2*elements,dim)=0;
+        end
+    elseif SOLVER.UW==2
+        GLOBAL.pw(elements,dim)=0;
+        GLOBAL.dpw(GEOMETRY.sp*elements,dim)=0;
     end
     
     GLOBAL.tp(dim,1)=0;
@@ -152,25 +173,51 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     end
     
     %----------------------------------------------------------------------
+    % FRACTURE
+    %----------------------------------------------------------------------
+    if SOLVER.FRAC
+        Mat_state.w=zeros(elements,1);
+        Mat_state.status=zeros(elements,2);
+        GLOBAL.w(elements,dim) = 0;
+        GLOBAL.status(elements,dim) = 0;
+        if SOLVER.FRAC>1
+            Mat_state.e_ini=zeros(elements,1);
+            GLOBAL.e_ini(elements,dim) = 0;
+        end
+        
+        [MAT_POINT]=FRAC.eps_nb(MAT_POINT,STEP.BLCK);
+        
+        GLOBAL.Force(dim,SOLVER.BODIES*GEOMETRY.sp)=0;
+        GLOBAL.E.D(dim,1)=0;
+        GLOBAL.E.W(dim,SOLVER.BODIES)=0;
+        GLOBAL.E.K(dim,SOLVER.BODIES)=0;
+        STEP.ENERGY.D=0;
+    end
+    
+    %----------------------------------------------------------------------
     % VECTORS OF ZEROS and ONES or taken from FILE
     %----------------------------------------------------------------------
     
     if SOLVER.INIT_file~=0
 
         % MAT_POINT
-        [MAT_POINT]=LIB.list2S(MAT_POINT,'J',GLOBAL.J(:,ste_p));
-        [MAT_POINT]=LIB.list2S(MAT_POINT,'xg',...
-            reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
-        MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
+        [phases,~]=size(SOLVER.PHASES);
+        for i=1:phases
+            [MAT_POINT{i}]=LIB.list2S(MAT_POINT{i},'J',GLOBAL.J(:,ste_p));
+            [MAT_POINT{i}]=LIB.list2S(MAT_POINT{i},'xg',...
+                reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
+        end
         
-        [Disp_field,Mat_state,Int_var,stiff_mtx]=VECTORS.Update_ini(...
+        [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT]=VECTORS.Update_ini(...
             STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT);
         
     else
         Disp_field.x_a=GEOMETRY.x_0;
         GLOBAL.xg(:,1)=reshape(GEOMETRY.xg_0,[GEOMETRY.sp*GEOMETRY.mat_points,1]);
         
-        [Mat_state]=ini_F(Mat_state,l1,elements,GEOMETRY.sp,SOLVER.UW);
+        if SOLVER.SMALL==0
+            [Mat_state]=ini_F(Mat_state,l1,elements,GEOMETRY.sp,SOLVER.UW);
+        end
         
         GLOBAL.ste_p=1;
         GLOBAL.tp(1)=STEP.t;
@@ -181,7 +228,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         Disp_field.a(:,2)=GLOBAL.a(:,1);
         Disp_field.d(:,2)=GLOBAL.d(:,1);
         
-        [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=initial_constitutive...
+        [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=initial_constitutive...
         (GLOBAL,MAT_POINT,Mat_state,Int_var,STEP);
     
     end 
@@ -266,119 +313,66 @@ function [dim,STEP]=fix_time(tp,ste_p)
     STEP.t=tb+tp0;
 end
 
-function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
+function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
     initial_constitutive(GLOBAL,MAT_POINT,Mat_state,Int_var,STEP)
 
     global GEOMETRY SOLVER  MATERIAL
-    
-    BLCK=STEP.BLCK;
-    
-    MODEL=MATERIAL(BLCK).MODEL;
-    Mat=GEOMETRY.material;
-    MAT=MATERIAL(BLCK).MAT;
-    
-    df=GEOMETRY.df;
-    dimf=GEOMETRY.f_dim;
-    dims=GEOMETRY.s_dim;
         
     Kt=4;
-
+    df=GEOMETRY.df;
     stiff_mtx = zeros(df*GEOMETRY.nodes);
     
-    f_v       = zeros(dimf,1);
-    f_old     = zeros(dimf,1);
+    Mat=GEOMETRY.material;
+    MAT=MATERIAL(STEP.BLCK).MAT;
+    MODEL=MATERIAL(STEP.BLCK).MODEL;
     
-    
+    dims=GEOMETRY.s_dim;
+
     for e=1:GEOMETRY.mat_points
-        
-        P0      = Int_var.P0(e,1:3);
-
-        % MATRIX B and F
-        b1=exp(P0(2)/3)^2;
-        Be=[b1 1e-15 0; 1e-15 b1 0; 0 0 b1];
-        
-        for i=1:dimf
-            f_v(i,1)=Mat_state.F((e-1)*dimf + i,1);
-            f_old(i,1)=Mat_state.F((e-1)*dimf + i,2);
-        end           
-        [F]=LIB.v2m(f_v);
-        [Fold]=LIB.v2m(f_old);
-        jacobians=det(F);
-        
             
-        if MODEL(Mat(e))>=2
-            Sy=Int_var.Sy(e,2);
-            Sy_r=Sy;
-            Gamma=Int_var.gamma(e,2);
-            dgamma=Int_var.dgamma(e,2); 
+        if SOLVER.SMALL==0            
+            P0      = Int_var.P0(e,1:3);
+
+            % MATRIX B and F
+            b1=exp(P0(2)/3)^2;
+            Be=[b1 1e-15 0; 1e-15 b1 0; 0 0 b1];
+            [be]=LIB.m2v(Be);
+            for i=1:GEOMETRY.f_dim
+                Mat_state.Be((e-1)*GEOMETRY.f_dim+i,2)=be(i,1);
+            end 
         end
 
-        if MODEL(Mat(e))<2
-            if MODEL(Mat(e))==0
-                [A,T,Be]=Saint_Venant(Kt,e,F,BLCK);
-            elseif MODEL(Mat(e))<2 && MODEL(Mat(e))>=1
-                [A,T,Be]=Neo_Hookean(Kt,e,F,jacobians,BLCK);
-            end
-        else        
-            if MODEL(Mat(e))>=2 && MODEL(Mat(e))<3
-                [A,T,Gamma,dgamma,Sy,Be]=...
-                    Drucker_prager(Kt,e,Gamma,dgamma,Sy,F,Be,Fold,BLCK);
-            elseif MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
-                [A,T,Gamma,dgamma,Sy,Sy_r,Be]=...
-                    M_Cam_Clay(Kt,1,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,press,P0,BLCK);
-                Int_var.Sy_r(e,1) = Sy_r;
-            elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
-                H=MAT(37,Mat(e));
-                epsvol=0;
-                [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
-                    PZ(Kt,1,e,Gamma,epsvol,dgamma,Sy,0,H,F,Fold,Be,P0,BLCK);
-                Int_var.epsv(e,1)  = epsvol;
-            end
-            Int_var.Sy(e,1)     = Sy;
-            Int_var.gamma(e,1)  = Gamma;
-            Int_var.dgamma(e,1) = dgamma;
+        if MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
+            Int_var.H(e,2)=MAT(37,Mat(e));
         end
-
-        % Main vectors
-        [T_vec]=LIB.E2e(T);
+    end
+    % Constitutive calculation
+    [stiff_mtx,Int_var,Mat_state,STEP]=Constitutive.strain2const(...
+            STEP,Mat_state,Int_var,stiff_mtx,Kt,MAT_POINT);
+    
+    for e=1:GEOMETRY.mat_points        
         for i=1:dims
-            Mat_state.Sigma((e-1)*dims+i,1)=T_vec(i,1);
-            Mat_state.Sigma((e-1)*dims+i,3)=T_vec(i,1);
-            GLOBAL.Sigma((e-1)*dims+i,1)=T_vec(i,1);
+            Mat_state.Sigma((e-1)*dims+i,3)=Mat_state.Sigma((e-1)*dims+i,1);
+            GLOBAL.Sigma((e-1)*dims+i,1)=Mat_state.Sigma((e-1)*dims+i,1);
         end
         
         [GLOBAL.Ps(e,1),GLOBAL.Qs(e,1)]=...
             VECTORS.invar(Mat_state.Sigma(:,1),e);   %PRESSURE
-        
-        [be]=LIB.m2v(Be);
-        [f]=LIB.m2v(F);
-        for i=1:dimf
-            Mat_state.Be((e-1)*dimf+i,2)=be(i,1);
-            Mat_state.F((e-1)*dimf+i,2)=f(i,1);
-        end 
-        MAT_POINT(e).J    =   jacobians;
-        
+       
         if SOLVER.UW>0
             Pw=SOLVER.INITIAL_PORE_PRESSURE;
-            Mat_state.pw(e,1)=Pw;
             Mat_state.pw(e,3)=Pw;
-            GLOBAL.pw(e,1)=Pw;
+            GLOBAL.pw(e,1)=Pw+Mat_state.pw(e,1);
         end
          
-        % Stiffness matrix
-        [stiff_mtx]=stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A,BLCK);
-
         % Store other vectors
         if MODEL(Mat(e))>=2
             Int_var.Sy(e,2)   =   Int_var.Sy(e,1);
             Int_var.Sy_r(e,2) =   Int_var.Sy_r(e,1);
-            %Int_var.P0(e,1)   =   press;
             if MODEL(Mat(e))>=4
-                Int_var.H(e,1) =   H;
-                Int_var.H(e,2) =   H;
-                Int_var.eta(e,1) = etaB;
-                Int_var.eta(e,2) = etaB;
-                Int_var.epsv(e,2)= epsvol;
+                Int_var.H(e,2) =   Int_var.H(e,1);
+                Int_var.eta(e,2) = Int_var.eta(e,1);
+                Int_var.epsv(e,2)= Int_var.epsv(e,1);
             end
         end
             

@@ -26,7 +26,7 @@
             GLOBAL.H(:,ste_p)       = Int_var.H(:,1);
             GLOBAL.eta(:,ste_p)     = Int_var.eta(:,1);
 
-            GLOBAL.xg(:,ste_p)      = LIB.reshape_S2list(MAT_POINT,'xg');
+            GLOBAL.xg(:,ste_p)      = LIB.reshape_S2list(MAT_POINT{1},'xg');
 
             [GLOBAL.gamma_nds(:,ste_p)]=VECTORS.Ep2Ep_n...
                 (GLOBAL.gamma,MAT_POINT,ste_p);
@@ -37,18 +37,40 @@
             end
             
             [GLOBAL.Es(:,ste_p),GLOBAL.Es_p(:,ste_p)]=...
-                VECTORS.strains(Mat_state.F,Mat_state.Be);
-            [GLOBAL.J(:,ste_p)]=LIB.S2list(MAT_POINT,'J'); %JACOBIAN
+                VECTORS.strains(Mat_state);
+            [GLOBAL.J(:,ste_p)]=LIB.S2list(MAT_POINT{1},'J'); %JACOBIAN
             GLOBAL.Sigma(:,ste_p)   = Mat_state.Sigma(:,1);    %STRESS
-            GLOBAL.F(:,ste_p)       = Mat_state.F(:,1);  %DEFORMATION GRADIENT
-            GLOBAL.Be(:,ste_p)      = Mat_state.Be(:,1); %LEFT CAUCHY GREEN 
+            if SOLVER.SMALL==0 
+                GLOBAL.F(:,ste_p)       = Mat_state.F(:,1);  %DEFORMATION GRADIENT
+                GLOBAL.Be(:,ste_p)      = Mat_state.Be(:,1); %LEFT CAUCHY GREEN 
+            end
             
             if SOLVER.UW==1
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
-                GLOBAL.Fw(:,ste_p) = Mat_state.Fw(:,1);
+                if SOLVER.SMALL==0
+                    GLOBAL.Fw(:,ste_p) = Mat_state.Fw(:,1);
+                else
+                    GLOBAL.Esw(:,ste_p) = Mat_state.Esw(:,1);
+                end
             elseif SOLVER.UW==2
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
                 GLOBAL.dpw(:,ste_p) = Mat_state.dpw(:,1);
+            end
+            
+            if SOLVER.FRAC
+                GLOBAL.w(:,ste_p)      = Mat_state.w(:,1);
+                GLOBAL.status(:,ste_p) = Mat_state.status(:,1);
+                if SOLVER.FRAC>1
+                    GLOBAL.e_ini(:,ste_p) = Mat_state.e_ini(:,1);
+                end
+                GLOBAL.E.K(ste_p,SOLVER.BODIES)=0;
+                GLOBAL.E.W(ste_p,SOLVER.BODIES)=0;
+                GLOBAL.E.D(ste_p,1)=STEP.ENERGY.D;
+                [GLOBAL.E]=FRAC.compute_energy(...
+                    MAT_POINT,STEP,Mat_state,GLOBAL.E,Disp_field.v);
+                
+                GLOBAL.Force(ste_p,SOLVER.BODIES*GEOMETRY.sp)=0;
+                [GLOBAL.Force]=FRAC.forces(MAT_POINT,STEP,GLOBAL.Force,Disp_field.v);
             end
 
             GLOBAL.tp(ste_p,1)=STEP.t;
@@ -68,16 +90,30 @@
             Disp_field.a(:,2)=Disp_field.a(:,1);
 
             Mat_state.Sigma(:,2)=Mat_state.Sigma(:,1);                
-            Mat_state.F(:,2)=Mat_state.F(:,1);
-            Mat_state.Be(:,2)=Mat_state.Be(:,1);
             Mat_state.fint(:,2)=Mat_state.fint(:,1);
+            
+            if SOLVER.SMALL==0
+                Mat_state.F(:,2)=Mat_state.F(:,1);
+                Mat_state.Be(:,2)=Mat_state.Be(:,1);
+            else
+                Mat_state.Es(:,2)=Mat_state.Es(:,1);
+                Mat_state.Es_e(:,2)=Mat_state.Es_e(:,1);
+            end
 
             if SOLVER.UW==1
                 Mat_state.pw(:,2)=Mat_state.pw(:,1);
-                Mat_state.Fw(:,2)=Mat_state.Fw(:,1);
+                if SOLVER.SMALL==0
+                    Mat_state.Fw(:,2)=Mat_state.Fw(:,1);
+                else
+                    Mat_state.Esw(:,2)=Mat_state.Esw(:,1);
+                end
             elseif SOLVER.UW==2
                 Mat_state.pw(:,2)=Mat_state.pw(:,1);
                 Mat_state.dpw(:,2)=Mat_state.dpw(:,1);
+            end
+            
+            if SOLVER.FRAC
+                Mat_state.status(:,2)=Mat_state.status(:,1);
             end
 
             Int_var.gamma(:,2)  = Int_var.gamma(:,1);
@@ -90,7 +126,7 @@
         end
         
         % Update initial
-        function [Disp_field,Mat_state,Int_var,stiff_mtx]=Update_ini(...
+        function [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT]=Update_ini(...
                 STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT)
             
             global SOLVER GEOMETRY MATERIAL
@@ -120,14 +156,26 @@
             Int_var.dgamma(:,2)=GLOBAL.dgamma(:,ste_p);
             
             Mat_state.Sigma(:,2)=GLOBAL.Sigma(:,ste_p);                %STRESS
-            Mat_state.F(:,2)=GLOBAL.F(:,ste_p);          %DEFORMATION GRADIENT
-            Mat_state.Be(:,2)=GLOBAL.Be(:,ste_p);           %LEFT CAUCHY GREEN
+            
+            if SOLVER.SMALL==0
+                Mat_state.F(:,1)=GLOBAL.F(:,ste_p);
+                Mat_state.F(:,2)=GLOBAL.F(:,ste_p);          %DEFORMATION GRADIENT
+                Mat_state.Be(:,2)=GLOBAL.Be(:,ste_p);           %LEFT CAUCHY GREEN
+            else
+                Mat_state.Es_e(:,2)=GLOBAL.Es(:,ste_p);
+                Mat_state.Es(:,2)=GLOBAL.Es_p(:,ste_p)+Mat_state.Es_e(:,2);
+                Mat_state.Es(:,1)=Mat_state.Es(:,2);
+            end
             
             if SOLVER.UW>0
                 Mat_state.pw(:,2)=GLOBAL.pw(:,ste_p);
                 if SOLVER.UW==1
-                    Mat_state.Fw(:,2)=GLOBAL.Fw(:,ste_p);
-                    Mat_state.Fw(:,1)=GLOBAL.Fw(:,ste_p);
+                    if SOLVER.SMALL==0
+                        Mat_state.Fw(:,2)=GLOBAL.Fw(:,ste_p);
+                        Mat_state.Fw(:,1)=GLOBAL.Fw(:,ste_p);
+                    else
+                        Mat_state.Esw(:,2)=GLOBAL.Esw(:,ste_p);
+                    end   
                 elseif SOLVER.UW==2
                     Mat_state.dpw(:,2)=GLOBAL.dpw(:,ste_p);
                 end
@@ -165,10 +213,21 @@
                 Mat_state.pw(:,3)=GLOBAL.pw(:,1);
             end
             
+            if SOLVER.FRAC
+                Mat_state.w(:,1)=GLOBAL.w(:,ste_p);
+                Mat_state.status(:,2)=GLOBAL.status(:,ste_p);
+                if SOLVER.FRAC>1
+                    Mat_state.e_ini(:,1)=GLOBAL.e_ini(:,ste_p);
+                end
+                STEP.ENERGY.D=GLOBAL.E.D(ste_p,1);
+            end
+            
+            % Recalculate shape functions
+            MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
+            
             % Constitutive
-            Mat_state.F(:,1)=GLOBAL.F(:,ste_p);
-            [stiff_mtx,Int_var,Mat_state]=...
-                Constitutive(1,STEP,Int_var,Mat_state,MAT_POINT);
+            [stiff_mtx,Int_var,Mat_state,STEP]=...
+                Constitutive.update(1,STEP,Int_var,Mat_state,MAT_POINT);
             Mat_state.fint(:,2)=Mat_state.fint(:,1);
         end
         
@@ -204,8 +263,8 @@
             Gamma_nds=zeros(GEOMETRY.nodes,1);
 
             for i=1:GEOMETRY.mat_points
-                sh=MAT_POINT(i).N;
-                nds=MAT_POINT(i).near;
+                sh=MAT_POINT{1}(i).N;
+                nds=MAT_POINT{1}(i).near;
                 n=length(nds);
                 for j=1:n
                     Gamma_nds(nds(j),1)=Gamma_nds(nds(j),1)+sh(j)*Gamma_tot(i,ste_p);
@@ -215,42 +274,54 @@
         end
                     
         % Small strain from Def Gradient and Finger tensor
-        function [es,es_p]=strains(def_G,b_e)
+        function [es,es_p]=strains(Mat_state)
 
             global GEOMETRY SOLVER
-
-            dimf=GEOMETRY.f_dim;
-            dims=GEOMETRY.s_dim;
             
+            dims=GEOMETRY.s_dim;
             [es,es_p]=deal(zeros(GEOMETRY.mat_points*dims,1));
-            [f_v,be]=deal(zeros(dimf,1));
+            
+            if SOLVER.SMALL==0
 
-            for e=1:GEOMETRY.mat_points
-                for i=1:dimf
-                    f_v(i,1)=def_G((e-1)*dimf + i,1);
-                    be(i,1)=b_e((e-1)*dimf + i,1);
-                end           
-                [F]=LIB.v2m(f_v);
-                [Be]=LIB.v2m(be);
-
-                Btot = F*F';
+                def_G= Mat_state.F;
+                b_e  = Mat_state.Be;
                 
-                [~,R]=chol(Btot);
-                if R==0
-                    Etot = logm(Btot)/2;
-                    Ee   = logm(Be)/2;
-                else
-                    disp('Error in log of B matrx');
-                    SOLVER.FAIL=1;
-                end
-                Ep   = Etot-Ee;
+                dimf=GEOMETRY.f_dim;
 
-                [ee]=LIB.E2e(Ee);
-                [ep]=LIB.E2e(Ep);
-                for i=1:dims
-                    es((e-1)*dims+i,1)=ee(i,1);
-                    es_p((e-1)*dims+i,1)=ep(i,1);
+                for e=1:GEOMETRY.mat_points
+                    [f_v,be]=deal(zeros(dimf,1));
+                    for i=1:dimf
+                        f_v(i,1)=def_G((e-1)*dimf + i,1);
+                        be(i,1)=b_e((e-1)*dimf + i,1);
+                    end           
+                    [F]=LIB.v2m(f_v);
+                    [Be]=LIB.v2m(be);
+
+                    Btot = F*F';
+
+                    [~,R]=chol(Btot);
+                    if R==0
+                        Etot = logm(Btot)/2;
+                        Ee   = logm(Be)/2;
+                    else
+                        disp('Error in log of B matrx');
+                        SOLVER.FAIL=1;
+                    end
+                    Ep   = Etot-Ee;
+
+                    [ee]=LIB.E2e(Ee);
+                    [ep]=LIB.E2e(Ep);
+                    for i=1:dims
+                        es((e-1)*dims+i,1)=ee(i,1);
+                        es_p((e-1)*dims+i,1)=ep(i,1);
+                    end
                 end
+            else
+                Es_e= Mat_state.Es_e;
+                Es  = Mat_state.Es;
+                
+                es = Es_e(:,1);
+                es_p = Es(:,1) - Es_e(:,1);
             end
 
         end

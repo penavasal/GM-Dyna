@@ -16,8 +16,70 @@ function PLOT(driver,PLT,varargin)
         plot_ep(str_in,folder,steps,freq,varargin{:})
     elseif strcmp(driver,'DEFORMED') || strcmp(driver,'DISTRIBUTION')
         plot_f(driver,str_in,folder,steps,ampl,freq,varargin{:})
+    elseif strcmp(driver,'CRACK')
+        plot_mp(str_in,folder,steps,freq)
     end
     
+end
+
+function plot_mp(str,folder,steps,rr)
+
+    root=strcat(folder,'/',str,'.mat');
+    load(root,'GEOMETRY','SOLVER','GLOBAL');
+
+    Status=GLOBAL.status;
+    d = GLOBAL.d;
+    x_0=GEOMETRY.x_0;
+    xg=GLOBAL.xg;
+    Elements=GEOMETRY.mat_points;
+    sp=GEOMETRY.sp;
+    Nodos=GEOMETRY.nodes;
+
+    contador=min(steps,GLOBAL.ste_p);
+    
+    DDD=max(x_0(:,1));
+    HHH=max(x_0(:,2));
+
+    %
+    for cont=1:rr:contador
+        s1=0;
+        s=0;
+        for nodo=1:Nodos
+            if GEOMETRY.body(1)==1
+                s=s+1;
+                x2(s,1)=x_0(nodo,1)+d(sp*nodo-1,cont);
+                y2(s,1)=x_0(nodo,2)+d(sp*nodo,cont);
+            else
+                s1=s1+1;
+                x1(s1,1)=x_0(nodo,1)+d(sp*nodo-1,cont);
+                y1(s1,1)=x_0(nodo,2)+d(sp*nodo,cont);
+            end
+        end
+        t=0;
+        for e=1:Elements
+            if Status(e,cont)==1
+                t=t+1;
+                x3(t,1)=xg(e,cont);
+                y3(t,1)=xg(Elements+e,cont);
+            end
+        end
+        
+        scatter(x2,y2,'MarkerFaceColor',[0 0 1],'MarkerEdgeColor',[0 0 1]), ...
+        hold on,...
+        if s1
+            scatter(x1,y1,'MarkerFaceColor',[0 0 0],'MarkerEdgeColor',[0 0 0]), ...
+        end
+        if t
+            scatter(x3,y3,'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'Marker','.'),...
+        end
+        hold off
+        axis([-DDD/10,DDD+DDD/10,-HHH/10,HHH+HHH/10])
+        drawnow
+        
+        clear x2 y2 y1 x1 x3 y3
+    end
+    
+
 end
 
    

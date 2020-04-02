@@ -1,22 +1,23 @@
-function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
+function [A,T,W]=Neo_Hookean(Kt,e,b,J,BLCK)
 
-    global MATERIAL GEOMETRY
+    global MATERIAL GEOMETRY SOLVER
     
     MODEL=MATERIAL(BLCK).MODEL;
     Material=GEOMETRY.material;
     MAT=MATERIAL(BLCK).MAT;
 
+    A=0;
+    W=0;
+    
+    I=eye(3);
+    
+    G  = MAT(4,Material(e));
+    Lam= MAT(5,Material(e)); 
+    
     if MODEL(Material(e))==1.0
 
         % Neo-Hookean Wriggers
-        A=0;
-
-        G  = MAT(4,Material(e));
-        Lam= MAT(5,Material(e)); 
         J2=J^2;
-
-        I=eye(3);
-        b=F*F';
 
         T=Lam/2*(J2-1)*I+G*(b-I);
         T=T/J;
@@ -27,19 +28,18 @@ function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
                     0          0   (1-J2)*Lam/2+G    0  ;
                     J2*Lam   J2*Lam     0       Lam+2*G]; 
         end
+        
+        if SOLVER.FRAC>0
+            
+            I1=trace(b);
+            K=lam+2*G/3;
+            W=K/4*(J^2 - 1) + G/2*(I1-3)-K/2*log(J);
 
-
+        end
 
     elseif MODEL(Material(e))==1.1
 
         % Neo-Hookean Bonet
-        A=0;
-
-        G  = MAT(4,Material(e));
-        Lam= MAT(5,Material(e)); 
-
-        I=eye(3);
-        b=F*F';
 
         T=Lam*log(J)*I+G*(b-I);
         T=T/J;
@@ -53,24 +53,24 @@ function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
                       0               0       mu_p     0;
                     lam_p          lam_p       0     lam_p+2*mu_p];
         end
+        
+        if SOLVER.FRAC>0
+            
+            I1=trace(b);
+            W=Lam/2*log(J)^2 + G/2*(I1-3)-G*log(J);
+
+        end
 
 
 
     elseif MODEL(Material(e))==1.2
 
         % Neo-Hookean Ehlers
-        A=0;
-
-        G  = MAT( 4,Material(e));
-        Lam= MAT( 5,Material(e)); 
         n0 = MAT(16,Material(e));
 
         if n0==0
             n0=1;
         end
-
-        I=eye(3);
-        b=F*F';
 
         T=Lam*n0^2*(J/n0-J/(J-1+n0))*I+G*(b-I);
         T=T/J;
@@ -83,6 +83,14 @@ function [A,T,b]=Neo_Hookean(Kt,e,F,J,BLCK)
                 lam_p       lam_p+2*mu_p   0    lam_p;
                   0               0       mu_p     0;
                 lam_p          lam_p       0     lam_p+2*mu_p];
+        end
+        
+        if SOLVER.FRAC>0
+            
+            I1=trace(b);
+            W=G/2*(I1-3)-G*log(J);
+            W=W+lam*(1-n0)^2*((J-1)/(1-n0)-ln((J-n0)/(1-n0)));
+
         end
 
     end

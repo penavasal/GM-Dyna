@@ -1,8 +1,8 @@
-function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
+function [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK)
     
     % St. Venant Material
 
-    global MATERIAL GEOMETRY
+    global MATERIAL GEOMETRY SOLVER
     
     Material=GEOMETRY.material;
     MAT=MATERIAL(BLCK).MAT;
@@ -13,14 +13,11 @@ function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
     I=eye(3);
 
     A=0;
+    W=0;
     
-    Be=F*F';
-    Ee=logm(Be)/2;
-    %Ee(2,1)=Ee(2,1)/2;
-    %Ee(1,2)=Ee(1,2)/2;
-
-    %T=(P0+Lam*trace(Ee))*I+2*G*Ee;
-    T=(Lam*trace(Ee))*I+2*G*Ee;
+    I1=trace(Ee);
+    
+    T=(P0+Lam*I1)*I+2*G*Ee;
     
     if Kt==1 || Kt==2 || Kt==4
         
@@ -31,13 +28,15 @@ function [A,T,Be]=Saint_Venant(Kt,e,F,BLCK)
             
     end
     
-%      E_vec(1,1)=Ee(1,1);
-%      E_vec(2,1)=Ee(2,2);
-%      E_vec(4,1)=Ee(3,3);
-%      E_vec(3,1)=Ee(2,1);
-%      T2=A*E_vec;
-%      e;
-
-
-
+    if SOLVER.FRAC>0
+        sum=0;
+        for i=1:3
+            for j=1:3
+                sum=sum+Ee(i,j)*Ee(i,j);
+            end
+        end
+        W=Lam/2*I1^2 + G*sum;
+        
+    end
+    
 end

@@ -33,8 +33,8 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
         [MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
 
         % 4. Constitutive &/O Stiffness_mat
-        [~,Int_var,Mat_state]=...
-            Constitutive(3,STEP,Int_var,Mat_state,MAT_POINT);
+        [~,Int_var,Mat_state,STEP]=...
+            Constitutive.update(3,STEP,Int_var,Mat_state,MAT_POINT);
 
         % 5. Final conditions: corrector
         

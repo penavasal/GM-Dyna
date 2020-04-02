@@ -1,7 +1,8 @@
 
-function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
+function MAT_POINT=shape_function_calculation(...
+    INITIAL,MAT_POINT,Disp_field,NODE_LIST)
 
-    global GEOMETRY SOLVER
+    global GEOMETRY SOLVER LME_param
     
     REM_T=0;
               
@@ -10,53 +11,107 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
     if INITIAL==1
 
         % Measurement of remapping
-        for i=1:GEOMETRY.mat_points
-            for j=1:3
-                MAT_POINT(i).EP(j,1)=1;
-                MAT_POINT(i).EP(j,2)=1;
+        [phases,~]=size(SOLVER.PHASES);
+        for k=1:phases
+            for i=1:GEOMETRY.mat_points
+                for j=1:3
+                    MAT_POINT{k}(i).EP(j,1)=1;
+                    MAT_POINT{k}(i).EP(j,2)=1;
+                end  
             end  
-        end  
+        end
        
         % Only for LME shape function
         if strcmp(SOLVER.TYPE{2},'LME')
             
-            MAT_POINT=LME.initialize(MAT_POINT);
+            MAT_POINT=LME.initialize(MAT_POINT,NODE_LIST);
             
-            for i=1:GEOMETRY.mat_points
-                xg=GEOMETRY.xg_0(i,:);
-                n_sp=LME.nodalspacing(MAT_POINT);
-                [MAT_POINT]=LME.near(i,GEOMETRY.x_0,xg,...
-                    n_sp,MAT_POINT); 
-                [MAT_POINT,SOLVER.FAIL]=LME.shapef...
-                    (i,GEOMETRY.x_0,n_sp,xg,MAT_POINT);
-                if SOLVER.FAIL
-                    fprintf('FAIL in the initial calculation of Shape function \n');
-                    stop;
+            [phases,~]=size(SOLVER.PHASES);
+            [shf,~]=size(LME_param);
+            for sh=1:shf
+                for ph=1:phases
+                    if SOLVER.PHASES{ph,2}==sh
+                        break;
+                    end
+                end
+            
+                n_sp=LME.nodalspacing(MAT_POINT{ph});
+                for i=1:GEOMETRY.mat_points
+                    xg=GEOMETRY.xg_0(i,:);
+                    [MAT_POINT{ph}]=LME.near(i,GEOMETRY.x_0,xg,...
+                        n_sp,MAT_POINT{ph},sh,ph); 
+                    [MAT_POINT{ph},SOLVER.FAIL]=LME.shapef...
+                        (i,GEOMETRY.x_0,n_sp,xg,MAT_POINT{ph},sh);
+                    if SOLVER.FAIL
+                        fprintf('FAIL in the initial calculation of Shape function \n');
+                        stop;
+                    end
+                end
+                
+                for ph1=ph+1:phases
+                    if SOLVER.PHASES{ph1,2}==sh
+                        for i=1:GEOMETRY.mat_points
+                            MAT_POINT{ph1}(i).N = MAT_POINT{ph}(i).N;
+                            MAT_POINT{ph1}(i).B = MAT_POINT{ph}(i).B;
+                            MAT_POINT{ph1}(i).xi= MAT_POINT{ph}(i).xi;
+                            MAT_POINT{ph1}(i).near= MAT_POINT{ph}(i).near;
+                        end
+                    end
                 end
             end
             
         else
             
-            for i=1:GEOMETRY.mat_points
-                
-                e=MAT_POINT(i).element;
-                
-                elem=GEOMETRY.elem(e,:);
-                
-                % Discover isoparametric coordinates
-                coord=zeros(length(elem),GEOMETRY.sp);
-                for j=1:length(elem)
-                    coord(j,:)=GEOMETRY.x_0(elem(j),:);
+            [phases,~]=size(SOLVER.PHASES);
+
+            if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')...
+                    || strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
+                shf=2;
+                SOLVER.PHASES{2,2}=2;
+            else
+                shf=1;
+            end
+                    
+            for sh=1:shf
+                for ph=1:phases
+                    if SOLVER.PHASES{ph,2}==sh
+                        break;
+                    end
                 end
-                [xilist_0,coord_xi] = ...
-                    FEM.integrationpoints(GEOMETRY.sp,length(elem),1);
-                [xilist]=FEM.search_xilist_NR(coord,GEOMETRY.xg_0(i,:),...
-                    xilist_0,coord_xi);
+
+                for i=1:GEOMETRY.mat_points
                 
-                MAT_POINT(i).xi=xilist;
+                    %e=MAT_POINT{ph}(i).element;
                 
-                % Calculate initial shape function
-                [MAT_POINT]=FEM.shapef(i,coord,xilist,MAT_POINT);
+                    %elem=GEOMETRY.elem(e,:);
+                    elem=MAT_POINT{ph}(i).near;
+
+                    % Discover isoparametric coordinates
+                    coord=zeros(length(elem),GEOMETRY.sp);
+                    for j=1:length(elem)
+                        coord(j,:)=GEOMETRY.x_0(elem(j),:);
+                    end
+                    [xilist_0,coord_xi] = ...
+                        FEM.integrationpoints(GEOMETRY.sp,length(elem),1);
+                    [xilist]=FEM.search_xilist_NR(coord,GEOMETRY.xg_0(i,:),...
+                        xilist_0,coord_xi);
+
+                    MAT_POINT{ph}(i).xi=xilist;
+
+                    % Calculate initial shape function
+                    [MAT_POINT{ph}]=FEM.shapef(i,coord,xilist,MAT_POINT{ph});
+                    
+                end
+                for ph1=ph+1:phases
+                    if SOLVER.PHASES{ph1,2}==sh
+                        for i=1:GEOMETRY.mat_points
+                            MAT_POINT{ph1}(i).N = MAT_POINT{ph}(i).N;
+                            MAT_POINT{ph1}(i).B = MAT_POINT{ph}(i).B;
+                            MAT_POINT{ph1}(i).xi= MAT_POINT{ph}(i).xi;
+                            MAT_POINT{ph1}(i).near= MAT_POINT{ph}(i).near;
+                        end
+                    end
+                end
             end
             
         end
@@ -64,14 +119,23 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
     else
         
         if strcmp(SOLVER.TYPE{2},'LME')
-            if SOLVER.TYPE{1}==0 || SOLVER.TYPE{1}==1 %OTM %MPM
+
+            [phases,~]=size(SOLVER.PHASES);
+            [shf,~]=size(LME_param);
+            for sh=1:shf
+                for ph=1:phases
+                    if SOLVER.PHASES{ph,2}==sh
+                        break;
+                    end
+                end
+
                 for i=1:GEOMETRY.mat_points            
-                    [MAT_POINT,REMAP]=LME.REMAPPING(MAT_POINT,i);
+                    [MAT_POINT{ph},REMAP]=LME.REMAPPING(MAT_POINT{ph},i);
                     REM_T=max(REM_T,REMAP);  
                     if REMAP
                         if SOLVER.TYPE{1}==0 %OTM
                             x=Disp_field.x_a;
-                            jacobians=MAT_POINT(i).J;
+                            jacobians=MAT_POINT{1}(i).J;
                             h=GEOMETRY.h_ini.*sqrt(jacobians);
                             xg = getfield(MAT_POINT(i),'xg');
                         elseif SOLVER.TYPE{1}==1 %MPM
@@ -79,42 +143,29 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
                             xg=GEOMETRY.xg_0(i,:);
                             h=GEOMETRY.h_ini;
                         end
-                        
-                        [MAT_POINT]=LME.near(i,x,xg,h,MAT_POINT); 
-                        [MAT_POINT,SOLVER.FAIL]=LME.shapef(i,x,h,xg,MAT_POINT);
+
+                        [MAT_POINT{ph}]=LME.near(i,x,xg,h,MAT_POINT{ph}); 
+                        [MAT_POINT{ph},SOLVER.FAIL]=LME.shapef(i,x,h,xg,MAT_POINT{ph});
                         if SOLVER.FAIL
                             fprintf('FAIL in the initial calculation of Shape function \n');
                             stop;
                         end
                     end
                 end
-            else %FEM
-                disp('FEM does not make remapping')
+                for ph1=ph+1:phases
+                    if SOLVER.PHASES{ph1,2}==sh
+                        for i=1:GEOMETRY.mat_points
+                            MAT_POINT{ph1}(i).N = MAT_POINT{ph}(i).N;
+                            MAT_POINT{ph1}(i).B = MAT_POINT{ph}(i).B;
+                            MAT_POINT{ph1}(i).xi= MAT_POINT{ph}(i).xi;
+                            MAT_POINT{ph1}(i).near= MAT_POINT{ph}(i).near;
+                        end
+                    end
+                end
             end
         else
-            if SOLVER.TYPE{1}==0 %OTM
-                for i=1:GEOMETRY.mat_points
-                    
-                    el=MAT_POINT(i).element;
-                    elem=GEOMETRY.elem(el,:);
-                    
-                    % Discover isoparametric coordinates
-                    coord=zeros(length(elem),GEOMETRY.sp);
-                    for j=1:length(elem)
-                        coord(j,:)=Disp_field.x_a(elem(j),:);
-                    end
-                    [~,coord_xi] = ...
-                        FEM.integrationpoints(GEOMETRY.sp,length(elem),1);
-                    [xilist]=FEM.search_xilist_NR(coord,MAT_POINT(i).xg,...
-                        MAT_POINT(i).xi,coord_xi);
-
-                    MAT_POINT(i).xi=xilist;
-
-                    % Calculate initial shape function
-                    [MAT_POINT]=FEM.shapef(i,coord,xilist,MAT_POINT);
-                    
-                end
-            elseif SOLVER.TYPE{1}==1 %MPM
+            
+            if SOLVER.TYPE{1}==1 %MPM
                 
                 for i=1:GEOMETRY.mat_points
 
@@ -171,25 +222,77 @@ function MAT_POINT=shape_function_calculation(INITIAL,MAT_POINT,Disp_field)
                 end
                
             else %FEM
-                disp('FEM does not make remapping')
+                REM_T=1;
+                [phases,~]=size(SOLVER.PHASES);
+
+                if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')...
+                        || strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
+                    shf=2;
+                    SOLVER.PHASES{2,2}=2;
+                else
+                    shf=1;
+                end
+
+                for sh=1:shf
+                    for ph=1:phases
+                        if SOLVER.PHASES{ph,2}==sh
+                            break;
+                        end
+                    end
+
+                    for i=1:GEOMETRY.mat_points
+
+                        elem=MAT_POINT{ph}(i).near;
+
+                        % Discover isoparametric coordinates
+                        coord=zeros(length(elem),GEOMETRY.sp);
+                        for j=1:length(elem)
+                            coord(j,:)=Disp_field.x_a(elem(j),:);
+                        end
+
+                        [~,coord_xi] = ...
+                            FEM.integrationpoints(GEOMETRY.sp,length(elem),1);
+                        [xilist]=FEM.search_xilist_NR(coord,MAT_POINT{ph}(i).xg,...
+                            MAT_POINT{ph}(i).xi,coord_xi);
+
+                        MAT_POINT{ph}(i).xi=xilist;
+
+
+                        % Calculate initial shape function
+                        [MAT_POINT{ph}]=FEM.shapef(i,coord,xilist,MAT_POINT{ph});
+
+                    end
+                    for ph1=ph+1:phases
+                        if SOLVER.PHASES{ph1,2}==sh
+                            for i=1:GEOMETRY.mat_points
+                                MAT_POINT{ph1}(i).N = MAT_POINT{ph}(i).N;
+                                MAT_POINT{ph1}(i).B = MAT_POINT{ph}(i).B;
+                                MAT_POINT{ph1}(i).xi= MAT_POINT{ph}(i).xi;
+                                MAT_POINT{ph1}(i).near= MAT_POINT{ph}(i).near;
+                            end
+                        end
+                    end
+                end
             end
         end
     end
     
     if REM_T || INITIAL
         if SOLVER.TYPE{1}==0 %OTM
-            [jacobians]=LIB.S2list(MAT_POINT,'J');
+            [jacobians]=LIB.S2list(MAT_POINT{1},'J');
             volume=GEOMETRY.Area.*jacobians;
         elseif SOLVER.TYPE{1}==1 || INITIAL %MPM || 
             volume=GEOMETRY.Area;
         end
         
         % MAKE Bbar - Patch
-        if SOLVER.B_BAR==1
-            [MAT_POINT]=bbar_matrix(GEOMETRY.patch_con,GEOMETRY.patch_el,...
-                GEOMETRY.mat_points,MAT_POINT,volume,SOLVER.B_BAR);
-        else
-            [MAT_POINT]=b_m(GEOMETRY.mat_points,GEOMETRY.sp,MAT_POINT);
+        for ph=1:phases
+            if SOLVER.B_BAR==1
+                [MAT_POINT{ph}]=bbar_matrix(GEOMETRY.patch_con,GEOMETRY.patch_el,...
+                    GEOMETRY.mat_points,MAT_POINT{ph},volume,SOLVER.B_BAR);
+            else
+                [MAT_POINT{ph}]=b_m(GEOMETRY.mat_points,GEOMETRY.sp,MAT_POINT{ph});
+            end
         end
     end
     
