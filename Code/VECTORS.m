@@ -93,7 +93,7 @@
         function [Disp_field,Mat_state,Int_var,stiff_mtx]=Update_ini(...
                 STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT)
             
-            global SOLVER GEOMETRY
+            global SOLVER GEOMETRY MATERIAL
             
             BLK=STEP.BLCK;
             ste=STEP.ste;
@@ -133,9 +133,34 @@
                 end
             end
             
-            % Initial Stresses
+            % Initial Stresses   
+            MODEL=MATERIAL(BLK).MODEL;
+            mmat=MATERIAL(BLK).MAT;
+            for i=1:GEOMETRY.mat_points
+                mati=GEOMETRY.material(i);
+                if MODEL(mati)>=3 && MODEL(mati)<5
+                    % P0
+                    p0=str2double(mmat{25,mati});
+                    ev0=str2double(mmat{23,mati});
+                    es0=str2double(mmat{26,mati});
+                    if isnan(p0)
+                        Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
+                    else
+                        if isnan(ev0)
+                            ev0=0;
+                        end
+                        if isnan(es0)
+                            es0=0;
+                        end                   
+                        Int_var.P0(i,1:3)=[p0 ev0 es0]; 
+                    end
+                end
+            end
+            
+
             %Int_var.P0(:,1)=GLOBAL.Ps(:,1);
-            Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,1);
+           % Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,GLOBAL.final_block(BLK-1));
+           Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,1);
             if SOLVER.UW>0
                 Mat_state.pw(:,3)=GLOBAL.pw(:,1);
             end
@@ -310,7 +335,7 @@
             rj3=rj3/3;
 
             rj23=sqrt(rj2)^3;
-            if rj23<1.0e-15
+            if rj23<1.0e-18
                 sint3=0;
             else
                 sint3 = -3 * sqrt(3) * rj3/2/rj23;
@@ -373,11 +398,13 @@
             Es0=Es1-Es2e;
             
             %CHECK
-%             khar=-K/P02;
-%             ghar=-G/P02;
-%             ees=(Es1-Es0);
-%             p=P02*exp(3*ghar*khar*(ees^2)/2);
-%             q=-P02*3*ees*ghar*exp(3*ghar*khar*(ees^2)/2);
+            khar=-K/P02;
+            ghar=-G/P02;
+            ees=(Es1-Es0);
+            eev=0;
+            
+            p=P02*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+            q=-P02*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
                
             val=[P02,Ev0,Es0];
             

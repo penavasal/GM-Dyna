@@ -34,8 +34,8 @@ function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
     
     Ge(13)=0;
     
-    Ge(1) = MAT{29,Mat(e)}/P0(1);%khar;
-    Ge(2) = MAT{4,Mat(e)}/P0(1);%ghar;
+    Ge(1) = -MAT{29,Mat(e)}/P0(1);%khar;
+    Ge(2) = -MAT{4,Mat(e)}/P0(1);%ghar;
     Ge(3) = MAT{33,Mat(e)};%alpha;
     Ge(4) = MAT{34,Mat(e)};%alphag;
     Ge(5) = MAT{19,Mat(e)};%Mf;
@@ -51,9 +51,6 @@ function [A,Sc,gamma,epsvol,dgamma,zetamax,etaB,H,Be]=...
     Ge(15)= P0(2);%Ev0
     Ge(16)= P0(3);%Es0
     
-    if e==16 && ste==2723
-        e;
-    end
     
     % Compute principal Kirchhoff tension 
     if MODEL==4.1
@@ -855,12 +852,18 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
 end
 
 
-function [A]=assemble(D,n,Ge,eev,ees)
+function [A]=assemble(D,n,Ge,eev1,ees1)
 
 
         khar  = Ge(1);
         ghar  = Ge(2);
         p0    = Ge(7);
+        
+        ev0    = Ge(15);
+        es0    = Ge(16);
+    
+        eev = eev1-ev0;
+        ees = ees1-es0;
           
         v_exp=exp(khar*eev+(3*ghar*khar*(ees^2)/2));
         

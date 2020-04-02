@@ -134,6 +134,12 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
                 if isnan(p0)
                     Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
                 else
+                    if isnan(ev0)
+                        ev0=0;
+                    end
+                    if isnan(es0)
+                        es0=0;
+                    end                   
                     Int_var.P0(i,1:3)=[p0 ev0 es0]; 
                 end
             end
@@ -284,9 +290,11 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
     
     
     for e=1:GEOMETRY.mat_points
+        
+        P0      = Int_var.P0(e,1:3);
 
         % MATRIX B and F
-        b1=exp(MAT{23,Mat(e)}/3)^2;
+        b1=exp(P0(2)/3)^2;
         Be=[b1 1e-15 0; 1e-15 b1 0; 0 0 b1];
         
         for i=1:dimf
@@ -317,13 +325,13 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT]=...
                     Drucker_prager(Kt,e,Gamma,dgamma,Sy,F,Be,Fold,BLCK);
             elseif MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
                 [A,T,Gamma,dgamma,Sy,Sy_r,Be]=...
-                    M_Cam_Clay(Kt,1,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,press,BLCK);
+                    M_Cam_Clay(Kt,1,e,Gamma,dgamma,Sy,Sy_r,F,Fold,Be,press,P0,BLCK);
                 Int_var.Sy_r(e,1) = Sy_r;
             elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
                 H=MAT(37,Mat(e));
                 epsvol=0;
                 [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Be]=...
-                    PZ(Kt,1,e,Gamma,epsvol,dgamma,Sy,0,H,F,Fold,Be,BLCK);
+                    PZ(Kt,1,e,Gamma,epsvol,dgamma,Sy,0,H,F,Fold,Be,P0,BLCK);
                 Int_var.epsv(e,1)  = epsvol;
             end
             Int_var.Sy(e,1)     = Sy;
