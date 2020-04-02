@@ -294,7 +294,7 @@ function [KG]=Geo_UW(KG,vol,e,Mat_state,MAT_POINT,b,n,nb,T,sp,df,BLCK)
     end
     
     %Water
-    nn=1-(1-MAT{16,Material(e)})/MAT_POINT(e).J;
+    nn=1-(1-MAT{16,Material(e)})/MAT_POINT{1}(e).J;
     [M4]=linearization(nn,b,nb,sp);
     
     %Solid
