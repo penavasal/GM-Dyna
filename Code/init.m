@@ -58,7 +58,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     Int_var.Sy_r= zeros(elements,2);
     Int_var.H   = zeros(elements,2);
     Int_var.eta = zeros(elements,2);
-    Int_var.P0  = zeros(elements,1);
+    Int_var.P0  = zeros(elements,3);
        
     Mat_state.title='Material state: material point information';
 

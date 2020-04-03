@@ -88,7 +88,7 @@
                             Fincr=F/Fold;
                             % Compute Trial left cauchy-Green
                             Be = Fincr*Be_old*Fincr';   
-                            if isnan(BeTr)
+                            if isnan(Be)
                                 error('Error in Green-Lagrange tensor of elem e %i \n',e);
                             end
                             if MODEL(Mat(e),1)>=4
@@ -127,14 +127,15 @@
                 %% Constitutive Calculation
                 % ----------------------------
                 W=0;
+                P0      = Int_var.P0(e,1:3);
                 if MODEL(Mat(e),1)<2
                     if MODEL(Mat(e),1)==0
-                        [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK);
+                        [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK,P0);
                     elseif MODEL(Mat(e),1)<2 && MODEL(Mat(e),1)>=1
                         if SOLVER.SMALL==0
-                            [A,T]=Neo_Hookean(Kt,e,Be,J,BLCK);
+                            [A,T]=Neo_Hookean(Kt,e,Be,J,P0,BLCK);
                         else
-                            [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK);
+                            [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK,P0);
                         end
                     end
                 else        
@@ -146,13 +147,12 @@
                         [A,T,Gamma,dgamma,Sy,Ee]=...
                             Drucker_prager(Kt,e,Gamma,dgamma,Sy,Ee,BLCK);
                     elseif MODEL(Mat(e),1)>=3 && MODEL(Mat(e),1)<4
-                        P0      = Int_var.P0(e,1:3);
+                        
                         Sy_r    = Int_var.Sy_r(e,2);
                         [A,T,Gamma,dgamma,Sy,Sy_r,Ee]=...
                             M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,Ee,BLCK);
                         Int_var.Sy_r(e,1) = Sy_r;
                     elseif MODEL(Mat(e),1)>=4 && MODEL(Mat(e),1)<5
-                        P0      = Int_var.P0(e,1:3);
                         H       = Int_var.H(e,2);
                         etaB    = Int_var.eta(e,2);
                         epsvol  = Int_var.epsv(e,2);

@@ -496,16 +496,16 @@ end
 
 function Mat=dp_tools(Mat)
 
-    if Mat(8)==0
-        Mat(8)=1;
-        Mat(9)=1e10;
+    if isempty(Mat{8})
+        Mat{8}=1;
+        Mat{9}=1e10;
     else
-        if Mat(9)==0
-            Mat(9)=1;
+        if isempty(Mat{9})
+            Mat{9}=1;
         end
     end
 
-    Mat(10)= Mat(7)/Mat(8);
+    Mat(10)= {Mat{7}/Mat{8}};
 
 end
 

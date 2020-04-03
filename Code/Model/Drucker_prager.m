@@ -12,8 +12,8 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
     I=eye(3);
     A=zeros(4,4);
     
-    K=MAT(5,Mat(e))+2*MAT(4,Mat(e))/3;  % Bulk modulus
-    G = MAT(4,Mat(e));                  % Shear modulus
+    K=MAT{5,Mat(e)}+2*MAT{4,Mat(e)}/3;  % Bulk modulus
+    G = MAT{4,Mat(e)};                  % Shear modulus
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%                     RADIAL RETURN MAPPING                       %%%
@@ -24,22 +24,22 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
     
     cte=sqrt(2/3);
     
-    if MODEL==2.0
+    if MODEL(1)==2.0
         alfn=0;
         alfm=0;
         beta=cte;
-    elseif MODEL==2.1
-        alfn=2*cte*sin(MAT(11,Mat(e)))/(3-sin(MAT(11,Mat(e))));  % Alpha_n
-        alfm=2*cte*sin(MAT(12,Mat(e)))/(3-sin(MAT(12,Mat(e))));  % Alpha_m
-        beta=cte*6*cos(MAT(11,Mat(e)))/(3-sin(MAT(11,Mat(e))));  % Beta*sqrt(2/3)
-    elseif MODEL==2.2
-        alfn=2*cte*sin(MAT(11,Mat(e)))/(3+sin(MAT(11,Mat(e))));  % Alpha_n
-        alfm=2*cte*sin(MAT(12,Mat(e)))/(3+sin(MAT(12,Mat(e))));  % Alpha_m
-        beta=cte*6*cos(MAT(11,Mat(e)))/(3+sin(MAT(11,Mat(e))));  % Beta*sqrt(2/3)
-    elseif MODEL==2.3
-        alfn=cte*tan(MAT(11,Mat(e)))/sqrt(3+4*(tan(MAT(11,Mat(e))))^2);  % Alpha_n
-        alfm=cte*tan(MAT(12,Mat(e)))/sqrt(3+4*(tan(MAT(12,Mat(e))))^2);  % Alpha_m
-        beta=cte*3/sqrt(3+4*(tan(MAT(11,Mat(e))))^2);  % Beta*sqrt(2/3)
+    elseif MODEL(1)==2.1
+        alfn=2*cte*sin(MAT{11,Mat(e)})/(3-sin(MAT{11,Mat(e)}));  % Alpha_n
+        alfm=2*cte*sin(MAT{12,Mat(e)})/(3-sin(MAT{12,Mat(e)}));  % Alpha_m
+        beta=cte*6*cos(MAT{11,Mat(e)})/(3-sin(MAT{11,Mat(e)}));  % Beta*sqrt(2/3)
+    elseif MODEL(1)==2.2
+        alfn=2*cte*sin(MAT{11,Mat(e)})/(3+sin(MAT{11,Mat(e)}));  % Alpha_n
+        alfm=2*cte*sin(MAT{12,Mat(e)})/(3+sin(MAT{12,Mat(e)}));  % Alpha_m
+        beta=cte*6*cos(MAT{11,Mat(e)})/(3+sin(MAT{11,Mat(e)}));  % Beta*sqrt(2/3)
+    elseif MODEL(1)==2.3
+        alfn=cte*tan(MAT{11,Mat(e)})/sqrt(3+4*(tan(MAT{11,Mat(e)}))^2);  % Alpha_n
+        alfm=cte*tan(MAT{12,Mat(e)})/sqrt(3+4*(tan(MAT{12,Mat(e)}))^2);  % Alpha_m
+        beta=cte*3/sqrt(3+4*(tan(MAT{11,Mat(e)}))^2);  % Beta*sqrt(2/3)
     end
     
     %------------------
@@ -68,11 +68,11 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
     %------------------
     % Plastic corrector
     %------------------
-        N_1=1/MAT(9,Mat(e));
+        N_1=1/MAT{9,Mat(e)};
         ads = sqrt(3*alfm*alfm+1);
         dg=0;               % initial delta_gamma = 0
         g=gamma;            % gamma = gamma_0
-        [H]=der_Sy(MAT(7,Mat(e)),MAT(10,Mat(e)),N_1,g);
+        [H]=der_Sy(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,g);
         
         %%%%
         p_lim = (4.5*K*alfm*snorm/G + beta/alfn*(snorm*ads*H/2/G + sy))/3;
@@ -89,14 +89,14 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
                 if(iter<300) 
                     t=-1;
                     
-                    [s_y]=sig_y(MAT(7,Mat(e)),MAT(10,Mat(e)),N_1,gm(iter));  % Sigma_y (Hardening law)
+                    [s_y]=sig_y(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gm(iter));  % Sigma_y (Hardening law)
 
                     if s_y<0
                         s_y=0;
                         H=0;
                         %t=1;
                     else
-                        [H]=der_Sy(MAT(7,Mat(e)),MAT(10,Mat(e)),N_1,gm(iter));   % H=dS/dE (Hardening law)
+                        [H]=der_Sy(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gm(iter));   % H=dS/dE (Hardening law)
                     end
 
                     f(iter)=snorm - 2*G*dgm(iter) + 3*alfn*(p-3*K*alfm*dgm(iter)) - beta*s_y;  % fi=0
@@ -120,7 +120,7 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
                             H=0;
                             %t=1;
                         else
-                            [H]=der_Sy(MAT(7,Mat(e)),MAT(10,Mat(e)),N_1,gm(iter));   % H=dS/dE (Hardening law)
+                            [H]=der_Sy(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gm(iter));   % H=dS/dE (Hardening law)
                         end
 
                         f(iter-1)=snorm - 2*G*dgm(iter) + 3*alfn*(p-3*K*alfm*dg) - beta*s_y;  % fi=0
@@ -161,13 +161,13 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
             
             if alfm~=0
          
-                [s_y]=sig_y(MAT(7,Mat(e)),MAT(10,Mat(e)),N_1,g);  % Sigma_y (Hardening law)
+                [s_y]=sig_y(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,g);  % Sigma_y (Hardening law)
                 if s_y<0
                     s_y=0;
                     H=0;
                     %t=1;
                 else
-                    [H]=der_Sy(MAT(7,Mat(e)),MAT(10,Mat(e)),N_1,g);   % H=dS/dE (Hardening law)
+                    [H]=der_Sy(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,g);   % H=dS/dE (Hardening law)
                 end
                 %---------------APEX---ITERATOR---------------------------------
                 while error>tol  &&  CON==0
@@ -238,7 +238,7 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
            end
            dgamma=sqrt(dg1*dg1+3*alfm*alfm*dg*dg);
            gamma=gamma+dgamma;
-           s_y=max(0,sig_y(MAT(7,Mat(e)),MAT(10,Mat(e)),N_1,gamma));
+           s_y=max(0,sig_y(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gamma));
            d1=0;
            dEp=dg*alfm*I+dg1*s/snorm;
         end
@@ -249,7 +249,7 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
     %-----------------------------------------------
     % Update tensors and plastic variables
     %-----------------------------------------------  
-    if isnan(dEp) || (abs(rcond(dEp)))<1e-8 || isnan(rcond(dEp))
+    if isnan(dEp) | (abs(rcond(dEp)))<1e-8 | isnan(rcond(dEp))
         e;
     end
 

@@ -1,4 +1,4 @@
-function [A,T,W]=Neo_Hookean(Kt,e,b,J,BLCK)
+function [A,T,W]=Neo_Hookean(Kt,e,b,J,P0,BLCK)
 
     global MATERIAL GEOMETRY SOLVER
     
@@ -11,8 +11,8 @@ function [A,T,W]=Neo_Hookean(Kt,e,b,J,BLCK)
     
     I=eye(3);
     
-    G  = MAT(4,Material(e));
-    Lam= MAT(5,Material(e)); 
+    G  = MAT{4,Material(e)};
+    Lam= MAT{5,Material(e)}; 
     
     if MODEL(Material(e))==1.0
 
@@ -20,6 +20,7 @@ function [A,T,W]=Neo_Hookean(Kt,e,b,J,BLCK)
         J2=J^2;
 
         T=Lam/2*(J2-1)*I+G*(b-I);
+        T=T+P0(1)*I;
         T=T/J;
 
         if Kt==1 || Kt==2 || Kt==4    
@@ -42,6 +43,7 @@ function [A,T,W]=Neo_Hookean(Kt,e,b,J,BLCK)
         % Neo-Hookean Bonet
 
         T=Lam*log(J)*I+G*(b-I);
+        T=T+P0(1)*I;
         T=T/J;
 
         if Kt==1 || Kt==2 || Kt==4                   
@@ -73,6 +75,7 @@ function [A,T,W]=Neo_Hookean(Kt,e,b,J,BLCK)
         end
 
         T=Lam*n0^2*(J/n0-J/(J-1+n0))*I+G*(b-I);
+        T=T+P0(1)*I;
         T=T/J;
 
         if Kt==1 || Kt==2 || Kt==4                   
