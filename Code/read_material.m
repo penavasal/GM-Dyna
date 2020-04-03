@@ -17,6 +17,7 @@ function read_material(filetxt,BLCK)
     [~,sp]=size(x_0);
     
     mat_e=GEOMETRY.material;
+    GEOMETRY.body=zeros(length(mat_e),1);
     
     %GEOM
     L=max(x_0(:,1));
@@ -27,12 +28,12 @@ function read_material(filetxt,BLCK)
     
     %FILE
 
-    fid = fopen(filetxt, 'rt'); % opción rt para abrir en modo texto
-    formato = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s '; % formato de cada línea 
+    fid = fopen(filetxt, 'rt'); % opciï¿½n rt para abrir en modo texto
+    formato = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s '; % formato de cada lï¿½nea 
     data = textscan(fid, formato, 'HeaderLines', 1);
 
     a = data{1};
-    % Convertir a vector numérico
+    % Convertir a vector numï¿½rico
     bb = data{2};
     bb2=str2double(bb);
     long=length(bb);
@@ -53,9 +54,13 @@ function read_material(filetxt,BLCK)
         stop
     end
     
-    MATERIAL(BLCK).MAT=cell(42,mats);   % Numero máximo de propiedades reconocidas
-    MATERIAL(BLCK).MODEL=zeros(mats,1);
+    BODIES(mats)=0;
+    
+    MATERIAL(BLCK).MAT=cell(49,mats);   % Numero mï¿½ximo de propiedades reconocidas
+    MATERIAL(BLCK).MODEL=zeros(mats,2);
     %RANGE=zeros(sp,2*mats); % Range of for materials
+    
+    MATERIAL(BLCK).MAT(48,:)={1};
 
     M=0;
     ks=0;
@@ -183,6 +188,15 @@ function read_material(filetxt,BLCK)
         	continue
         end
         switch s1
+            case 'BODY'
+                BODIES(M)=str2double(bb{t});
+                continue
+            case 'EIGENEROSION'
+                MATERIAL(BLCK).MODEL(M,2)=1;
+                continue
+            case 'EIGENSOFTENING'
+                MATERIAL(BLCK).MODEL(M,2)=2;
+                continue
             case 'YOUNG'
                 MATERIAL(BLCK).MAT(1,M)={bb2(t)};
                 continue
@@ -333,6 +347,27 @@ function read_material(filetxt,BLCK)
             case 'WATER_DENSITY'
                 MATERIAL(BLCK).MAT(42,M)={bb2(t)};
                 continue
+            case 'CEPS'
+                MATERIAL(BLCK).MAT(43,M)=str2double(bb{t});
+                continue
+            case 'GC'
+                MATERIAL(BLCK).MAT(44,M)=str2double(bb{t});
+                continue
+            case 'WC'
+                MATERIAL(BLCK).MAT(45,M)=str2double(bb{t});
+                continue
+            case 'FT'
+                MATERIAL(BLCK).MAT(46,M)=str2double(bb{t});
+                continue
+            case 'WC_P'
+                MATERIAL(BLCK).MAT(47,M)=str2double(bb{t});
+                continue
+            case 'FT_P'
+                MATERIAL(BLCK).MAT(48,M)=str2double(bb{t});
+                continue
+            case 'D'
+                MATERIAL(BLCK).MAT(49,M)=str2double(bb{t});
+                continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)
                 stop
@@ -344,7 +379,18 @@ function read_material(filetxt,BLCK)
     
     %localization(RANGE);
     
+    bds=max(BODIES);
+    SOLVER.BODIES=max(1,bds);
+    
     for i=1:mats
+        for j=1:GEOMETRY.mat_points
+            if mat_e(j)==i
+                GEOMETRY.body(j)=BODIES(i);
+            elseif bds==0
+                GEOMETRY.body(j)=1;
+            end
+        end
+        
         if SOLVER.UW
             n=MATERIAL(BLCK).MAT{16,i};
             if n==0
@@ -381,6 +427,21 @@ function read_material(filetxt,BLCK)
             MATERIAL(BLCK).MAT(:,i)=mcc_tools(MATERIAL(BLCK).MAT(:,i));
         elseif MATERIAL(BLCK).MODEL(i)<5 && MATERIAL(BLCK).MODEL(i)>=4
             MATERIAL(BLCK).MAT(:,i)=pz_tools(MATERIAL(BLCK).MAT(:,i));
+        end
+        
+        % Fracture
+        if MATERIAL(BLCK).MODEL(i,2)==1
+            if SOLVER.FRAC==1 || SOLVER.FRAC==0
+                SOLVER.FRAC=1;
+            else
+                error('Two different fracture criteria')
+            end
+        elseif MATERIAL(BLCK).MODEL(i,2)==2
+            if SOLVER.FRAC==2 || SOLVER.FRAC==0
+                SOLVER.FRAC=2;
+            else
+                error('Two different fracture criteria')
+            end
         end
         
     end
