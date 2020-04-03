@@ -348,25 +348,25 @@ function read_material(filetxt,BLCK)
                 MATERIAL(BLCK).MAT(42,M)={bb2(t)};
                 continue
             case 'CEPS'
-                MATERIAL(BLCK).MAT(43,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(43,M)={bb2(t)};
                 continue
             case 'GC'
-                MATERIAL(BLCK).MAT(44,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(44,M)={bb2(t)};
                 continue
             case 'WC'
-                MATERIAL(BLCK).MAT(45,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(45,M)={bb2(t)};
                 continue
             case 'FT'
-                MATERIAL(BLCK).MAT(46,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(46,M)={bb2(t)};
                 continue
             case 'WC_P'
-                MATERIAL(BLCK).MAT(47,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(47,M)={bb2(t)};
                 continue
             case 'FT_P'
-                MATERIAL(BLCK).MAT(48,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(48,M)={bb2(t)};
                 continue
             case 'D'
-                MATERIAL(BLCK).MAT(49,M)=str2double(bb{t});
+                MATERIAL(BLCK).MAT(49,M)={bb2(t)};
                 continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)
@@ -441,6 +441,10 @@ function read_material(filetxt,BLCK)
                 SOLVER.FRAC=2;
             else
                 error('Two different fracture criteria')
+            end
+            
+            if isempty(MATERIAL(BLCK).MAT{47,i})
+                MATERIAL(BLCK).MAT(47,i)={0};
             end
         end
         
@@ -533,25 +537,7 @@ function Mat=pz_tools(Mat)
     elseif isempty(Mat(12))
         Mat(12)={asin((3*Mat(32))/(6+Mat(32)))};
     end
-    
-%     % OCR
-%     if Mat(25} && Mat(7}
-%         Mat(24} = Mat(7}/Mat(25};
-%     elseif Mat(25} && Mat(24}
-%         Mat(7} = Mat(25}*Mat(24};
-%     elseif Mat(7} && Mat(24}
-%         Mat(25} = Mat(7}/Mat(24};
-%     elseif Mat(7}
-%         Mat(25}=Mat(7};
-%         Mat(24}=1;
-%     elseif Mat(25}
-%         Mat(7}=Mat(25};
-%         Mat(24}=1;
-%     elseif Mat(24}
-%         disp('We need more PZ parameters!')
-%         stop
-%     end
-    
+        
     %H0
     if isempty(Mat{37})
         if isempty(Mat{21}) || isempty(Mat{22})

@@ -922,7 +922,8 @@
                 x0=MAT_POINT(i).xg;
                 e=MAT_POINT(i).element;
                 near=[e, GEOMETRY.element_near{e}];
-                d=zeros(length(near),1);
+                %d=zeros(length(near),1);
+                d=0;
                 k=0;
                 for j=1:length(near)
                     for n=1:GEOMETRY.mat_points

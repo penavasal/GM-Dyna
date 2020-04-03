@@ -30,8 +30,8 @@
         h=GEOMETRY.h_ini(e)*sqrt(MAT_POINT{1}(e).J);
         
         if MODEL(Mat(e),2)==1
-            Ceps=MAT(43,Mat(e)); 
-            GC  =MAT(44,Mat(e));
+            Ceps=MAT{43,Mat(e)}; 
+            GC  =MAT{44,Mat(e)};
             if Mat_state.status(e,2)==0 
                 eps_list=MAT_POINT{1}(e).epsilon;
 
@@ -63,12 +63,12 @@
                 T=zeros(3);
             end 
         elseif MODEL(Mat(e),2)==2
-            %Ceps = MAT(43,Mat(e));
-            wc   = MAT(45,Mat(e));
-            ft   = MAT(46,Mat(e));
-            wk   = MAT(47,Mat(e));
-            fk   = MAT(48,Mat(e));
-            D    = MAT(49,Mat(e));
+            %Ceps = MAT{43,Mat(e)};
+            wc   = MAT{45,Mat(e)};
+            ft   = MAT{46,Mat(e)};
+            wk   = MAT{47,Mat(e)};
+            fk   = MAT{48,Mat(e)};
+            D    = MAT{49,Mat(e)};
             if Mat_state.status(e,2)==0  &&  Mat_state.e_ini(e)==0
                 eps_list=MAT_POINT{1}(e).epsilon;
                 if eps_list(1)>0    
@@ -137,7 +137,7 @@
 
         for e=1:GEOMETRY.mat_points
 
-            Ceps=MAT(43,Mat(e));
+            Ceps=MAT{43,Mat(e)};
 
             if MODEL(Mat(e),2)>0
 
@@ -206,10 +206,10 @@
             
             vol_e=GEOMETRY.Area(e)*MAT_POINT{1}(e).J;
             if SOLVER.UW
-                n=1-(1-MATERIAL(BLCK).MAT(16,mati(i)))/MAT_POINT{1}(i).J;
-                dens=n*rho_w+(1-n)*MATERIAL(BLCK).MAT(3,mati(i));
+                n=1-(1-MATERIAL(BLCK).MAT{16,mati(i)})/MAT_POINT{1}(i).J;
+                dens=n*rho_w+(1-n)*MATERIAL(BLCK).MAT{3,mati(i)};
             else
-                dens=MATERIAL(BLCK).MAT(3,mati(i))/MAT_POINT{1}(i).J;
+                dens=MATERIAL(BLCK).MAT{3,mati(i)}/MAT_POINT{1}(i).J;
             end
 
             %Strain energy
@@ -246,9 +246,7 @@
 %         end
 %         Sup_energy(ste_p)=Sup_energy(ste_p-1)+(React(ste_p)+React(ste_p-1))/2*(D-D1);
     end   
-    
-    
-    
+      
     function [F]=forces(MAT_POINT,STEP,F,v1)
 
         
@@ -282,10 +280,10 @@
             
             vol_e=GEOMETRY.Area(e)*MAT_POINT{1}(e).J;
             if SOLVER.UW
-                n=1-(1-MATERIAL(BLCK).MAT(16,mati(i)))/MAT_POINT{1}(i).J;
-                dens=n*rho_w+(1-n)*MATERIAL(BLCK).MAT(3,mati(i));
+                n=1-(1-MATERIAL(BLCK).MAT{16,mati(i)})/MAT_POINT{1}(i).J;
+                dens=n*rho_w+(1-n)*MATERIAL(BLCK).MAT{3,mati(i)};
             else
-                dens=MATERIAL(BLCK).MAT(3,mati(i))/MAT_POINT{1}(i).J;
+                dens=MATERIAL(BLCK).MAT{3,mati(i)}/MAT_POINT{1}(i).J;
             end
                         
             sh = MAT_POINT{1}(e).N;
