@@ -126,13 +126,13 @@
         end
         
         % Update initial
-        function [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT]=Update_ini(...
-                STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT)
+        function [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT,STEP]=...
+                Update_ini(STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT)
             
             global SOLVER GEOMETRY MATERIAL
             
             BLK=STEP.BLCK;
-            ste=STEP.ste;
+            %ste=STEP.ste;
             ste_p=STEP.ste_p;
             
             for j=1:GEOMETRY.nodes
