@@ -269,6 +269,8 @@ function calculate_forces...
     
     global GEOMETRY SOLVER LOAD
     
+    t=SOLVER.thickness;
+    
        
     x_0=GEOMETRY.x_0;
     [nodes,sp]=size(x_0);
@@ -396,9 +398,9 @@ function calculate_forces...
                 d=sqrt(sum(area));
                 if nod_f(j,3)==0
                     if SOLVER.AXI
-                        f=2*pi*rr*V*d/2;
+                        f=2*pi*rr*V*d/2*t;
                     else
-                        f=V*d/2;
+                        f=V*d/2*t;
                     end
                     LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
                         LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)+f(1);
@@ -410,9 +412,9 @@ function calculate_forces...
                         LOAD{BLCK}.ext_forces_s(nod_f(j,2)*sp,m)+f(2);
                 else
                     if SOLVER.AXI
-                        f=2*pi*rr*V*d/6;
+                        f=2*pi*rr*V*d/6*t;
                     else
-                        f=V*d/6;
+                        f=V*d/6*t;
                     end
                     LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)=...
                         LOAD{BLCK}.ext_forces_s(nod_f(j,1)*sp-1,m)+f(1);
@@ -460,9 +462,9 @@ function calculate_forces...
                 d=sqrt(sum(area));
                 if nod_f(j,3)==0
                     if SOLVER.AXI
-                        f=2*pi*rr*V*d/2;
+                        f=2*pi*rr*V*d/2*t;
                     else
-                        f=V*d/2;
+                        f=V*d/2*t;
                     end
                     LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)=...
                         LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)+f(1);
@@ -474,9 +476,9 @@ function calculate_forces...
                         LOAD{BLCK}.ext_forces_w(nod_f(j,2)*sp,m)+f(2);
                 else
                     if SOLVER.AXI
-                        f=2*pi*rr*V*d/6;
+                        f=2*pi*rr*V*d/6*t;
                     else
-                        f=V*d/6;
+                        f=V*d/6*t;
                     end
                     LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)=...
                         LOAD{BLCK}.ext_forces_w(nod_f(j,1)*sp-1,m)+f(1);
