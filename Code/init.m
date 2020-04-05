@@ -343,7 +343,7 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
         end
 
         if MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
-            Int_var.H(e,2)=MAT(37,Mat(e));
+            Int_var.H(e,2)=MAT{37,Mat(e)};
         end
     end
     % Constitutive calculation
