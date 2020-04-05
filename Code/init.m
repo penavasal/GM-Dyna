@@ -140,18 +140,12 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
 
     for i=1:elements
         mati=GEOMETRY.material(i);
-        if MODEL(mati)>=2 && MODEL(mati)<5
-            % Yield stress
-            if isempty(mmat{7,mati})
-               Int_var.Sy(i,2)=0;
-            else
-                Int_var.Sy(i,2) = mmat{7,mati};
-            end
-            if MODEL(mati)>=3 && MODEL(mati)<5
-                % P0
-                p0=str2double(mmat{25,mati});
-                ev0=str2double(mmat{23,mati});
-                es0=str2double(mmat{26,mati});
+        % P0
+        p0=str2double(mmat{25,mati});
+        ev0=str2double(mmat{23,mati});
+        es0=str2double(mmat{26,mati});
+        if isnan(p0) || isnan(es0) || isnan(ev0)
+            if MODEL(mati)>=2 && MODEL(mati)<5
                 if isnan(p0)
                     Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
                 else
@@ -161,8 +155,16 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
                     if isnan(es0)
                         es0=0;
                     end                   
-                    Int_var.P0(i,1:3)=[p0 ev0 es0]; 
                 end
+            end
+        end
+        Int_var.P0(i,1:3)=[p0 ev0 es0];
+        % Yield stress
+        if MODEL(mati)>=2 && MODEL(mati)<5
+            if isempty(mmat{7,mati})
+               Int_var.Sy(i,2)=0;
+            else
+                Int_var.Sy(i,2) = mmat{7,mati};
             end
         end
         if SOLVER.UW>0
