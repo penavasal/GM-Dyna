@@ -22,7 +22,8 @@ function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee]=...
     
 
     if MODEL(Mat(e))==3.0 || ste==1
-        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcd,Kt,-P0(1),dgamma_);
+        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,-Pcd,Kt,-P0(1),dgamma_);
+        Pcs=-Pcs;
         Pcd=Pcs;
     elseif MODEL(Mat(e))==3.1
         [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,-P0(1),dgamma_,ste,BLCK);
