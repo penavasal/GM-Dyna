@@ -1,5 +1,5 @@
-function [A,Sc,gamma,dgamma,Pcd,Pcs,Ee]=...
-    M_Cam_Clay(Kt,ste,e,gamma,dgamma_,Pcd,Pcs,Ee_tr,P0,BLCK)
+function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee]=...
+    M_Cam_Clay(Kt,ste,e,epvol,gamma,dgamma_,Pcd,Pcs,Ee_tr,P0,BLCK)
 
     global MATERIAL GEOMETRY
     
@@ -11,24 +11,26 @@ function [A,Sc,gamma,dgamma,Pcd,Pcs,Ee]=...
     % Compute principal Cauchy / Kirchhoff tension 
     Ge(10)=0;
     
-    Ge(2) = MAT(4,Mat(e));   %mu0
-    Ge(3) = MAT(20,Mat(e));  %alfa
-    Ge(4) = MAT(22,Mat(e));  %kappa
-    Ge(5) = MAT(21,Mat(e));  %lambda
-    Ge(6) = MAT(19,Mat(e));  %M
-    Ge(9) = MAT(23,Mat(e));  %epsev0
-    Ge(10)= MAT(30,Mat(e));  %mu
-    Ge(11)= MAT(31,Mat(e));  %TAU
+    Ge(2) = MAT{4,Mat(e)};   %mu0
+    Ge(3) = MAT{20,Mat(e)};  %alfa
+    Ge(4) = MAT{22,Mat(e)};  %kappa
+    Ge(5) = MAT{21,Mat(e)};  %lambda
+    Ge(6) = MAT{19,Mat(e)};  %M
+    Ge(9) = P0(2);  %epsev0
+    Ge(10)= MAT{30,Mat(e)};  %mu
+    Ge(11)= MAT{31,Mat(e)};  %TAU
     
 
     if MODEL(Mat(e))==3.0 || ste==1
-        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcs,Kt,P0,dgamma_);
+        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcd,Kt,-P0(1),dgamma_);
         Pcd=Pcs;
     elseif MODEL(Mat(e))==3.1
-        [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0,dgamma_,ste,BLCK);
+        [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,-P0(1),dgamma_,ste,BLCK);
     end
     
-    gamma=gamma-dgamma*2*Q/P/Ge(6)^2;   
+    eta=Q/P;
+    gamma=gamma-dgamma*2*eta/Ge(6)^2;
+    epvol=epvol+dgamma*(1-eta*eta/Ge(6)^2);
 
 end
 
@@ -92,6 +94,7 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
     toll = 1e-3;
     if Ftr > toll % PLASTIC STEP    
        
+        iter=1;
         % Inizialize variables
         x = zeros(3,1);
         x(1,1) = epsevTR;   % epsev
@@ -101,52 +104,72 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
         Pc = Pcn;
         P = Ptr;
         Q = Qtr;
+        
+        % Initialize r and A
+        r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
+            x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
+            (Q/M)^2 + P*(P-Pc)];  
+        
+        A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
+            kappa,mu0,alfa,P0,epsev0,M);
 
         % Solve NR system
-        iter=0;
-        normr0=0;
+        normr0=norm(r);
         imax = 200;
-        a=1.0;
         NORMErec=0;
+        
         while iter<imax
             
             iter = iter+1;
             
-            % 1. Evaluate residual            
-            r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
-                 x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
-                 (Q/M)^2 + P*(P-Pc)];  
+            % A. Solve for displacement increment
+            dx = A\r;
             
-            if isnan(r)   %|| NORMErec(iter,1)>emax
-                error('Fallo en el Modified Cam Clay \n');
-            else
-                % 2. Check for convergence
-                if iter==1
-                    normr0=norm(r);
+            A_conver=0;
+            a=1;
+            while A_conver==0
+
+                % 1. Calculate variables
+                x(:,iter) = x(:,iter-1) - a*dx;                 
+
+                % 2. Update 
+                [P,Q]=PQ(x(1,iter),x(2,iter),P0,alfa,kappa,epsev0,mu0);
+                Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter)));
+            
+                % 3. Evaluate residual            
+                r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
+                     x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
+                     (Q/M)^2 + P*(P-Pc)];  
+
+                if isnan(r)   %|| NORMErec(iter,1)>emax
+                    error('Fallo en el Modified Cam Clay \n');
                 else
-                    [CONVER,NORMErec,a,iter]=...
-                        LIB.convergence(r,normr0,NORMErec,toll,iter,imax,a);
+                    % 4. Check for convergence
+                    [CONVER,NORMErec]=...
+                        LIB.convergence(r,normr0,NORMErec,toll,iter,imax);
                     if CONVER==1     
                         break
+                    elseif (NORMErec(iter)-NORMErec(iter-1))>1e-8 && iter>3
+                        x(:,iter) = x(:,iter-1) + a*dx; 
+                        [a,CONVER]=LIB.a_factor_NR(a,NORMErec,toll,iter);
+                        if CONVER==1     
+                            break;
+                        end
+                    else
+                        A_conver=1;
                     end
                 end
-
-                % 3. Evaluate tangent matrix for NR iteration
+            end
+            % 5. Evaluate tangent matrix for NR iteration
+            if CONVER==0
                 A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
                     kappa,mu0,alfa,P0,epsev0,M);
-                    
+
                 if rcond(A)<1e-16
                     disp('Small jacobian matrix of Modified Cam Clay return mapping');
                 end
-                
-                % 4. Solve for displacement increment
-                dx = -a*(A\r);
-                x(:,iter+1) = x(:,iter) + dx;                 
-
-                % 5. Update 
-                [P,Q]=PQ(x(1,iter+1),x(2,iter+1),P0,alfa,kappa,epsev0,mu0);
-                Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter+1)));
-
+            else
+                break;
             end
         end
 

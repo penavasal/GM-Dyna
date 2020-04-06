@@ -144,14 +144,18 @@
                     dgamma  = Int_var.dgamma(e,2);
 
                     if MODEL(Mat(e),1)>=2 && MODEL(Mat(e),1)<3
-                        [A,T,Gamma,dgamma,Sy,Ee]=...
-                            Drucker_prager(Kt,e,Gamma,dgamma,Sy,Ee,BLCK);
+                        epsvol  = Int_var.epsv(e,2);
+                        [A,T,epsvol,Gamma,dgamma,Sy,Ee]=...
+                            Drucker_prager(Kt,e,epsvol,Gamma,dgamma,Sy,Ee,P0,BLCK);
+                        Int_var.epsv(e,1)= epsvol;
                     elseif MODEL(Mat(e),1)>=3 && MODEL(Mat(e),1)<4
                         
                         Sy_r    = Int_var.Sy_r(e,2);
-                        [A,T,Gamma,dgamma,Sy,Sy_r,Ee]=...
-                            M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,Ee,BLCK);
+                        epsvol  = Int_var.epsv(e,2);
+                        [A,T,epsvol,Gamma,dgamma,Sy,Sy_r,Ee]=...
+                            M_Cam_Clay(Kt,ste,e,epsvol,Gamma,dgamma,Sy,Sy_r,Ee,P0,BLCK);
                         Int_var.Sy_r(e,1) = Sy_r;
+                        Int_var.epsv(e,1)= epsvol;
                     elseif MODEL(Mat(e),1)>=4 && MODEL(Mat(e),1)<5
                         H       = Int_var.H(e,2);
                         etaB    = Int_var.eta(e,2);

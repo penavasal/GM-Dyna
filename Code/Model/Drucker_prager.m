@@ -1,6 +1,6 @@
 
-function [A,Sc,gamma,dgamma,sy,Ee]=...
-    Drucker_prager(Kt,e,gamma,dgamma,sy,Ee,BLCK)
+function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
+    Drucker_prager(Kt,e,epvol,gamma,dgamma,sy,Ee,P0,BLCK)
 
     global MATERIAL GEOMETRY
     
@@ -48,7 +48,7 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
     
     % Deviatoric and volumetric strain
     [e_dev,e_vol]=split(Ee);
-    p=K*e_vol;
+    p=K*e_vol+P0(1);
     s=2*G*e_dev;
     
     %Sig2=2*MAT(4,Mat(e))*Ee+MAT(5,Mat(e))*trace(Ee)*I;
@@ -149,6 +149,7 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
             dgamma=dgm(iter);
             d1=1-2*G*dgamma/snorm;
             dEp=dgamma*alfm*I+dgamma*s/snorm;
+            epvol=epvol+3*dgamma*alfm;
         else
             t=-1;
             error=1e32;
@@ -241,6 +242,7 @@ function [A,Sc,gamma,dgamma,sy,Ee]=...
            s_y=max(0,sig_y(MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gamma));
            d1=0;
            dEp=dg*alfm*I+dg1*s/snorm;
+           epvol=epvol+3*dg*alfm;
         end
         sy=s_y;
         Sc=(p-3*alfm*K*dg)*I+d1*s;

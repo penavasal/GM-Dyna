@@ -93,7 +93,7 @@ function print_file_2(str,str2,steps,dd)
     elseif strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
         nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
     else
-        nodes_p = linspace(1,GEOMETRY.nodes)';
+        nodes_p = linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
     end
     
     

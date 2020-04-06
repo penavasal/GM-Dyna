@@ -596,49 +596,58 @@ function Mat=mcc_tools(Mat)
 
     global SOLVER
 
-    if Mat{19}==0 && Mat{11}==0
+    if isempty(Mat{19}) & isempty(Mat{11})
         disp('Error, no critical state line!')
         stop
-    elseif Mat{19}==0
-        Mat{19}=6*sin(Mat{11})/(3-sin(Mat{11}));
-    elseif Mat{11}==0
-        Mat{11}=asin((3*Mat{19})/(6+Mat{19}));
+    elseif isempty(Mat{19})
+        Mat(19)={6*sin(Mat{11})/(3-sin(Mat{11}))};
+    elseif isempty(Mat{11})
+        Mat(11)={asin((3*Mat{19})/(6+Mat{19}))};
     end
     
     % OCR
-    if Mat(25) && Mat(7)
-        Mat(24) = Mat(7)/Mat(25);
-    elseif Mat(25) && Mat(24)
-        Mat(7) = Mat(25)*Mat(24);
-    elseif Mat(7) && Mat(24)
-        Mat(25) = Mat(7)/Mat(24);
-    elseif Mat(7)
+    if isreal(str2double(Mat{25})) & isreal(Mat{7})
+        Mat(24) = {Mat{7}/str2double(Mat{25})};
+    elseif isreal(str2double(Mat{25})) && isreal(Mat{24})
+        Mat(7) = {str2double(Mat{25})*Mat{24}};
+    elseif isreal(Mat{7}) & isreal(Mat{24})
+        Mat(25) = {Mat{7}/Mat{24}};
+    elseif isreal(Mat{7})
         Mat(25)=Mat(7);
-        Mat(24)=1;
-    elseif Mat(25)
-        Mat(7)=Mat(25);
-        Mat(24)=1;
-    elseif Mat(24)
+        Mat(24)={1};
+    elseif isreal(str2double(Mat{25}))
+        Mat(7)={str2double(Mat{25})};
+        Mat(24)={1};
+    elseif isreal(Mat{24})
         disp('We need more MCC parameters!')
         stop
     end
     
+    if isempty(Mat{30})
+        Mat(30)={0};
+    end
     
-    if Mat(21)==0 || Mat{22}==0
+    if isempty(Mat{31})
+        Mat(31)={0};
+    end
+    
+    if isempty(Mat{21}) | isempty(Mat{22})
         disp('We need more MCC parameters!')
         stop
     end
     
     %%% E
-    Mat(1)=2*Mat(4)*(1+Mat(2)); 
+    Mat(2)={(3*Mat{29}-2*Mat{4})/(6*Mat{29}+2*Mat{4})};
+    Mat(1)={2*Mat{4}*(1+Mat{2})}; 
+    
     % Wave velocity
-    Mat(17)=Mat(1)*(1-Mat(2))/((1+Mat(2))*(1-2*Mat(2)));
+    Mat(17)={Mat{1}*(1-Mat{2})/((1+Mat{2})*(1-2*Mat{2}))};
     if SOLVER.UW
-        M=Mat(17)+Mat{18};
+        M=Mat{17}+Mat{18};
     else
-        M=Mat(17);
+        M=Mat{17};
     end
-    Mat(6)=sqrt(M/Mat(3));     % cp
+    Mat(6)={sqrt(M/Mat{3})};     % cp
     
 end
 
