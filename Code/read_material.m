@@ -606,19 +606,19 @@ function Mat=mcc_tools(Mat)
     end
     
     % OCR
-    if isreal(str2double(Mat{25})) & isreal(Mat{7})
+    if ~isnan(str2double(Mat{25})) & ~isnan(Mat{7})
         Mat(24) = {Mat{7}/str2double(Mat{25})};
-    elseif isreal(str2double(Mat{25})) && isreal(Mat{24})
+    elseif ~isnan(str2double(Mat{25})) && ~isnan(Mat{24})
         Mat(7) = {str2double(Mat{25})*Mat{24}};
-    elseif isreal(Mat{7}) & isreal(Mat{24})
-        Mat(25) = {Mat{7}/Mat{24}};
-    elseif isreal(Mat{7})
-        Mat(25)=Mat(7);
+    elseif ~isnan(Mat{7}) & ~isnan(Mat{24})
+        Mat(25) = {num2str(Mat{7}/Mat{24})};
+    elseif ~isnan(Mat{7})
+        Mat(25)={num2str(Mat{7})};
         Mat(24)={1};
-    elseif isreal(str2double(Mat{25}))
+    elseif ~isnan(str2double(Mat{25}))
         Mat(7)={str2double(Mat{25})};
         Mat(24)={1};
-    elseif isreal(Mat{24})
+    elseif ~isnan(Mat{24})
         disp('We need more MCC parameters!')
         stop
     end
@@ -637,7 +637,9 @@ function Mat=mcc_tools(Mat)
     end
     
     %%% E
-    Mat(2)={(3*Mat{29}-2*Mat{4})/(6*Mat{29}+2*Mat{4})};
+    if isnan(Mat{2})
+        Mat(2)={(3*Mat{29}-2*Mat{4})/(6*Mat{29}+2*Mat{4})};
+    end
     Mat(1)={2*Mat{4}*(1+Mat{2})}; 
     
     % Wave velocity
