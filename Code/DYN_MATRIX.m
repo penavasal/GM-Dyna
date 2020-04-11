@@ -515,6 +515,12 @@ classdef DYN_MATRIX
                 m  = length(nd);
                 sh = MAT_POINT{1}(i).N;
                 
+                if SOLVER.UW==1
+                    ndw = MAT_POINT{2}(i).near;
+                    mw  = length(ndw);
+                    shw = MAT_POINT{2}(i).N;
+                end
+                
                 if SOLVER.UW==2
                     b = MAT_POINT{2}(i).B;
                     ndw = MAT_POINT{2}(i).near;

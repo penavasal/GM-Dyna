@@ -357,7 +357,7 @@
             rj3=rj3/3;
 
             rj23=sqrt(rj2)^3;
-            if rj23<1.0e-15
+            if rj23<1.0e-17
                 sint3=0;
             else
                 sint3 = -3 * sqrt(3) * rj3/2/rj23;
@@ -369,7 +369,7 @@
             end
             theta = 1/3*asin(sint3);
             
-            if sint3<0
+            if sint3<0 && abs(sint3)>1e-10
                 Q2=-Q2;
             end
         end

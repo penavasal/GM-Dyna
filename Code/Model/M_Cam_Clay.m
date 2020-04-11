@@ -22,11 +22,10 @@ function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee]=...
     
 
     if MODEL(Mat(e))==3.0 || ste==1
-        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,-Pcd,Kt,-P0(1),dgamma_);
-        Pcs=-Pcs;
+        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcd,Kt,P0(1),dgamma_);
         Pcd=Pcs;
     elseif MODEL(Mat(e))==3.1
-        [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,-P0(1),dgamma_,ste,BLCK);
+        [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0(1),dgamma_,ste,BLCK);
     end
     
     eta=Q/P;
@@ -92,8 +91,9 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 
     % Check for plasticity    
     Ftr = (Qtr/M)^2+Ptr*(Ptr-Pcn);
-    toll = 1e-3;
-    if Ftr > toll % PLASTIC STEP    
+    
+    toll = 1e-4;
+    if Ftr/Pcn/Pcn > toll % PLASTIC STEP    
        
         iter=1;
         % Inizialize variables
@@ -229,7 +229,6 @@ function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = ...
     alfa = Ge(3);
     kappa = Ge(4);
     lambda = Ge(5);
-    M = Ge(6);
     %P0 = Ge(7);
     epsev0 = Ge(9);
     mu = Ge(10);
@@ -240,14 +239,9 @@ function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = ...
     PSI = 1/mu/OMEGA;
     XI = delta_t*mu/tau;
 
-
-    % Compute volumetric trial strain
-    epsevTR = defepr(1,1)+defepr(2,2)+defepr(3,3);
-
-    % Compute deviatoric trial strain
-    epsedev = defepr-1/3*I*epsevTR;
-
-    epsesTR = sqrt(2/3)*s_j2(epsedev);
+    % Compute volumetric and deviatoric trial strain
+    [epsevTR,epsesTR,theta_e,~,~,epsedev]=invar(defepr,'STRAIN');
+    [M]=define_M(Ge,theta_e);
 
 
     % Compute trial stress invariants
@@ -370,7 +364,7 @@ function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = ...
     end
 
     % Compute principal Kirchhoff tension
-    tenspr = P*I+ sqrt(2/3)*Q*n;
+    tenspr = -P*I+ sqrt(2/3)*Q*n;
 
     % Compute principal elastic strain
     epse = (1/3)*epsev*I + sqrt(3/2)*epses*n;
@@ -435,7 +429,7 @@ end
 function [P,Q] = PQ(epsev, epses, P0, alfa, kappa, epsev0, mu0)
     OMEGA = -(epsev-epsev0)/kappa;
     P = P0*exp(OMEGA)*(1+(3*alfa)*(epses^2)/(2*kappa));
-    Q = 3*(mu0-alfa*P0*exp(OMEGA))*epses;
+    Q = 3*(mu0+alfa*P0*exp(OMEGA))*epses;
 end
 
 function Dep = DEPtens( epsev,epses,dgamma,P,Q,Pc,lambda,kappa,mu0,alfa,P0,epsev0,M )
@@ -636,4 +630,59 @@ function [q]=s_j2(s)
        s(3,1)^2 + s(1,3)^2 + ...
        s(2,3)^2 + s(3,2)^2;
     q= sqrt(q);
+end
+
+function [p,q,theta,rj2,sn,devs,rj3]=invar(s,type)
+
+    p=s(1,1)+s(2,2)+s(3,3);
+    
+    devs=s-p/3*eye(3);
+    
+    [sn]=s_j2(devs);
+
+    rj2=sn*sn*0.5;
+    
+
+    rj3=0;
+    rj3 = rj3 + 3*devs(2,1)*devs(2,1)*(devs(1,1)+devs(2,2));
+    for i=1:3
+        rj3 = rj3 + devs(i,i)*devs(i,i)*devs(i,i);
+    end
+    rj3=rj3/3;
+    
+    rj23=sqrt(rj2)^3;
+    if 2*rj23<1.0e-18
+        sint3=0;
+    else
+        sint3 = -3 * sqrt(3) * rj3/2/rj23;
+    end
+    if sint3<-1
+        sint3=-1;
+    elseif sint3>1
+        sint3=1;
+    end
+    theta = 1/3*asin(sint3);
+    
+    if strcmp(type,'STRAIN')
+        q=sqrt(2/3)*sn;
+        p=-p;
+    else
+        q=sqrt(3*rj2);
+        p=-p/3;
+    end
+    
+    if sint3<0
+        q=-q;
+    end   
+
+end
+
+function [Mg]=define_M(Ge,theta)
+    if theta>pi/6
+        Mg=Ge(6);
+    elseif theta<-pi/6
+        Mg=Ge(6)*18/(18+6*Ge(6));
+    else
+        Mg=Ge(6)*18/(18+2*Ge(6)*(1-sin(3*theta)));
+    end
 end

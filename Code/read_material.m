@@ -33,7 +33,7 @@ function read_material(filetxt,BLCK)
     data = textscan(fid, formato, 'HeaderLines', 1);
 
     a = data{1};
-    % Convertir a vector num�rico
+    % Convertir a vector numérico
     bb = data{2};
     bb2=str2double(bb);
     long=length(bb);
@@ -56,7 +56,7 @@ function read_material(filetxt,BLCK)
     
     BODIES(mats)=0;
     
-    MATERIAL(BLCK).MAT=cell(49,mats);   % Numero m�ximo de propiedades reconocidas
+    MATERIAL(BLCK).MAT=cell(49,mats);   % Numero m¿ximo de propiedades reconocidas
     MATERIAL(BLCK).MODEL=zeros(mats,2);
     %RANGE=zeros(sp,2*mats); % Range of for materials
     
@@ -422,7 +422,7 @@ function read_material(filetxt,BLCK)
             MATERIAL(BLCK).MAT(:,i)=elastic_tools(MATERIAL(BLCK).MAT(:,i));
         end
         if MATERIAL(BLCK).MODEL(i)<3 && MATERIAL(BLCK).MODEL(i)>=2
-            MATERIAL(BLCK).MAT(:,i)=dp_tools(MATERIAL(BLCK).MAT(:,i));
+            MATERIAL(BLCK).MAT(:,i)=dp_tools(MATERIAL(BLCK).MAT(:,i),MATERIAL(BLCK).MODEL(i));
         elseif MATERIAL(BLCK).MODEL(i)<4 && MATERIAL(BLCK).MODEL(i)>=3
             MATERIAL(BLCK).MAT(:,i)=mcc_tools(MATERIAL(BLCK).MAT(:,i));
         elseif MATERIAL(BLCK).MODEL(i)<5 && MATERIAL(BLCK).MODEL(i)>=4
@@ -498,7 +498,17 @@ function Mat=elastic_tools(Mat)
     
 end
 
-function Mat=dp_tools(Mat)
+function Mat=dp_tools(Mat,MODEL)
+
+    if isempty(Mat{10})
+        if isempty(Mat{8})
+            Mat(10)={1e10};    
+        elseif Mat{9}==1
+            Mat(10)= {-Mat{7}/Mat{8}};
+        else
+            error('wrond hardening parameters');
+        end
+    end
 
     if isempty(Mat{8})
         Mat{8}=1;
@@ -508,15 +518,22 @@ function Mat=dp_tools(Mat)
             Mat{9}=1;
         end
     end
+    
+    if isempty(Mat{19}) & isempty(Mat{11}) & MODEL~=2.0
+        disp('Error, no critical state line!')
+        stop
+    elseif isempty(Mat{19})
+        Mat(19)={6*sin(Mat{11})/(3-sin(Mat{11}))};
+    elseif isempty(Mat{11})
+        Mat(11)={asin((3*Mat{19})/(6+Mat{19}))};
+    end
 
-    Mat(10)= {Mat{7}/Mat{8}};
 
 end
 
 function Mat=pz_tools(Mat)
 
     global SOLVER
-    
 
     % Mf
     if isempty(Mat{19}) && isempty(Mat{11})
@@ -596,6 +613,7 @@ function Mat=mcc_tools(Mat)
 
     global SOLVER
 
+    % M
     if isempty(Mat{19}) & isempty(Mat{11})
         disp('Error, no critical state line!')
         stop
@@ -636,11 +654,15 @@ function Mat=mcc_tools(Mat)
         stop
     end
     
-    %%% E
-    if isnan(Mat{2})
-        Mat(2)={(3*Mat{29}-2*Mat{4})/(6*Mat{29}+2*Mat{4})};
+    %%% Elastic
+    if isempty(Mat{29})
+        Mat(29)={-str2double(Mat{25})/Mat{22}};
     end
-    Mat(1)={2*Mat{4}*(1+Mat{2})}; 
+    if isempty(Mat{1}) && isempty(Mat{5}) && isempty(Mat{2})
+        Mat(5)={Mat{29}-2/3*Mat{4}};                         % Lambda
+        Mat(1)={Mat{4}*(3*Mat{5}+2*Mat{4})/(Mat{4}+Mat{5})}; % E
+        Mat(2)={Mat{5}/2/(Mat{5}+Mat{4})}; %nu
+    end
     
     % Wave velocity
     Mat(17)={Mat{1}*(1-Mat{2})/((1+Mat{2})*(1-2*Mat{2}))};

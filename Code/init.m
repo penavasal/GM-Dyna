@@ -106,6 +106,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     GLOBAL.H(elements,dim)=0;
     GLOBAL.eta(elements,dim)=0;
     
+    GLOBAL.pw(elements,dim)=0;
     GLOBAL.Ps(elements,dim)=0;
     GLOBAL.Qs(elements,dim)=0;
     
@@ -118,14 +119,12 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     GLOBAL.Es_p(l2*elements,dim) = 0;
     GLOBAL.xg(elements*GEOMETRY.sp,dim)=0;
     if SOLVER.UW==1
-        GLOBAL.pw(elements,dim)=0;
         if SOLVER.SMALL==0
             GLOBAL.Fw(l1*elements,dim)=0;
         else
             GLOBAL.Esw(l2*elements,dim)=0;
         end
     elseif SOLVER.UW==2
-        GLOBAL.pw(elements,dim)=0;
         GLOBAL.dpw(GEOMETRY.sp*elements,dim)=0;
     end
     
@@ -166,6 +165,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
             else
                 Int_var.Sy(i,2) = mmat{7,mati};
             end
+            GLOBAL.Sy(i,1)=Int_var.Sy(i,2);
         end
         if SOLVER.UW>0
             Mat_state.k(i) = ...
@@ -305,7 +305,7 @@ function [dim,STEP]=fix_time(tp,ste_p)
     l2=l1-ste_aux;
     
     dim_2=floor((l2)/SOLVER.SAVE_I);
-    dim=dim_2+ste_p;
+    dim=dim_2+ste_p+BLOCKS;
     fprintf('%i plot steps\n',dim);
     fprintf('Save %i times before the final\n',round(dim/SOLVER.SAVE_F));
     
