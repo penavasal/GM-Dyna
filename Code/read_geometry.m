@@ -132,7 +132,10 @@ function [MAT_POINT,NODE_LIST]=...
     if strcmp(GRID,'T3')
         
         if NNE==4 && grid==0
-            if strcmp(ELEMENT,'T3')
+            if strcmp(ELEMENT,'T3-3')
+                [xg,GEOMETRY.Area,elem,patch_con,patch_el,materials]=...
+                    split3xg(x_a,elem,materials);
+            elseif strcmp(ELEMENT,'T3')
                 [elem,patch_con,patch_el,materials]=...
                     split2(x_a,elem,materials);
             elseif strcmp(ELEMENT,'T3-inverse')
@@ -150,7 +153,11 @@ function [MAT_POINT,NODE_LIST]=...
             GEOMETRY.elem_c=elem;
             GEOMETRY.patch_con=patch_con;
             GEOMETRY.patch_el=patch_el;
-            [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
+            if strcmp(ELEMENT,'T3-3')
+                
+            else
+                [xg,GEOMETRY.Area]=g_center(x_a,GEOMETRY.elem,DIM);
+            end
             
         elseif NNE==3
             GEOMETRY.elem=elem;
@@ -806,6 +813,96 @@ function [xg,Area,patch_el,patch_con,nw_mat]=tri3xg(x_a,elem_0,mat)
     end
 end
 
+function [xg,Area,nw_elem,patch_con,patch_el,nw_mat]=...
+                    split3xg(x_a,elem,mat)
+                
+    [elements,NNE]=size(elem);
+    [~,sp]=size(x_a);
+        
+    nw_elem=zeros(elements*sp,NNE-1);
+    material=zeros(elements*sp,1);
+
+    for i=1:elements
+        X=zeros(NNE,sp);
+        for j=1:NNE
+            for k=1:sp
+                X(j,k)=x_a(elem(i,j),k);
+            end
+        end
+        [t]=circunf3(X);
+        
+        if t==1
+            nw_elem((i-1)*sp+1,1)=elem(i,1);
+            nw_elem((i-1)*sp+1,2)=elem(i,2);
+            nw_elem((i-1)*sp+1,3)=elem(i,3);
+
+            nw_elem((i-1)*sp+2,1)=elem(i,3);
+            nw_elem((i-1)*sp+2,2)=elem(i,4);
+            nw_elem((i-1)*sp+2,3)=elem(i,1);
+        else
+            nw_elem((i-1)*sp+1,1)=elem(i,2);
+            nw_elem((i-1)*sp+1,2)=elem(i,3);
+            nw_elem((i-1)*sp+1,3)=elem(i,4);
+
+            nw_elem((i-1)*sp+2,1)=elem(i,4);
+            nw_elem((i-1)*sp+2,2)=elem(i,1);
+            nw_elem((i-1)*sp+2,3)=elem(i,2);
+        end
+        
+        material((i-1)*sp+1,1)=mat(i);
+        material((i-1)*sp+2,1)=mat(i);
+    end
+    
+    [~,area_]=g_center(x_a,nw_elem,0);
+    
+    xg=zeros(elements*3*2,sp);
+    Area=zeros(elements*3*2,1);
+    nw_mat=zeros(elements*3*2,1);
+    patch_el=zeros(elements*3*2,1);
+    patch_con=zeros(elements,3*2);
+    
+    point=[0.2 0.2; 0.2 0.6; 0.6 0.2];
+    
+    k=0;
+    for e=1:elements*2
+        xn=zeros(3,1);
+        yn=zeros(3,1);
+
+        for i=1:3
+            nd=nw_elem(e,i);
+            xn(i)=x_a(nd,1);
+            yn(i)=x_a(nd,2);
+        end
+        
+        for i=1:3
+            
+            xp=[xn(1)+(xn(2)-xn(1))*point(i,1)+(xn(3)-xn(1))*point(i,2),...
+                yn(1)+(yn(2)-yn(1))*point(i,1)+(yn(3)-yn(1))*point(i,2)];
+            
+            k=k+1;
+            
+            for j=1:sp
+                xg(k,j)=xp(j);
+            end
+            %elem(k,:)=elem_0(e,:);
+            Area(k)=area_(e)/3;
+            nw_mat(k)=material(e);
+            
+        end 
+    end
+    
+    for e=1:elements
+        for j=1:3*2
+            patch_con(e,j)=(e-1)*6+j;
+        end
+    end
+    
+    for j=1:elements
+        for k=1:3*sp
+            patch_el(patch_con(j,k))=j;
+        end
+    end
+end
 
 function [xg]=q_g_center(x_a,elem)
 

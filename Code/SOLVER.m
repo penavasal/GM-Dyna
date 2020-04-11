@@ -42,13 +42,14 @@ function SOLVER(MAT_POINT)
                 Implicit_solver(STEP,MAT_POINT,Disp_field,Int_var,...
                 Mat_state,GLOBAL,stiff_mtx,MATRIX,load_s);
         end
+
         STEP.BLCK=STEP.BLCK+1;
         
         if STEP.BLCK>SOLVER.BLOCKS
             break;
         else
             % Update
-            [Disp_field,Mat_state,Int_var,stiff_mtx]=VECTORS.Update_ini(...
+            [Disp_field,Mat_state,Int_var,stiff_mtx,STEP]=VECTORS.Update_ini(...
                 STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT);
             
             [load_s,out_list1]=...

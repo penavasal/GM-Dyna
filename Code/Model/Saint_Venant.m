@@ -1,4 +1,4 @@
-function [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK)
+function [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK,P0)
     
     % St. Venant Material
 
@@ -7,9 +7,8 @@ function [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK)
     Material=GEOMETRY.material;
     MAT=MATERIAL(BLCK).MAT;
     
-    G  = MAT(4,Material(e));
-    Lam= MAT(5,Material(e));  
-    P0 = MAT(25,Material(e));%P0;
+    G  = MAT{4,Material(e)};
+    Lam= MAT{5,Material(e)};  
     I=eye(3);
 
     A=0;
@@ -17,7 +16,7 @@ function [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK)
     
     I1=trace(Ee);
     
-    T=(P0+Lam*I1)*I+2*G*Ee;
+    T=(P0(1)+Lam*I1)*I+2*G*Ee;
     
     if Kt==1 || Kt==2 || Kt==4
         

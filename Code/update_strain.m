@@ -270,8 +270,8 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 e=GEOMETRY.patch_con(j,k);
                 mati=GEOMETRY.material(e);
                 Mat_state.k(e) = ...
-                    mmat(15,mati)/...
-                    mmat(42,mati)/VARIABLE.g;
+                    mmat{15,mati}/...
+                    mmat{42,mati}/VARIABLE.g;
             end
         end
     end

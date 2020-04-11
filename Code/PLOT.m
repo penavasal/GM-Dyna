@@ -187,18 +187,57 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
     
     
     % Allocate
-
-    elem=GEOMETRY.elem;
-    [Elements,NNE]=size(GEOMETRY.elem);
+    
+    [elements,NNE]=size(GEOMETRY.elem);
      x_0=GEOMETRY.x_0;
-    [Nodos,~]=size(x_0);
-    df=GEOMETRY.df;
+     df=GEOMETRY.df;
+    
+    if NNE==4 || NNE==3
+        elem=GEOMETRY.elem;
+        elem2=GEOMETRY.elem;
+        nodes_p = linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
+    elseif NNE==8
+        NNE=4;
+        elem=GEOMETRY.elem_c;
+        nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
+        elem2=zeros(elements,4);
+        for i=1:4
+            for j=1:elements
+                for k=1:length(nodes_p)
+                    if elem(j,i)==nodes_p(k)
+                        elem2(j,i)=k;
+                        break;
+                    end
+                end
+            end
+        end
+    elseif NNE==6
+        NNE=3;
+        elem=GEOMETRY.elem_c;
+        nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
+        elem2=zeros(elements,3);
+        for i=1:3
+            for j=1:elements
+                for k=1:length(nodes_p)
+                    if elem(j,i)==nodes_p(k)
+                        elem2(j,i)=k;
+                        break;
+                    end
+                end
+            end
+        end
+    end
+    
+
+
+    Nodos=length(nodes_p);
     x=zeros(Nodos,1);
     y=zeros(Nodos,1);
 
-    for nd=1:Nodos
-        x(nd,1)=x_0(nd,1);
-        y(nd,1)=x_0(nd,2);
+    for j=1:Nodos
+        nd=nodes_p(j);
+        x(j,1)=x_0(nd,1);
+        y(j,1)=x_0(nd,2);
     end
 
     DDD=max(x(:));
@@ -217,22 +256,23 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
         y2=zeros(Nodos,1);
         figure
         for cont=1:rr:contador
-            for nodo=1:Nodos
+            for j=1:Nodos
+                nodo=nodes_p(j);
                 if SOLVER.UW==1
-                    x2(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-3,cont);
-                    y2(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
+                    x2(j)=x(j)+hh*GLOBAL.d(df*nodo-3,cont);
+                    y2(j)=y(j)+hh*GLOBAL.d(df*nodo-2,cont);
                 elseif SOLVER.UW==2
-                    x2(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
-                    y2(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
+                    x2(j)=x(j)+hh*GLOBAL.d(df*nodo-2,cont);
+                    y2(j)=y(j)+hh*GLOBAL.d(df*nodo-1,cont);
                 else
-                    x2(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
-                    y2(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo,cont);
+                    x2(j)=x(j)+hh*GLOBAL.d(df*nodo-1,cont);
+                    y2(j)=y(j)+hh*GLOBAL.d(df*nodo,cont);
                 end
             end
             if NNE==3
-                triplot(elem,x2,y2)
+                triplot(elem2,x2,y2)
             elseif NNE==4
-                quadplot(elem,x2,y2)
+                quadplot(elem2,x2,y2)
             end
             axis([-0.05,DDD*1.2,-0.05,HHH*1.1])
             drawnow
@@ -264,9 +304,9 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
             for cont=1:contador
                 suma1=0;
                 suma2=0;
-                for i=1:Elements
+                for i=1:elements
                     for j=1:NNE
-                        if nodo==elem(i,j)
+                        if nodo==elem2(i,j)
                             suma1=suma1+VAR(i,cont)*GEOMETRY.Area(i);
                             suma2=suma2+GEOMETRY.Area(i);
                         end
@@ -279,19 +319,20 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
 
         figure
         for cont=1:rr:ste_p       
-            for nodo=1:Nodos
+            for j=1:Nodos
+                nodo=nodes_p(j);
                 if SOLVER.UW==1
-                    x1(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-3,cont);
-                    y1(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
+                    x1(j)=x(j)+hh*GLOBAL.d(df*nodo-3,cont);
+                    y1(j)=y(j)+hh*GLOBAL.d(df*nodo-2,cont);
                 elseif SOLVER.UW==2
-                    x1(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-2,cont);
-                    y1(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
+                    x1(j)=x(j)+hh*GLOBAL.d(df*nodo-2,cont);
+                    y1(j)=y(j)+hh*GLOBAL.d(df*nodo-1,cont);
                 else
-                    x1(nodo)=x(nodo)+hh*GLOBAL.d(df*nodo-1,cont);
-                    y1(nodo)=y(nodo)+hh*GLOBAL.d(df*nodo,cont);
+                    x1(j)=x(j)+hh*GLOBAL.d(df*nodo-1,cont);
+                    y1(j)=y(j)+hh*GLOBAL.d(df*nodo,cont);
                 end
             end
-            pr=TriRep(elem,x1(:),y1(:),PWnodo(:,cont));
+            pr=TriRep(elem2,x1(:),y1(:),PWnodo(:,cont));
             trisurf(pr)
             colorbar
             axis([-0.05,DDD*1.2,-0.05,HHH*1.1])

@@ -126,13 +126,13 @@
         end
         
         % Update initial
-        function [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT]=Update_ini(...
-                STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT)
+        function [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT,STEP]=...
+                Update_ini(STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT)
             
-            global SOLVER GEOMETRY
+            global SOLVER GEOMETRY MATERIAL
             
             BLK=STEP.BLCK;
-            ste=STEP.ste;
+            %ste=STEP.ste;
             ste_p=STEP.ste_p;
             
             for j=1:GEOMETRY.nodes
@@ -181,9 +181,34 @@
                 end
             end
             
-            % Initial Stresses
+            % Initial Stresses   
+            MODEL=MATERIAL(BLK).MODEL;
+            mmat=MATERIAL(BLK).MAT;
+            for i=1:GEOMETRY.mat_points
+                mati=GEOMETRY.material(i);
+                if MODEL(mati)>=3 && MODEL(mati)<5
+                    % P0
+                    p0=str2double(mmat{25,mati});
+                    ev0=str2double(mmat{23,mati});
+                    es0=str2double(mmat{26,mati});
+                    if isnan(p0)
+                        Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
+                    else
+                        if isnan(ev0)
+                            ev0=0;
+                        end
+                        if isnan(es0)
+                            es0=0;
+                        end                   
+                        Int_var.P0(i,1:3)=[p0 ev0 es0]; 
+                    end
+                end
+            end
+            
+
             %Int_var.P0(:,1)=GLOBAL.Ps(:,1);
-            Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,1);
+           % Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,GLOBAL.final_block(BLK-1));
+           Mat_state.Sigma(:,3)=GLOBAL.Sigma(:,1);
             if SOLVER.UW>0
                 Mat_state.pw(:,3)=GLOBAL.pw(:,1);
             end
@@ -332,7 +357,56 @@
             rj3=rj3/3;
 
             rj23=sqrt(rj2)^3;
-            if rj23<1.0e-15
+            if rj23<1.0e-17
+                sint3=0;
+            else
+                sint3 = -3 * sqrt(3) * rj3/2/rj23;
+            end
+            if sint3<-1
+                sint3=-1;
+            elseif sint3>1
+                sint3=1;
+            end
+            theta = 1/3*asin(sint3);
+            
+            if sint3<0 && abs(sint3)>1e-10
+                Q2=-Q2;
+            end
+        end
+        
+        % Es & Ev invariants
+        function [P2,Q2]=E_invar(Ss,e)
+            global GEOMETRY
+            
+            dims=GEOMETRY.s_dim;
+
+            ss=zeros(dims,1);
+            for i=1:dims
+                ss(dims+1-i)=Ss(e*dims+1-i);
+            end
+
+            Sc=LIB.e2E(ss);
+
+            P2=(Sc(1,1)+Sc(2,2)+Sc(3,3));
+            s=Sc-P2*eye(3)/3;
+            Q2= s(1,1)^2 + s(2,2)^2 + s(3,3)^2 +...
+               s(2,1)^2 + s(1,2)^2 + ...
+               s(3,1)^2 + s(1,3)^2 + ...
+               s(2,3)^2 + s(3,2)^2;
+            rj2=Q2*0.5;
+            Q2= sqrt(2/3*Q2);
+            P2=-P2;
+            
+            %Sign
+            rj3=0;
+            rj3 = rj3 + 3*s(2,1)*s(2,1)*(s(1,1)+s(2,2));
+            for i=1:3
+                rj3 = rj3 + s(i,i)*s(i,i)*s(i,i);
+            end
+            rj3=rj3/3;
+
+            rj23=sqrt(rj2)^3;
+            if rj23<1.0e-18
                 sint3=0;
             else
                 sint3 = -3 * sqrt(3) * rj3/2/rj23;
@@ -347,6 +421,64 @@
             if sint3<0
                 Q2=-Q2;
             end
+        end
+        
+        
+        function [val]=fill_p0(p0,GLOBAL,e,STEP)
+            
+            global MATERIAL GEOMETRY
+            
+            Mat=GEOMETRY.material;
+            MODEL=MATERIAL(STEP.BLCK).MODEL;
+            %MAT=MATERIAL(BLCK).MAT;
+
+            if MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
+                disp('Not implemented yet');
+                stop;
+            elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
+                val=VECTORS.p0_PZ(p0,GLOBAL,e,STEP);
+            end
+            
+        end
+        
+        function [val]=p0_PZ(p0,GLOBAL,e,STEP)
+            
+            global MATERIAL GEOMETRY
+                
+            Mat=GEOMETRY.material;
+            MAT=MATERIAL(STEP.BLCK).MAT;
+            
+            if strcmp(p0(1:5),'BLOCK')
+                BLCK=str2double(p0(7));
+                step=GLOBAL.final_block(BLCK);
+            else
+                disp('Unrecognized sentence in p0 value');
+                stop;
+            end
+            
+            [P,Q]=VECTORS.invar(GLOBAL.Sigma(:,step),e);
+            [Ev0,Es1]=VECTORS.E_invar(GLOBAL.Es(:,step),e);
+            
+            K = MAT{29,Mat(e)};%khar;
+            G = MAT{4,Mat(e)};%ghar;
+            
+            aux=exp(K*Q*Q/6/G/P/P);
+            P02=P/aux;
+            
+            Es2e=P02*Q/P/3/G;
+            Es0=Es1-Es2e;
+            
+            %CHECK
+            khar=-K/P02;
+            ghar=-G/P02;
+            ees=(Es1-Es0);
+            eev=0;
+            
+            p=P02*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+            q=-P02*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+               
+            val=[P02,Ev0,Es0];
+            
         end
         
     end

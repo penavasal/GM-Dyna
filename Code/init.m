@@ -58,7 +58,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     Int_var.Sy_r= zeros(elements,2);
     Int_var.H   = zeros(elements,2);
     Int_var.eta = zeros(elements,2);
-    %Int_var.P0  = zeros(elements,1);
+    Int_var.P0  = zeros(elements,3);
        
     Mat_state.title='Material state: material point information';
 
@@ -106,6 +106,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     GLOBAL.H(elements,dim)=0;
     GLOBAL.eta(elements,dim)=0;
     
+    GLOBAL.pw(elements,dim)=0;
     GLOBAL.Ps(elements,dim)=0;
     GLOBAL.Qs(elements,dim)=0;
     
@@ -118,14 +119,12 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     GLOBAL.Es_p(l2*elements,dim) = 0;
     GLOBAL.xg(elements*GEOMETRY.sp,dim)=0;
     if SOLVER.UW==1
-        GLOBAL.pw(elements,dim)=0;
         if SOLVER.SMALL==0
             GLOBAL.Fw(l1*elements,dim)=0;
         else
             GLOBAL.Esw(l2*elements,dim)=0;
         end
     elseif SOLVER.UW==2
-        GLOBAL.pw(elements,dim)=0;
         GLOBAL.dpw(GEOMETRY.sp*elements,dim)=0;
     end
     
@@ -136,13 +135,42 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     % VECTORS OF PARAMETERS
     %----------------------------------------------------------------------
     mmat=MATERIAL(STEP.BLCK).MAT;
+    MODEL=MATERIAL(STEP.BLCK).MODEL;
+
     for i=1:elements
         mati=GEOMETRY.material(i);
-        Int_var.Sy(i,2) = mmat(7,mati);
+        % P0
+        p0=str2double(mmat{25,mati});
+        ev0=str2double(mmat{23,mati});
+        es0=str2double(mmat{26,mati});
+        if isnan(p0) || isnan(es0) || isnan(ev0)
+            if MODEL(mati)>=2 && MODEL(mati)<5
+                if isnan(p0)
+                    Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
+                else
+                    if isnan(ev0)
+                        ev0=0;
+                    end
+                    if isnan(es0)
+                        es0=0;
+                    end                   
+                end
+            end
+        end
+        Int_var.P0(i,1:3)=[p0 ev0 es0];
+        % Yield stress
+        if MODEL(mati)>=2 && MODEL(mati)<5
+            if isempty(mmat{7,mati})
+               Int_var.Sy(i,2)=0;
+            else
+                Int_var.Sy(i,2) = mmat{7,mati};
+            end
+            GLOBAL.Sy(i,1)=Int_var.Sy(i,2);
+        end
         if SOLVER.UW>0
             Mat_state.k(i) = ...
-                mmat(15,mati)/...
-                mmat(42,mati)/VARIABLE.g;
+                mmat{15,mati}/...
+                mmat{42,mati}/VARIABLE.g;
         end
     end
     
@@ -182,7 +210,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
                 reshape(GLOBAL.xg(:,ste_p),[elements,GEOMETRY.sp]));
         end
         
-        [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT]=VECTORS.Update_ini(...
+        [Disp_field,Mat_state,Int_var,stiff_mtx,MAT_POINT,STEP]=VECTORS.Update_ini(...
             STEP,GLOBAL,Disp_field,Mat_state,Int_var,MAT_POINT);
         
     else
@@ -254,8 +282,10 @@ function [dim,STEP]=fix_time(tp,ste_p)
         stop
     elseif BLK==1
         tp0=0;
+        stini=0;
     else
         tp0=SOLVER.Time_final(BLK-1);
+        stini=SOLVER.step_final(BLK-1);
     end
     
     dt=SOLVER.time_step(BLK);
@@ -275,12 +305,12 @@ function [dim,STEP]=fix_time(tp,ste_p)
     l2=l1-ste_aux;
     
     dim_2=floor((l2)/SOLVER.SAVE_I);
-    dim=dim_2+ste_p;
+    dim=dim_2+ste_p+BLOCKS;
     fprintf('%i plot steps\n',dim);
     fprintf('Save %i times before the final\n',round(dim/SOLVER.SAVE_F));
     
     STEP.BLCK=BLK;
-    STEP.ste=ste_aux;
+    STEP.ste=ste_aux+stini;
     STEP.dt=dt;
     STEP.t=tb+tp0;
 end
@@ -303,8 +333,10 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
     for e=1:GEOMETRY.mat_points
             
         if SOLVER.SMALL==0            
+            P0      = Int_var.P0(e,1:3);
+
             % MATRIX B and F
-            b1=exp(MAT(23,Mat(e))/3)^2;
+            b1=exp(P0(2)/3)^2;
             Be=[b1 1e-15 0; 1e-15 b1 0; 0 0 b1];
             [be]=LIB.m2v(Be);
             for i=1:GEOMETRY.f_dim
@@ -313,7 +345,7 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
         end
 
         if MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
-            Int_var.H(e,2)=MAT(37,Mat(e));
+            Int_var.H(e,2)=MAT{37,Mat(e)};
         end
     end
     % Constitutive calculation

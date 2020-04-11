@@ -1,5 +1,5 @@
-function [A,Sc,gamma,dgamma,Pcd,Pcs,Ee]=...
-    M_Cam_Clay(Kt,ste,e,gamma,dgamma_,Pcd,Pcs,Ee_tr,P0,BLCK)
+function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee]=...
+    M_Cam_Clay(Kt,ste,e,epvol,gamma,dgamma_,Pcd,Pcs,Ee_tr,P0,BLCK)
 
     global MATERIAL GEOMETRY
     
@@ -11,24 +11,26 @@ function [A,Sc,gamma,dgamma,Pcd,Pcs,Ee]=...
     % Compute principal Cauchy / Kirchhoff tension 
     Ge(10)=0;
     
-    Ge(2) = MAT(4,Mat(e));   %mu0
-    Ge(3) = MAT(20,Mat(e));  %alfa
-    Ge(4) = MAT(22,Mat(e));  %kappa
-    Ge(5) = MAT(21,Mat(e));  %lambda
-    Ge(6) = MAT(19,Mat(e));  %M
-    Ge(9) = MAT(23,Mat(e));  %epsev0
-    Ge(10)= MAT(30,Mat(e));  %mu
-    Ge(11)= MAT(31,Mat(e));  %TAU
+    Ge(2) = MAT{4,Mat(e)};   %mu0
+    Ge(3) = MAT{20,Mat(e)};  %alfa
+    Ge(4) = MAT{22,Mat(e)};  %kappa
+    Ge(5) = MAT{21,Mat(e)};  %lambda
+    Ge(6) = MAT{19,Mat(e)};  %M
+    Ge(9) = P0(2);  %epsev0
+    Ge(10)= MAT{30,Mat(e)};  %mu
+    Ge(11)= MAT{31,Mat(e)};  %TAU
     
 
     if MODEL(Mat(e))==3.0 || ste==1
-        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcs,Kt,P0,dgamma_);
+        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcd,Kt,P0(1),dgamma_);
         Pcd=Pcs;
     elseif MODEL(Mat(e))==3.1
-        [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0,dgamma_,ste,BLCK);
+        [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0(1),dgamma_,ste,BLCK);
     end
     
-    gamma=gamma-dgamma*2*Q/P/Ge(6)^2;   
+    eta=Q/P;
+    gamma=gamma-dgamma*2*eta/Ge(6)^2;
+    epvol=epvol+dgamma*(1-eta*eta/Ge(6)^2);
 
 end
 
@@ -89,9 +91,11 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 
     % Check for plasticity    
     Ftr = (Qtr/M)^2+Ptr*(Ptr-Pcn);
-    toll = 1e-3;
-    if Ftr > toll % PLASTIC STEP    
+    
+    toll = 1e-4;
+    if Ftr/Pcn/Pcn > toll % PLASTIC STEP    
        
+        iter=1;
         % Inizialize variables
         x = zeros(3,1);
         x(1,1) = epsevTR;   % epsev
@@ -101,52 +105,72 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
         Pc = Pcn;
         P = Ptr;
         Q = Qtr;
+        
+        % Initialize r and A
+        r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
+            x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
+            (Q/M)^2 + P*(P-Pc)];  
+        
+        A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
+            kappa,mu0,alfa,P0,epsev0,M);
 
         % Solve NR system
-        iter=0;
-        normr0=0;
+        normr0=norm(r);
         imax = 200;
-        a=1.0;
         NORMErec=0;
+        
         while iter<imax
             
             iter = iter+1;
             
-            % 1. Evaluate residual            
-            r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
-                 x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
-                 (Q/M)^2 + P*(P-Pc)];  
+            % A. Solve for displacement increment
+            dx = A\r;
             
-            if isnan(r)   %|| NORMErec(iter,1)>emax
-                error('Fallo en el Modified Cam Clay \n');
-            else
-                % 2. Check for convergence
-                if iter==1
-                    normr0=norm(r);
+            A_conver=0;
+            a=1;
+            while A_conver==0
+
+                % 1. Calculate variables
+                x(:,iter) = x(:,iter-1) - a*dx;                 
+
+                % 2. Update 
+                [P,Q]=PQ(x(1,iter),x(2,iter),P0,alfa,kappa,epsev0,mu0);
+                Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter)));
+            
+                % 3. Evaluate residual            
+                r = [x(1,iter) - epsevTR + x(3,iter)*(2*P-Pc);
+                     x(2,iter) - epsesTR + x(3,iter)*(2*Q/M^2);
+                     (Q/M)^2 + P*(P-Pc)];  
+
+                if isnan(r)   %|| NORMErec(iter,1)>emax
+                    error('Fallo en el Modified Cam Clay \n');
                 else
-                    [CONVER,NORMErec,a,iter]=...
-                        LIB.convergence(r,normr0,NORMErec,toll,iter,imax,a);
+                    % 4. Check for convergence
+                    [CONVER,NORMErec]=...
+                        LIB.convergence(r,normr0,NORMErec,toll,iter,imax);
                     if CONVER==1     
                         break
+                    elseif (NORMErec(iter)-NORMErec(iter-1))>1e-8 && iter>3
+                        x(:,iter) = x(:,iter-1) + a*dx; 
+                        [a,CONVER]=LIB.a_factor_NR(a,NORMErec,toll,iter);
+                        if CONVER==1     
+                            break;
+                        end
+                    else
+                        A_conver=1;
                     end
                 end
-
-                % 3. Evaluate tangent matrix for NR iteration
+            end
+            % 5. Evaluate tangent matrix for NR iteration
+            if CONVER==0
                 A = Atang(x(1,iter),x(2,iter),x(3,iter),P,Q,Pc,lambda,...
                     kappa,mu0,alfa,P0,epsev0,M);
-                    
+
                 if rcond(A)<1e-16
                     disp('Small jacobian matrix of Modified Cam Clay return mapping');
                 end
-                
-                % 4. Solve for displacement increment
-                dx = -a*(A\r);
-                x(:,iter+1) = x(:,iter) + dx;                 
-
-                % 5. Update 
-                [P,Q]=PQ(x(1,iter+1),x(2,iter+1),P0,alfa,kappa,epsev0,mu0);
-                Pc = Pcn*exp(-OMEGA*(epsevTR-x(1,iter+1)));
-
+            else
+                break;
             end
         end
 
@@ -205,7 +229,6 @@ function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = ...
     alfa = Ge(3);
     kappa = Ge(4);
     lambda = Ge(5);
-    M = Ge(6);
     %P0 = Ge(7);
     epsev0 = Ge(9);
     mu = Ge(10);
@@ -216,14 +239,9 @@ function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = ...
     PSI = 1/mu/OMEGA;
     XI = delta_t*mu/tau;
 
-
-    % Compute volumetric trial strain
-    epsevTR = defepr(1,1)+defepr(2,2)+defepr(3,3);
-
-    % Compute deviatoric trial strain
-    epsedev = defepr-1/3*I*epsevTR;
-
-    epsesTR = sqrt(2/3)*s_j2(epsedev);
+    % Compute volumetric and deviatoric trial strain
+    [epsevTR,epsesTR,theta_e,~,~,epsedev]=invar(defepr,'STRAIN');
+    [M]=define_M(Ge,theta_e);
 
 
     % Compute trial stress invariants
@@ -346,7 +364,7 @@ function [tenspr,epse,Pcd,Pcs,aep,P,Q,dgamma] = ...
     end
 
     % Compute principal Kirchhoff tension
-    tenspr = P*I+ sqrt(2/3)*Q*n;
+    tenspr = -P*I+ sqrt(2/3)*Q*n;
 
     % Compute principal elastic strain
     epse = (1/3)*epsev*I + sqrt(3/2)*epses*n;
@@ -411,7 +429,7 @@ end
 function [P,Q] = PQ(epsev, epses, P0, alfa, kappa, epsev0, mu0)
     OMEGA = -(epsev-epsev0)/kappa;
     P = P0*exp(OMEGA)*(1+(3*alfa)*(epses^2)/(2*kappa));
-    Q = 3*(mu0-alfa*P0*exp(OMEGA))*epses;
+    Q = 3*(mu0+alfa*P0*exp(OMEGA))*epses;
 end
 
 function Dep = DEPtens( epsev,epses,dgamma,P,Q,Pc,lambda,kappa,mu0,alfa,P0,epsev0,M )
@@ -612,4 +630,59 @@ function [q]=s_j2(s)
        s(3,1)^2 + s(1,3)^2 + ...
        s(2,3)^2 + s(3,2)^2;
     q= sqrt(q);
+end
+
+function [p,q,theta,rj2,sn,devs,rj3]=invar(s,type)
+
+    p=s(1,1)+s(2,2)+s(3,3);
+    
+    devs=s-p/3*eye(3);
+    
+    [sn]=s_j2(devs);
+
+    rj2=sn*sn*0.5;
+    
+
+    rj3=0;
+    rj3 = rj3 + 3*devs(2,1)*devs(2,1)*(devs(1,1)+devs(2,2));
+    for i=1:3
+        rj3 = rj3 + devs(i,i)*devs(i,i)*devs(i,i);
+    end
+    rj3=rj3/3;
+    
+    rj23=sqrt(rj2)^3;
+    if 2*rj23<1.0e-18
+        sint3=0;
+    else
+        sint3 = -3 * sqrt(3) * rj3/2/rj23;
+    end
+    if sint3<-1
+        sint3=-1;
+    elseif sint3>1
+        sint3=1;
+    end
+    theta = 1/3*asin(sint3);
+    
+    if strcmp(type,'STRAIN')
+        q=sqrt(2/3)*sn;
+        p=-p;
+    else
+        q=sqrt(3*rj2);
+        p=-p/3;
+    end
+    
+    if sint3<0
+        q=-q;
+    end   
+
+end
+
+function [Mg]=define_M(Ge,theta)
+    if theta>pi/6
+        Mg=Ge(6);
+    elseif theta<-pi/6
+        Mg=Ge(6)*18/(18+6*Ge(6));
+    else
+        Mg=Ge(6)*18/(18+2*Ge(6)*(1-sin(3*theta)));
+    end
 end

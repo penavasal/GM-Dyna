@@ -88,7 +88,7 @@
                             Fincr=F/Fold;
                             % Compute Trial left cauchy-Green
                             Be = Fincr*Be_old*Fincr';   
-                            if isnan(BeTr)
+                            if isnan(Be)
                                 error('Error in Green-Lagrange tensor of elem e %i \n',e);
                             end
                             if MODEL(Mat(e),1)>=4
@@ -127,14 +127,15 @@
                 %% Constitutive Calculation
                 % ----------------------------
                 W=0;
+                P0      = Int_var.P0(e,1:3);
                 if MODEL(Mat(e),1)<2
                     if MODEL(Mat(e),1)==0
-                        [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK);
+                        [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK,P0);
                     elseif MODEL(Mat(e),1)<2 && MODEL(Mat(e),1)>=1
                         if SOLVER.SMALL==0
-                            [A,T]=Neo_Hookean(Kt,e,Be,J,BLCK);
+                            [A,T]=Neo_Hookean(Kt,e,Be,J,P0,BLCK);
                         else
-                            [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK);
+                            [A,T,W]=Saint_Venant(Kt,e,Ee,BLCK,P0);
                         end
                     end
                 else        
@@ -143,21 +144,24 @@
                     dgamma  = Int_var.dgamma(e,2);
 
                     if MODEL(Mat(e),1)>=2 && MODEL(Mat(e),1)<3
-                        [A,T,Gamma,dgamma,Sy,Ee]=...
-                            Drucker_prager(Kt,e,Gamma,dgamma,Sy,Ee,BLCK);
+                        epsvol  = Int_var.epsv(e,2);
+                        [A,T,epsvol,Gamma,dgamma,Sy,Ee]=...
+                            Drucker_prager(Kt,e,epsvol,Gamma,dgamma,Sy,Ee,P0,BLCK);
+                        Int_var.epsv(e,1)= epsvol;
                     elseif MODEL(Mat(e),1)>=3 && MODEL(Mat(e),1)<4
-                        %P0      = Int_var.P0(e);
+                        
                         Sy_r    = Int_var.Sy_r(e,2);
-                        [A,T,Gamma,dgamma,Sy,Sy_r,Ee]=...
-                            M_Cam_Clay(Kt,ste,e,Gamma,dgamma,Sy,Sy_r,Ee,BLCK);
+                        epsvol  = Int_var.epsv(e,2);
+                        [A,T,epsvol,Gamma,dgamma,Sy,Sy_r,Ee]=...
+                            M_Cam_Clay(Kt,ste,e,epsvol,Gamma,dgamma,Sy,Sy_r,Ee,P0,BLCK);
                         Int_var.Sy_r(e,1) = Sy_r;
+                        Int_var.epsv(e,1)= epsvol;
                     elseif MODEL(Mat(e),1)>=4 && MODEL(Mat(e),1)<5
-                        %P0      = Int_var.P0(e);
                         H       = Int_var.H(e,2);
                         etaB    = Int_var.eta(e,2);
                         epsvol  = Int_var.epsv(e,2);
                         [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Ee]=...
-                                PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,Ee,deps,BLCK);
+                                PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,Ee,deps,P0,BLCK);
                         Int_var.epsv(e,1)= epsvol;
                         Int_var.H(e,1)   = H;
                         Int_var.eta(e,1) = etaB;
@@ -200,9 +204,9 @@
                 %% Pore Water Pressure Calculation matrix
                 % ----------------------------
                     % Q calculation
-                    n=1-(1-MAT(16,Mat(e)))/MAT_POINT{1}(e).J;
-                    K_w=MAT(28,Mat(e));
-                    K_s=MAT(27,Mat(e));
+                    n=1-(1-MAT{16,Mat(e)})/MAT_POINT{1}(e).J;
+                    K_w=MAT{28,Mat(e)};
+                    K_s=MAT{27,Mat(e)};
                     Q=1/(n/K_w+(1-n)/K_s);
 
                     %%% Strains %%%

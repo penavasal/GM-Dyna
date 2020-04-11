@@ -70,6 +70,8 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
     % SAVING LAST VALUES
     STEP.ste_p=STEP.ste_p+1;
     fprintf('ste_p %i \n',STEP.ste_p);
+    
+    GLOBAL.final_block(STEP.BLCK)=GLOBAL.ste_p;
 
     GLOBAL=VECTORS.Store(GLOBAL,STEP,Mat_state,Disp_field,Int_var,...
         MAT_POINT,out_list1);
