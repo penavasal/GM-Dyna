@@ -52,8 +52,8 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     
     Int_var.title='Internal variables: plastic information';
     Int_var.dgamma  = zeros(elements,2);
-    Int_var.gamma  = zeros(elements,2);
-    Int_var.epsv  = zeros(elements,2);
+    Int_var.gamma  = zeros(elements,3);
+    Int_var.epsv  = zeros(elements,3);
     Int_var.Sy  = zeros(elements,2);
     Int_var.Sy_r= zeros(elements,2);
     Int_var.H   = zeros(elements,2);
@@ -143,21 +143,20 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         p0=str2double(mmat{25,mati});
         ev0=str2double(mmat{23,mati});
         es0=str2double(mmat{26,mati});
-        if isnan(p0) || isnan(es0) || isnan(ev0)
-            if MODEL(mati)>=2 && MODEL(mati)<5
-                if isnan(p0)
-                    Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,STEP);
-                else
-                    if isnan(ev0)
-                        ev0=0;
-                    end
-                    if isnan(es0)
-                        es0=0;
-                    end                   
-                end
+        if p0 && (isempty(mmat{23,mati}) || isempty(mmat{26,mati}))
+            if isempty(mmat{23,mati})
+                ev0=0;
             end
+            if isempty(mmat{26,mati})
+                es0=0;
+            end
+            Int_var.P0(i,1:3)=[p0 ev0 es0];
+        elseif isnan(p0) || isnan(es0) || isnan(ev0)
+            Int_var.P0(i,1:3)=VECTORS.fill_p0(mmat{25,mati},GLOBAL,i,...
+                STEP,mmat{26,mati},mmat{23,mati});                
+        else
+            Int_var.P0(i,1:3)=[p0 ev0 es0];
         end
-        Int_var.P0(i,1:3)=[p0 ev0 es0];
         % Yield stress
         if MODEL(mati)>=2 && MODEL(mati)<5
             if isempty(mmat{7,mati})

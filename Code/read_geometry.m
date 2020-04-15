@@ -513,7 +513,7 @@ function [MAT_POINT,NODE_LIST]=...
     % Plot
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if PLOT_ini
-        plot_nb(0,0,x_a,GEOMETRY.elem_c,0,0)
+        PLOT('NEIGHBORS',pwd,'AMPL',0);
     end
 
 

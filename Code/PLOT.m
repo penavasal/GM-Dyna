@@ -1,25 +1,181 @@
-function PLOT(driver,PLT,varargin)
+function PLOT(driver,folder,varargin)
 
-    folder = PLT.folder;
-    freq   = PLT.freq;
-    ampl   = PLT.ampl;
-    steps  = PLT.steps;
-    str_out= PLT.str_out;
-    str_in = PLT.str_in;
+    ll=length(varargin);
+    b = mod(ll+1,2);
+    a = floor((ll)/2);
+    
+    %Initial values
+    ampl=1;
+    freq=1;
+    steps=0;
+    str_out='RES';
+    PLT=struct('var',0,'film',0,'near',0,'file',0,'e',0,'range',0,...
+        'onnodes',0,'time',0,'pw',1);
 
+    if ~strcmp(driver,'NEIGHBORS') && b~=0
+        error('Wrong format: file,type,num,type,num...');
+    elseif strcmp(driver,'NEIGHBORS') && mod(nargin,2)~=0
+        error('Wrong format: file,type,num,type,num...');
+    else
+        t=0;
+        if ~strcmp(driver,'NEIGHBORS')
+            t=1;
+            str_in=varargin{t};
+        end
+        
+        for i=1:a
+            t=t+1;
+            s2=varargin{t};
+            switch s2
+                case 'AMPL'
+                    t=t+1;
+                    ampl=varargin{t};
+                    continue
+                case 'AMPLIFICATION'
+                    t=t+1;
+                    ampl=varargin{t};
+                    continue
+                case 'FREQ'
+                    t=t+1;
+                    freq=varargin{t};
+                    continue
+                case 'FREQUENCY'
+                    t=t+1;
+                    freq=varargin{t};
+                    continue
+                case 'FILE_OUT'
+                    t=t+1;
+                    str_out=varargin{t};
+                    continue
+                case 'OUT'
+                    t=t+1;
+                    str_out=varargin{t};
+                    continue
+                case 'VAR'
+                    t=t+1;
+                    PLT.var=varargin{t};
+                    continue
+                case 'FILE_IN'
+                    t=t+1;
+                    PLT.file=varargin{t};
+                    continue
+                case 'E'
+                    t=t+1;
+                    PLT.e=varargin{t};
+                    continue
+                case 'FILM'
+                    t=t+1;
+                    PLT.film=1;
+                    continue
+                case 'TIME'
+                    t=t+1;
+                    PLT.time=varargin{t};
+                    continue
+                case 'RANGE'
+                    t=t+1;
+                    PLT.range=varargin{t};
+                    continue
+                case 'ON_NODES'
+                    t=t+1;
+                    PLT.onnodes=1;
+                    continue
+                case 'PW'
+                    t=t+1;
+                    PLT.pw=varargin{t};
+                    continue
+                case 'STEPS'
+                    t=t+1;
+                    if strcmp(varargin{t},'FULL')
+                        steps=0;
+                    else
+                        steps=varargin{t};
+                    end
+                    continue
+                otherwise
+                    error('Unrecognized variable')
+            end
+        end
+
+    end
 
     if strcmp(driver,'VTK')
         vtk_driver(str_in,str_out,steps,ampl,freq,folder)
     elseif strcmp(driver,'GID')
         GID_driver(str_in,str_out,steps,freq,folder)
     elseif strcmp(driver,'GRID')
-        plot_ep(str_in,folder,steps,freq,varargin{:})
+        plot_ep(str_in,folder,steps,freq,PLT)
     elseif strcmp(driver,'DEFORMED') || strcmp(driver,'DISTRIBUTION')
-        plot_f(driver,str_in,folder,steps,ampl,freq,varargin{:})
+        plot_f(driver,str_in,folder,steps,ampl,freq,PLT)
     elseif strcmp(driver,'CRACK')
         plot_mp(str_in,folder,steps,freq)
+    elseif strcmp(driver,'NEIGHBORS')
+        plot_nb(PLT,ampl)
+    elseif strcmp(driver,'CONSTITUTIVE')
+        plot_constitutive(str_in,ste_p,freq,PLT)
+    elseif strcmp(driver,'EXCESS_PW')
+        nodes_col(str_in,PLT)
+    elseif strcmp(driver,'CONSOLIDATION')
+        plot_col(str_in,PLT)
     end
     
+end
+
+function plot_nb(PLT,h)
+
+if PLT.file==0
+    global GEOMETRY
+    ds=zeros(GEOMETRY.nodes*GEOMETRY.df,1);
+else
+    load(PLT.file,'-mat','GEOMETRY','GLOBAL');
+    ds=GLOBAL.d(:,GLOBAL.ste_p);
+end
+
+NODO=PLT.e;
+nds=PLT.near;
+
+xg=GEOMETRY.xg_0;
+x_a=GEOMETRY.x_0;
+elem=GEOMETRY.elem_c;
+df=GEOMETRY.df;
+nodes=GEOMETRY.nodes;
+
+[~,NNE]=size(elem);
+
+if h~=0
+    for i=1:nodes
+        x_a(i,1)=x_a(i,1)+h*ds((i-1)*df+1,1);
+        x_a(i,2)=x_a(i,2)+h*ds((i-1)*df+2,1);
+    end
+end
+
+
+if NODO
+    XX=zeros(length(nds),2);
+    for i=1:length(nds)
+        XX(i,1)=x_a(nds(i),1);
+        XX(i,2)=x_a(nds(i),2);
+    end
+    if NNE==3
+    hold on, triplot(elem,x_a(:,1),x_a(:,2)), scatter(xg(:,1),xg(:,2)), ...
+        scatter(xg(NODO,1),xg(NODO,2),'MarkerFaceColor',[1 1 0]), ...
+        scatter(XX(:,1),XX(:,2),'MarkerFaceColor',[1 0 0]), hold off
+    elseif NNE==4
+    hold on, quadplot(elem,x_a(:,1),x_a(:,2)), scatter(xg(:,1),xg(:,2)), ...
+        scatter(xg(NODO,1),xg(NODO,2),'MarkerFaceColor',[1 1 0]), ...
+        scatter(XX(:,1),XX(:,2),'MarkerFaceColor',[1 0 0]), hold off
+    end
+else
+    if NNE==3
+    hold on, triplot(elem,x_a(:,1),x_a(:,2)), scatter(xg(:,1),xg(:,2)), ...
+        hold off
+    elseif NNE==4
+    hold on, quadplot(elem,x_a(:,1),x_a(:,2)), scatter(xg(:,1),xg(:,2)), ...
+        hold off
+    end
+    xlabel('X'),ylabel('Y')
+end
+    
+
 end
 
 function plot_mp(str,folder,steps,rr)
@@ -34,9 +190,13 @@ function plot_mp(str,folder,steps,rr)
     Elements=GEOMETRY.mat_points;
     sp=GEOMETRY.sp;
     Nodos=GEOMETRY.nodes;
-
-    contador=min(steps,GLOBAL.ste_p);
     
+    if steps==0
+        contador=GLOBAL.ste_p-1;
+    else
+        contador=min(steps,ste_p);
+    end
+
     DDD=max(x_0(:,1));
     HHH=max(x_0(:,2));
 
@@ -82,26 +242,28 @@ function plot_mp(str,folder,steps,rr)
 
 end
 
-   
-function plot_ep(str,folder,ste_p,rt,varargin)
+function plot_ep(str,folder,ste_p,rt,PLT)
 
     
     root=strcat(folder,'/',str,'.mat');
     load(root,'GEOMETRY','SOLVER','GLOBAL');
     
-    if strcmp(ste_p,'FULL')
-        ste_p=SOLVER.dim;
+    if ste_p==0
+        ste_p=GLOBAL.ste_p-1;
     end
     
     %[elements,NNE]=size(GEOMETRY.elem);
     x_0=GEOMETRY.x_0;
     
-    if strcmp(varargin{1},'GAMMA')
-        VAR=GLOBAL.gamma_nds;
-    %elseif strcmp(varargin{1},'PW')
+    if PLT.var==0
+        error('Unrecognized variable')
     else
-        disp('Unrecognized variable')
-        stop
+        if strcmp(PLT.var,'GAMMA')
+            VAR=GLOBAL.gamma_nds;
+        %elseif strcmp(varargin{1},'PW')
+        else
+            error('Unrecognized variable')
+        end
     end
 
     [Nodos,~]=size(x_0);
@@ -137,7 +299,7 @@ function plot_ep(str,folder,ste_p,rt,varargin)
 
 end
 
-function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
+function plot_f(driver,str,folder,ste_p,hh,rr,PLT)
 
     %hh   %Amplification in pressure plot
     %rr   %Frequency in pressure plot
@@ -155,34 +317,33 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
     %TYPE
     if strcmp(driver,'DISTRIBUTION')
         flag3=1;
-        if strcmp(varargin{1},'PS')
-            VAR=GLOBAL.Ps;
-        elseif strcmp(varargin{1},'PW')
-            VAR=GLOBAL.pw;
-        elseif strcmp(varargin{1},'GAMMA')
-            VAR=GLOBAL.gamma;
+        if PLT.var==0
+            error('Unrecognized variable')
         else
-            disp('Unrecognized variable')
-            stop
-        end
-        if nargin==8
-            if strcmp(varargin{2},'FILM')
-                film2=1;
+            if strcmp(PLT.var,'PS')
+                VAR=GLOBAL.Ps;
+            elseif strcmp(PLT.var,'PW')
+                VAR=GLOBAL.pw;
+            elseif strcmp(PLT.var,'GAMMA')
+                VAR=GLOBAL.gamma;
+            else
+                error('Unrecognized variable')
             end
+        end
+        if PLT.film
+            film2=1;
         end  
     elseif strcmp(driver,'DEFORMED')
         flag2=1;
-        if nargin==7
-            if strcmp(varargin{1},'FILM')
-                film=1;
-            end
-        end 
+        if PLT.film
+            film=1;
+        end
     end
 
     % Steps
-    if strcmp(ste_p,'FULL')
-        ste_p=SOLVER.dim;
-    end  
+    if ste_p==0
+        ste_p=GLOBAL.ste_p-1;
+    end
     contador=ste_p;
     
     
@@ -347,6 +508,344 @@ function plot_f(driver,str,folder,ste_p,hh,rr,varargin)
         if film2
             close(movie2);
         end
+    end
+
+
+end
+
+function plot_constitutive(str,steps,freq,PLT)
+
+global GEOMETRY MATERIAL SOLVER
+
+time_d=0.001;
+
+e=PLT.e;
+
+load(str,'-mat','GLOBAL','GEOMETRY','MATERIAL','SOLVER');
+
+BLCK=1;
+
+mati=GEOMETRY.material(e);
+MODEL=MATERIAL(BLCK).MODEL(mati,1);
+MAT=MATERIAL(BLCK).MAT;
+
+if MODEL>=2
+    if ~isempty(MAT{19,mati})
+        M = MAT{19,mati};
+    else
+        M=0;
+    end
+end
+
+if ~isempty(MAT{16,mati})
+    n0=MAT{16,mati};
+    %n=1-(1-n0)/MAT_POINT{1}(e).J;
+else
+    n0=0;
+end
+
+e_0=n0/(1-n0);
+
+Ps=GLOBAL.Ps(e,:);
+P0=Ps(1);
+
+if P0<500 % To kPa
+    mult=1000;
+else
+    mult=0.001;
+end
+Ps=Ps*mult;
+Sy_tot=GLOBAL.Sy(e,:)*mult;
+Qs=GLOBAL.Qs(e,:)*mult;
+Pw=GLOBAL.pw(e,:)*mult;
+
+Es=GLOBAL.Es;
+Es_p=GLOBAL.Es_p;
+void_index=GLOBAL.J(e,:)*(1+e_0)-1;
+
+
+% Time
+if steps==0
+    ste_p=GLOBAL.ste_p-1;
+else
+    ste_p=steps;
+end
+
+if freq==0
+    total=100;
+    if total>ste_p
+        each=1;
+    else
+        each=round(ste_p/total);
+    end
+else
+    each=freq;
+end
+    
+
+% Epsilon
+edev=zeros(ste_p,1);
+evol=zeros(ste_p,1);
+for j=1:ste_p
+    [evol(j),edev(j)]=VECTOR.E_invar(Es(:,j)+Es_p(:,j),e);
+end
+
+%Ellipse
+
+if MODEL>=3 && MODEL<4
+    Pc_max=max(-Sy_tot(e,1:ste_p));
+else
+    Pc_max=max(-Ps(e,1:ste_p))*1.2;
+end
+b_max=M*Pc_max/2;
+lim=1.2*Pc_max;
+
+figure;
+
+hold on
+h2=plot(0,0);
+h3=plot(0,0);
+for i=1:each:ste_p
+    
+    if  MODEL>=2 && MODEL<5
+        if MODEL>=2 && MODEL<3
+            C=-Sy_tot(i);
+        else
+            C=0;
+        end
+        delete(h3)
+        subplot(2,2,2)
+        hold on
+        h3=plot(linspace(0,lim,5),M*linspace(0,lim,5)+C,'k');
+    else
+        C=0;
+    end
+    
+    subplot(2,2,1)
+    plot(edev(1:i)*100,Qs(1:i))
+    axis([0 inf 0 max(max(Qs(1:ste_p))*1.1,max(b_max,lim*M+C))])
+    xlabel('\epsilon %')
+    ylabel('Q [kPa]')
+    
+    subplot(2,2,2)
+    axis([0 Pc_max 0 max(max(Qs(1:ste_p))*1.1,max(b_max,lim*M+C))])
+    xlabel('P [kPa]')
+    ylabel('Q [kPa]')
+
+    if MODEL>=3 && MODEL<4
+    delete(h2)
+    Pc=-Sy_tot(i);
+    b=M*Pc/2;
+    x0=Pc/2;
+    t=0:0.01:pi;
+    x=x0+Pc/2*cos(t);
+    y=b*sin(t);
+    
+    h2=plot(x,y,'b');
+    hold on
+    end
+    
+    plot(-Ps(1:i),Qs(1:i),'r')
+    
+    if SOLVER.UW
+    subplot(2,2,3)
+    plot(edev(1:i)*100,Pw(1:i))
+    axis([0 inf -inf max(Pw(1:ste_p))*1.1])
+    xlabel('\epsilon %')
+    ylabel('P_w [kPa]')
+    end
+
+    subplot(2,2,4)
+    plot(-Ps(2:i),1+void_index(2:i))
+    axis([0 Pc_max min(void_index(2:ste_p))+0.5 max(void_index(2:ste_p))+1.5])
+    xlabel('P [kPa]')
+    ylabel('1+e')
+    
+    drawnow;
+    pause(time_d)
+end
+hold off
+
+end
+
+function nodes_col(str,PLT)
+
+    load(str,'-mat','GLOBAL','GEOMETRY')
+    
+    rr=PLT.range;
+    range1=rr(1);
+    range2=rr(2);
+    tt=PLT.time;
+    
+    %nds=GEOMETRY.nodes;
+    mps=GEOMETRY.mat_points;
+    %sp=GEOMETRY.sp;
+    %df=GEOMETRY.df;
+    %xa=GEOMETRY.x_0;
+    xg=GEOMETRY.xg_0;
+    %d=GLOBAL.d;
+    
+    Pw=GLOBAL.pw;
+    S=GLOBAL.Sigma;
+    
+    tp=GLOBAL.tp;
+    steps=GLOBAL.ste_p;
+    
+    k=0;
+    for i=1:mps
+        if xg(i,1)<range2  && xg(i,1)>range1
+            k=k+1;
+            col(k,1)=i;
+            col(k,2)=xg(i,2);
+        end
+    end
+
+    column=zeros(k,2);
+    s0=zeros(k,1);
+    for i=1:k
+        [~,j]=max(col(:,2));
+        column(i,1)=col(j,1);
+        column(i,2)=xg(column(i,1),2);
+        column(i,3)=xg(column(i,1),1);
+        col(j,2)=-1e32;
+    end
+    
+    ll=length(tt);
+    sll=zeros(ll,1);
+    for i=1:ll
+        for j=1:steps
+            if tp(j)>tt(i)
+                sll(i)=j;
+                break;
+            end
+        end
+    end
+    
+    st0=sll(1);
+    for i=1:k
+        s0(i,1)=-S((column(i)-1)*4+2,st0);
+    end
+    
+    figure;
+    plot(s0,column(:,2),'DisplayName','\sigma_y_0');
+    hold on
+    pl=zeros(k,1);
+    for i=1:ll
+        for j=1:k
+            pl(j)=Pw(column(j,1),sll(i))-Pw(column(j,1),st0);
+        end
+        plot(pl,column(:,2),'DisplayName',strcat(num2str(tt(i)),' s'));
+    end
+    hold off
+    legend
+    
+
+end
+
+function plot_col(str,PLT)
+
+    load(str,'-mat','GLOBAL','GEOMETRY','SOLVER')
+
+    rr=PLT.range;
+    range1=rr(1);
+    range2=rr(2);
+    
+    P=PLT.pw;
+    
+    if strcmp(PLT.time,'MAX')
+        tt=-1;
+    else
+        tt=PLT.time;
+    end
+    
+    nn=PLT.onnodes;
+    if nn==1 && SOLVER.UW==1
+        error('only on nodes if the UPw formulation is run')
+    end
+        
+
+    df=GEOMETRY.df;
+    if nn
+        x=GEOMETRY.x_0;
+        lim=GEOMETRY.nodes;
+    else
+        x=GEOMETRY.xg_0;
+        lim=GEOMETRY.mat_points;
+    end
+
+    steps=GLOBAL.ste_p;
+    tp=GLOBAL.tp;
+
+    k=0;
+    for i=1:lim
+        if x(i,1)>range1 && x(i,1)<range2
+            k=k+1;
+            list_aux(k)=i;
+            x_aux(k,:)=x(i,:);
+        end
+    end
+
+    if k==0
+        error('Nodes/mps out of defined range')
+    end
+
+    x_col(k,2)=0;
+    list_col(k,1)=0;
+    for i=1:k
+        [~,a]=min(x_aux(:,2));
+        x_col(i,:)=x_aux(a,:);
+        list_col(i)=a;
+        x_aux(a,2)=1e32; 
+    end
+
+    if tt~=-1
+        ll=length(tt);
+        plots=zeros(ll,1);
+        for i=1:ll
+            for j=1:steps
+                if tp(j)>tt(i)
+                    plots(i)=j;
+                    break;
+                end
+            end
+        end
+
+
+        figure;
+        hold on
+        for i=1:length(plots)
+            pl=zeros(k,1);
+            for j=1:k
+                if nn
+                    pl(j)=GLOBAL.d((list_col(j)-1)*df+3,plots(i));
+                else
+                    pl(j)=GLOBAL.pw(list_col(j),plots(i));
+                end
+            end
+            plot(pl,x_col(:,2));
+        end
+
+    else
+        pl=zeros(k,1);
+        for i=1:k
+            b=-1e30;
+            for j=1:steps
+                if nn
+                    pp=GLOBAL.d((list_col(i)-1)*df+3,j)/P;
+                else
+                    pp=GLOBAL.pw(list_col(i),j)/P;
+                end
+                if pp>b
+                    b=pp;
+                end
+            end
+            pl(i)=b;
+        end
+        figure
+        plot(pl,x_col(:,2))
+        axis([min(0,min(pl)),max(1.1,max(pl)),...
+            min(min(x_col(:,2)),0),max(10,max(x_col(:,2)))])
+
     end
 
 

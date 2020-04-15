@@ -110,7 +110,7 @@
             end
             MAT_POINT(i).near=near_;
             if T==1
-                plot_nb(i,near_,x_a,GEOMETRY.elem_c,1,0);
+                PLOT('NEIGHBORS',pwd,'e',i,'NEAR',near_,'AMPL',0);
             end
         end
 

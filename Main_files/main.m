@@ -1,4 +1,7 @@
-clear all
+function main(varargin)
+
+%clear all
+clearvars -except varargin
 format long
 restoredefaultpath
 warning('off', 'MATLAB:nearlySingularMatrix')
@@ -28,7 +31,12 @@ addpath(path,s1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CODE PARAMETERS, GEOMETRY, MATERIAL and BOUNDARY CONDITIONS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[MAT_POINT]=read_problem;
+if nargin==0
+    str='problem.txt';
+else
+    str=strcat(varargin{1},'.txt');
+end
+[MAT_POINT]=read_problem(str);
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%SOLVER

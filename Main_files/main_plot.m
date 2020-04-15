@@ -1,4 +1,4 @@
-function main_plot(driver,str_in,str_out,steps,freq,ampl,varargin)
+function main_plot(driver,varargin)
 
 
 % Driver to employ plot tools developed within this code
@@ -21,15 +21,8 @@ function main_plot(driver,str_in,str_out,steps,freq,ampl,varargin)
     end 
 
     addpath(path,s);
-    
-    PLT.folder  = pwd;
-    PLT.freq    = freq;
-    PLT.ampl    = ampl;
-    PLT.steps   = steps;
-    PLT.str_out = str_out;
-    PLT.str_in  = str_in;
-    
-    PLOT(driver,PLT,varargin);
+    folder  = pwd;
+    PLOT(driver,folder,varargin{:});
     
 
 

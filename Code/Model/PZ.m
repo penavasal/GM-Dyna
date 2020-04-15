@@ -821,7 +821,6 @@ function [aep,T,E_elast]=aep_calculation(Kt,Ge,P,Q,...
     
 end
 
-
 function [A]=assemble(D,n,Ge,eev1,ees1)
 
 

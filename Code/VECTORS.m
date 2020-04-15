@@ -116,8 +116,11 @@
                 Mat_state.status(:,2)=Mat_state.status(:,1);
             end
 
+            Int_var.gamma(:,3)  = Int_var.gamma(:,2);
             Int_var.gamma(:,2)  = Int_var.gamma(:,1);
+            Int_var.epsv(:,3)   = Int_var.epsv(:,2);
             Int_var.epsv(:,2)   = Int_var.epsv(:,1);
+            
             Int_var.H(:,2)      = Int_var.H(:,1);
             Int_var.eta(:,2)    = Int_var.eta(:,1);
             Int_var.Sy(:,2)     = Int_var.Sy(:,1);
@@ -418,21 +421,39 @@
             end
             theta = 1/3*asin(sint3);
             
-            if sint3<0
+            if sint3<0 && abs(sint3)>1e-10
                 Q2=-Q2;
             end
         end
         
         
-        function [val]=fill_p0(p0,GLOBAL,e,STEP)
+        function [val]=fill_p0(p0,GLOBAL,e,STEP,es0,ev0)
             
             global MATERIAL GEOMETRY
             
             Mat=GEOMETRY.material;
             MODEL=MATERIAL(STEP.BLCK).MODEL;
             %MAT=MATERIAL(BLCK).MAT;
+            
+            
 
-            if MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
+            if MODEL(Mat(e))<3
+                if isempty(p0) && isempty(es0) && isempty(ev0)
+                    val=[0 0 0];
+                else
+                    if strcmp(p0(1:5),'BLOCK')
+                        %BLCK=str2double(p0(7));
+                        %step=GLOBAL.final_block(BLCK);
+                        error('to be continued...')
+                    elseif strcmp(p0(1:2),'')
+                        val=[0 0 0];
+                    else
+                        disp('Unrecognized sentence in p0 value');
+                        stop;
+                    end
+                end
+            
+            elseif MODEL(Mat(e))>=3 && MODEL(Mat(e))<4
                 disp('Not implemented yet');
                 stop;
             elseif MODEL(Mat(e))>=4 && MODEL(Mat(e))<5
