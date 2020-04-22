@@ -251,10 +251,10 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
     end
     
     sy=-sy;
-    [ss,p]=split(Sc);
-    [q]=s_j2(ss);
-    Q= sqrt(3/2)*q
-    P=p/3
+%     [ss,p]=split(Sc);
+%     [q]=s_j2(ss);
+%     Q= sqrt(3/2)*q
+%     P=p/3
     %-----------------------------------------------
     % Update tensors and plastic variables
     %-----------------------------------------------  
