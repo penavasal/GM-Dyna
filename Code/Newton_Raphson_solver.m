@@ -45,7 +45,7 @@ function [Disp_field,Mat_state,MAT_POINT,STEP]=...
         % A.1 Check
         if isnan(du(:,iter))
             disp('Nan in displacements')
-            SOLVER.FAIL=1;
+            STEP.FAIL=1;
             break;
         end
         
@@ -76,10 +76,10 @@ function [Disp_field,Mat_state,MAT_POINT,STEP]=...
             %--------------------------------------------------------------
             if isnan(GT)   %|| NORMErec(iter,1)>emax
                 error('Fallo en el NR global \n');
-                SOLVER.FAIL=1;
+                STEP.FAIL=1;
             else
-                [CONVER,error_nr]=LIB.convergence(GT,nGT0,error_nr,...
-                    RTOL,iter,SOLVER.NR_iterations(BLCK));
+                [CONVER,error_nr,STEP.FAIL]=LIB.convergence(GT,nGT0,error_nr,...
+                    RTOL,iter,SOLVER.NR_iterations(BLCK),STEP.FAIL);
                 if CONVER==1     
                     break;
                 elseif iter>6 && norm(du(:,iter))/norm(d0(:,1)) < DTOL

@@ -3,12 +3,12 @@
         function [stiff_mtx,Int_var,Mat_state,STEP]=...
             update(Kt,STEP,Int_var,Mat_state,MAT_POINT)
 
-            global GEOMETRY SOLVER
+            global GEOMETRY
 
             df=GEOMETRY.df;
             stiff_mtx = zeros(df*GEOMETRY.nodes);
 
-            if SOLVER.FAIL==0
+            if STEP.FAIL==0
                 
                 % ----------------------------
                 % Constitutive calculation
@@ -152,16 +152,16 @@
                         
                         Sy_r    = Int_var.Sy_r(e,2);
                         epsvol  = Int_var.epsv(e,2);
-                        [A,T,epsvol,Gamma,dgamma,Sy,Sy_r,Ee]=...
-                            M_Cam_Clay(Kt,ste,e,epsvol,Gamma,dgamma,Sy,Sy_r,Ee,P0,BLCK);
+                        [A,T,epsvol,Gamma,dgamma,Sy,Sy_r,Ee,STEP]=...
+                            M_Cam_Clay(Kt,STEP,e,epsvol,Gamma,dgamma,Sy,Sy_r,Ee,P0);
                         Int_var.Sy_r(e,1) = Sy_r;
                         Int_var.epsv(e,1)= epsvol;
                     elseif MODEL(Mat(e),1)>=4 && MODEL(Mat(e),1)<5
                         H       = Int_var.H(e,2);
                         etaB    = Int_var.eta(e,2);
                         epsvol  = Int_var.epsv(e,2);
-                        [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Ee]=...
-                                PZ(Kt,ste,e,Gamma,epsvol,dgamma,Sy,etaB,H,Ee,deps,P0,BLCK);
+                        [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Ee,STEP]=...
+                                PZ(Kt,STEP,e,Gamma,epsvol,dgamma,Sy,etaB,H,Ee,deps,P0);
                         Int_var.epsv(e,1)= epsvol;
                         Int_var.H(e,1)   = H;
                         Int_var.eta(e,1) = etaB;
@@ -179,7 +179,7 @@
                 AA=isreal(T);
                 if  AA(1)==0
                     fprintf('Error with stress, in Constitutive file, element %i \n',e);
-                    SOLVER.FAIL=1;
+                    STEP.FAIL=1;
                     break;
                 end
                 

@@ -40,11 +40,10 @@ function MAT_POINT=shape_function_calculation(...
                     xg=GEOMETRY.xg_0(i,:);
                     [MAT_POINT{ph}]=LME.near(i,GEOMETRY.x_0,xg,...
                         n_sp,MAT_POINT{ph},sh,ph); 
-                    [MAT_POINT{ph},SOLVER.FAIL]=LME.shapef...
+                    [MAT_POINT{ph},FAIL]=LME.shapef...
                         (i,GEOMETRY.x_0,n_sp,xg,MAT_POINT{ph},sh);
-                    if SOLVER.FAIL
-                        fprintf('FAIL in the initial calculation of Shape function \n');
-                        stop;
+                    if FAIL
+                        error('FAIL in the initial calculation of Shape function \n');
                     end
                 end
                 
@@ -145,10 +144,9 @@ function MAT_POINT=shape_function_calculation(...
                         end
 
                         [MAT_POINT{ph}]=LME.near(i,x,xg,h,MAT_POINT{ph}); 
-                        [MAT_POINT{ph},SOLVER.FAIL]=LME.shapef(i,x,h,xg,MAT_POINT{ph});
-                        if SOLVER.FAIL
-                            fprintf('FAIL in the initial calculation of Shape function \n');
-                            stop;
+                        [MAT_POINT{ph},FAIL]=LME.shapef(i,x,h,xg,MAT_POINT{ph});
+                        if FAIL
+                            error('FAIL in the initial calculation of Shape function \n');
                         end
                     end
                 end

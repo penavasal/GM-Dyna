@@ -50,16 +50,16 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
             STEP.ste_p=STEP.ste_p+1;
             fprintf('ste_p %i \n',STEP.ste_p);
           
-            GLOBAL=VECTORS.Store(GLOBAL,STEP,Mat_state,Disp_field,...
+            [GLOBAL,STEP]=VECTORS.Store(GLOBAL,STEP,Mat_state,Disp_field,...
                 Int_var,MAT_POINT,out_list1);
         end
 
         % 6. Save info
-        if ((rem(STEP.ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) || (SOLVER.FAIL==1))
+        if ((rem(STEP.ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) || (STEP.FAIL==1))
             save(SOLVER.Output(BLCK),'MAT_POINT','GLOBAL','-append')
-            if SOLVER.FAIL==1
-                stop
-            end   
+            if STEP.FAIL==1
+                error('Simulation failed');
+            end  
         end
         
         % 7. Update
@@ -76,7 +76,7 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
     
     GLOBAL.final_block(STEP.BLCK)=GLOBAL.ste_p;
 
-    GLOBAL=VECTORS.Store(GLOBAL,STEP,Mat_state,Disp_field,Int_var,...
+    [GLOBAL,STEP]=VECTORS.Store(GLOBAL,STEP,Mat_state,Disp_field,Int_var,...
         MAT_POINT,out_list1);
     save(SOLVER.Output(BLCK),'MAT_POINT','GLOBAL','-append')
      

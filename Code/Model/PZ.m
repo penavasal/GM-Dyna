@@ -1,9 +1,13 @@
 
-function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee]=...
-    PZ(Kt,ste,e,gamma,epsvol,dgamma_,zetamax,etaB,H,Ee_tr,deps,P0,BLCK)
-
+function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee,STEP]=...
+    PZ(Kt,STEP,e,gamma,epsvol,dgamma_,zetamax,etaB,H,Ee_tr,deps,P0)
 
     global MATERIAL GEOMETRY
+    
+    ste=STEP.ste;
+    BLCK=STEP.BLCK;
+    
+    FAIL=STEP.FAIL;
     
     Mat=GEOMETRY.material;
     MODEL=MATERIAL(BLCK).MODEL(Mat(e));
@@ -31,7 +35,7 @@ function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee]=...
     
     % Compute principal Kirchhoff tension 
     if MODEL==4.1
-        [TTe,Ee,H,A,dgamma,gamma,epsvol,zetamax,etaB] = ...
+        [TTe,Ee,H,A,dgamma,gamma,epsvol,zetamax,etaB,FAIL] = ...
             PZ_backward_Euler(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
     elseif MODEL==4.2
         [TTe,Ee,H,A,dgamma,gamma,epsvol,zetamax,etaB]=...
@@ -41,13 +45,17 @@ function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee]=...
             PZ_modified_Euler(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
     end
     
+    STEP.FAIL=FAIL;
+    
 end
 
-function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
+function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB,FAIL]=...
             PZ_backward_Euler(ste,Ge,defepr,H,Kt,defplasdes,defplasvol,dgamma_,deps,zetamax0,etaB)
         
     alpha = Ge(3);
     alphag= Ge(4);
+    
+    FAIL=0;
 
     % Compute volumetric and deviatoric trial strain
     [eevtrial,eestrial,theta_e,~,~,epsedev]=invar(defepr,'STRAIN');
@@ -113,8 +121,8 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
             if ite==1
                 r0=norm(r);
             else
-                [CONVER,NORMErec,a,ite]=...
-                    LIB.convergence(r,r0,NORMErec,TOL,ite,imax,a);
+                [CONVER,NORMErec,a,ite,FAIL]=...
+                    LIB.convergence(r,r0,NORMErec,TOL,ite,imax,a,FAIL);
                 if CONVER==1     
                     break
                 end

@@ -212,15 +212,15 @@
         end
         
         % Convergence and alpha scale (Line search)
-        function [CONVER,NORMErec]=...
-            convergence(r,normr0,NORMErec,toll,iter,imax)
+        function [CONVER,NORMErec,FAIL]=...
+            convergence(r,normr0,NORMErec,toll,iter,imax,FAIL)
         
-            global SOLVER
+            FAIL=0;
         
             OBJ = norm(r)/normr0; 
             CONVER=0;
             
-            if SOLVER.FAIL==1
+            if FAIL==1
                 CONVER=1;
             elseif OBJ < toll
                 CONVER=1;
@@ -239,7 +239,7 @@
                         CONVER=1;
                     else
                         fprintf('\n No convergence RM \n')
-                        SOLVER.FAIL=1;
+                        FAIL=1;
                         CONVER=1;
                     end
                 end         

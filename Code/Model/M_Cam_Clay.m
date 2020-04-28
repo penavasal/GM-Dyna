@@ -1,7 +1,11 @@
-function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee]=...
-    M_Cam_Clay(Kt,ste,e,epvol,gamma,dgamma_,Pcd,Pcs,Ee_tr,P0,BLCK)
+function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee,STEP]=...
+    M_Cam_Clay(Kt,STEP,e,epvol,gamma,dgamma_,Pcd,Pcs,Ee_tr,P0)
 
     global MATERIAL GEOMETRY
+    
+    ste=STEP.ste;
+    BLCK=STEP.BLCK;
+    FAIL=STEP.FAIL;
     
     MODEL=MATERIAL(BLCK).MODEL;
     Mat=GEOMETRY.material;
@@ -22,7 +26,7 @@ function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee]=...
     
 
     if MODEL(Mat(e))==3.0 || ste==1
-        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcd,Kt,P0(1),dgamma_);
+        [Sc,Ee,Pcs,A,P,Q,dgamma] = tensCC(Ge,Ee_tr,Pcd,Kt,P0(1),dgamma_,FAIL);
         Pcd=Pcs;
     elseif MODEL(Mat(e))==3.1
         [Sc,Ee,Pcd,Pcs,A,P,Q,dgamma] = visco(Ge,Ee_tr,Pcd,Pcs,Kt,P0(1),dgamma_,ste,BLCK);
@@ -31,11 +35,13 @@ function [A,Sc,epvol,gamma,dgamma,Pcd,Pcs,Ee]=...
     eta=Q/P;
     gamma=gamma-dgamma*2*eta/Ge(6)^2;
     epvol=epvol+dgamma*(1-eta*eta/Ge(6)^2);
+    
+    STEP.FAIL=FAIL;
 
 end
 
 
-function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
+function [tenspr,epse,Pc,aep,P,Q,dgamma,FAIL] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 %--------------------------------------------------------
 % tensVM: 
 %   Compute the Kirchhoff principal tension according to CC yield criterion.
@@ -66,6 +72,7 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
 %--------------------------------------------------------
 
     I = eye(3);
+    FAIL=0;
 
     % Set isotropic elasto-plastic parameter
     mu0  = Ge(2);  
@@ -146,8 +153,8 @@ function [tenspr,epse,Pc,aep,P,Q,dgamma] = tensCC(Ge,defepr,Pcn,Kt,P0,dgamma_)
                     error('Fallo en el Modified Cam Clay \n');
                 else
                     % 4. Check for convergence
-                    [CONVER,NORMErec]=...
-                        LIB.convergence(r,normr0,NORMErec,toll,iter,imax);
+                    [CONVER,NORMErec,FAIL]=...
+                        LIB.convergence(r,normr0,NORMErec,toll,iter,imax,FAIL);
                     if CONVER==1     
                         break
                     elseif (NORMErec(iter)-NORMErec(iter-1))>1e-8 && iter>3

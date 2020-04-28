@@ -38,8 +38,6 @@ function MAT_POINT=read_problem(str)
     
     SOLVER.thickness=1;
     
-    SOLVER.FAIL = 0;
-    
     SOLVER.BLOCKS = 1;
     
     SOLVER.SMALL = 0;

@@ -10,7 +10,7 @@ function PLOT(driver,folder,varargin)
     steps=0;
     str_out='RES';
     PLT=struct('var',0,'film',0,'near',0,'file',0,'e',0,'range',0,...
-        'onnodes',0,'time',0,'pw',1);
+        'onnodes',0,'time',0,'pw',1,'drained',0);
 
     if ~strcmp(driver,'NEIGHBORS') && b~=0
         error('Wrong format: file,type,num,type,num...');
@@ -83,6 +83,10 @@ function PLOT(driver,folder,varargin)
                     t=t+1;
                     PLT.pw=varargin{t};
                     continue
+                case 'DRAINED'
+                    t=t+1;
+                    PLT.drained=1;
+                    continue
                 case 'STEPS'
                     t=t+1;
                     if strcmp(varargin{t},'FULL')
@@ -111,7 +115,7 @@ function PLOT(driver,folder,varargin)
     elseif strcmp(driver,'NEIGHBORS')
         plot_nb(PLT,ampl)
     elseif strcmp(driver,'CONSTITUTIVE')
-        plot_constitutive(str_in,ste_p,freq,PLT)
+        plot_constitutive(str_in,steps,freq,PLT)
     elseif strcmp(driver,'EXCESS_PW')
         nodes_col(str_in,PLT)
     elseif strcmp(driver,'CONSOLIDATION')
@@ -520,6 +524,7 @@ global GEOMETRY MATERIAL SOLVER
 time_d=0.001;
 
 e=PLT.e;
+dr=PLT.drained;
 
 load(str,'-mat','GLOBAL','GEOMETRY','MATERIAL','SOLVER');
 
@@ -587,7 +592,7 @@ end
 edev=zeros(ste_p,1);
 evol=zeros(ste_p,1);
 for j=1:ste_p
-    [evol(j),edev(j)]=VECTOR.E_invar(Es(:,j)+Es_p(:,j),e);
+    [evol(j),edev(j)]=VECTORS.E_invar(Es(:,j)+Es_p(:,j),e);
 end
 
 %Ellipse
@@ -622,11 +627,17 @@ for i=1:each:ste_p
     end
     
     subplot(2,2,1)
-    plot(edev(1:i)*100,Qs(1:i))
-    axis([0 inf 0 max(max(Qs(1:ste_p))*1.1,max(b_max,lim*M+C))])
-    xlabel('\epsilon %')
-    ylabel('Q [kPa]')
-    
+    if dr==0
+        plot(edev(1:i)*100,Qs(1:i))
+        axis([0 inf 0 max(max(Qs(1:ste_p))*1.1,max(b_max,lim*M+C))])
+        xlabel('\epsilon_s %')
+        ylabel('Q [kPa]')
+    else
+        plot(edev(1:i)*100,Qs(e,1:i)./Ps(e,1:i))
+        xlabel('\epsilon_s %')
+        ylabel('\eta')
+    end
+
     subplot(2,2,2)
     axis([0 Pc_max 0 max(max(Qs(1:ste_p))*1.1,max(b_max,lim*M+C))])
     xlabel('P [kPa]')
@@ -647,19 +658,32 @@ for i=1:each:ste_p
     
     plot(-Ps(1:i),Qs(1:i),'r')
     
-    if SOLVER.UW
-    subplot(2,2,3)
-    plot(edev(1:i)*100,Pw(1:i))
-    axis([0 inf -inf max(Pw(1:ste_p))*1.1])
-    xlabel('\epsilon %')
-    ylabel('P_w [kPa]')
+    if dr==0
+        if SOLVER.UW
+        subplot(2,2,3)
+        plot(edev(1:i)*100,Pw(1:i))
+        axis([0 inf -inf max(Pw(1:ste_p))*1.1])
+        xlabel('\epsilon %')
+        ylabel('P_w [kPa]')
+        end
+    else
+        subplot(2,2,3)
+        plot(edev(1:i)*100,evol(1:i)*100)
+        xlabel('\epsilon_s %')
+        ylabel('\epsilon_v %')
     end
 
     subplot(2,2,4)
-    plot(-Ps(2:i),1+void_index(2:i))
-    axis([0 Pc_max min(void_index(2:ste_p))+0.5 max(void_index(2:ste_p))+1.5])
-    xlabel('P [kPa]')
-    ylabel('1+e')
+    if dr==0
+        plot(-Ps(2:i),1+void_index(2:i))
+        axis([0 Pc_max min(void_index(2:ste_p))+0.5 max(void_index(2:ste_p))+1.5])
+        xlabel('P [kPa]')
+        ylabel('1+e')
+    else
+        plot(Qs(e,1:i)./Ps(e,1:i),evol(1:i)*100)
+        xlabel('\eta')
+        ylabel('\epsilon_v %')
+    end
     
     drawnow;
     pause(time_d)

@@ -2,7 +2,7 @@
     methods(Static)
 
         % Store
-        function GLOBAL=Store(GLOBAL,STEP,Mat_state,Disp_field,...
+        function [GLOBAL,STEP]=Store(GLOBAL,STEP,Mat_state,Disp_field,...
             Int_var,MAT_POINT,out_list1)
 
             global SOLVER GEOMETRY
@@ -36,8 +36,8 @@
                     VECTORS.invar(Mat_state.Sigma(:,1),e);   %PRESSURE
             end
             
-            [GLOBAL.Es(:,ste_p),GLOBAL.Es_p(:,ste_p)]=...
-                VECTORS.strains(Mat_state);
+            [GLOBAL.Es(:,ste_p),GLOBAL.Es_p(:,ste_p),STEP]=...
+                VECTORS.strains(Mat_state,STEP);
             [GLOBAL.J(:,ste_p)]=LIB.S2list(MAT_POINT{1},'J'); %JACOBIAN
             GLOBAL.Sigma(:,ste_p)   = Mat_state.Sigma(:,1);    %STRESS
             if SOLVER.SMALL==0 
@@ -277,7 +277,7 @@
         end
                     
         % Small strain from Def Gradient and Finger tensor
-        function [es,es_p]=strains(Mat_state)
+        function [es,es_p,STEP]=strains(Mat_state,STEP)
 
             global GEOMETRY SOLVER
             
@@ -308,7 +308,7 @@
                         Ee   = logm(Be)/2;
                     else
                         disp('Error in log of B matrx');
-                        SOLVER.FAIL=1;
+                        STEP.FAIL=1;
                     end
                     Ep   = Etot-Ee;
 
