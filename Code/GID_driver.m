@@ -88,16 +88,25 @@ function print_file_2(str,str2,steps,dd)
     [nodes,sp]=size(x_a);
     df=GEOMETRY.df;
     
-    if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')
-        nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
-    elseif strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
-        nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
-    else
-        nodes_p = linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
-    end
-    
+    try
+        if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')
+            nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
+        elseif strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
+            nodes_p = intersect(GEOMETRY.elem,GEOMETRY.elem_c);
+        else
+            nodes_p = linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
+        end
+    catch 
+       nodes_p = linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
+    end    
     
     type=SOLVER.Element;
+    
+    try 
+        FRAC=SOLVER.FRAC;
+    catch
+        FRAC=0;
+    end
 
 %     if NNE==3
 %         elemtype='Triangle';
@@ -130,7 +139,7 @@ function print_file_2(str,str2,steps,dd)
     Sy_tot=GLOBAL.Sy;
     gamma=GLOBAL.gamma;
 
-    if SOLVER.FRAC>0
+    if FRAC>0
     	W=GLOBAL.w;
         xi=GLOBAL.status; 
     end
@@ -156,6 +165,9 @@ function print_file_2(str,str2,steps,dd)
     fprintf( myfile , '%29s  \n' , 'Natural Coordinates: Internal');
     fprintf( myfile , '%15s  \n' , 'End GaussPoints');
 
+    if steps==0
+        steps=GLOBAL.ste_p-1;
+    end
 
     for cont=1:dd:steps
         % DEGREES of FREEDOM
@@ -363,7 +375,7 @@ function print_file_2(str,str2,steps,dd)
         end
         fprintf( myfile , '%10s  \n' , 'End Values');
         
-        if SOLVER.FRAC>0
+        if FRAC>0
         % Ep
         fprintf(myfile, ['Result  Damage Fracture ' num2str(GLOBAL.tp(cont)) ' Scalar  OnGaussPoints Group1\n']);
         fprintf( myfile , '%6s  \n' ,  'Values');

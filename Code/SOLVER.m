@@ -3,7 +3,7 @@ function SOLVER(MAT_POINT)
     
     tic;
 
-    global SOLVER VARIABLE GEOMETRY
+    global SOLVER VARIABLE GEOMETRY MATERIAL
      
     %----------------------------------------------------------------------
     % Initial state, matrixes and load
@@ -27,10 +27,10 @@ function SOLVER(MAT_POINT)
         if STEP.BLCK>1
             if SOLVER.Output(STEP.BLCK)~=SOLVER.Output(STEP.BLCK-1)  || ...
                     isfile(SOLVER.Output(STEP.BLCK))==0
-                save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
+                save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER','MATERIAL');
             end
         else
-            save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER');
+            save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER','MATERIAL');
         end
 
         if SOLVER.IMPLICIT(STEP.BLCK)==0
