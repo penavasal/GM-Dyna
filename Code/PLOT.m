@@ -598,9 +598,9 @@ end
 %Ellipse
 
 if MODEL>=3 && MODEL<4
-    Pc_max=max(-Sy_tot(e,1:ste_p));
+    Pc_max=max(-Sy_tot(1:ste_p));
 else
-    Pc_max=max(-Ps(e,1:ste_p))*1.2;
+    Pc_max=max(-Ps(1:ste_p))*1.2;
 end
 b_max=M*Pc_max/2;
 lim=1.2*Pc_max;
