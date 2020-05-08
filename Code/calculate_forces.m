@@ -44,6 +44,7 @@ function [load_s,OUTPUT]=...
             continue;
         end
         
+        hyd=0;
         if strcmp(value(4,m),'VALUE')
             val=eval(value(1,m));
         elseif strcmp(value(4,m),'FUNCTION')
@@ -54,6 +55,8 @@ function [load_s,OUTPUT]=...
             if eval(value(5,m)) == 3
                 val=val*g;
             end
+        elseif strcmp(value(4,m),'HYDROSTATIC')
+            hyd=1;
         else
             disp('Error, wrong type of load!')
             stop
@@ -64,6 +67,15 @@ function [load_s,OUTPUT]=...
             tt=1;
             if (SOLVER.UW==1 || SOLVER.UW==2) && SOLVER.IMPLICIT(BLCK)==1
                 tt=-1;
+            end
+            
+            if hyd==1
+                x=GEOMETRY.x_0(i,1);
+                y=GEOMETRY.x_0(i,2);
+                if sp>2
+                    z=GEOMETRY.x_0(i,3);
+                end
+                val=eval(value(1,m));
             end
                 
             if SOLVER.UW==1

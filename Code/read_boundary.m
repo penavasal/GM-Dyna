@@ -345,7 +345,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK)
         ll=str2double(NLIST(m));
         if isnan(ll)
             if strcmp(NLIST(m),'FULL')
-                nod_f=linspace(1,nodes);
+                nod_f=linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
             elseif strcmp(NLIST(m),'Q8')
                 nod_f=setdiff(GEOMETRY.elem,GEOMETRY.elem_c,'sorted');
             else

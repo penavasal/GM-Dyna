@@ -251,8 +251,18 @@ function interval(INTERVAL,loads,BLCK,VALUE,TYPE)
                 LOAD{BLCK}.value(1,m)=ff;
                 LOAD{BLCK}.value(4,m)='FILE';
             else
-                LOAD{BLCK}.value(4,m)='FUNCTION';
                 LOAD{BLCK}.value(1,m)=VALUE(m);
+                rr=VALUE{m};
+                for i=1:strlength(rr)
+                    if strcmp('x',rr(i)) || strcmp('y',rr(i)) || strcmp('z',rr(i))
+                        LOAD{BLCK}.value(4,m)='HYDROSTATIC';
+                        rr='0';
+                        break;
+                    end
+                end
+                if ~strcmp(rr,'0')
+                    LOAD{BLCK}.value(4,m)='FUNCTION';
+                end
             end
         else
             LOAD{BLCK}.value(4,m)='VALUE';

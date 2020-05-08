@@ -141,7 +141,11 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     for i=1:elements
         mati=GEOMETRY.material(i);
         % P0
-        p0=str2double(mmat{25,mati});
+        if isempty(mmat{25,mati})
+            p0=0;
+        else
+            p0=str2double(mmat{25,mati});
+        end
         ev0=str2double(mmat{23,mati});
         es0=str2double(mmat{26,mati});
         if p0 && (isempty(mmat{23,mati}) || isempty(mmat{26,mati}))
