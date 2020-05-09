@@ -87,7 +87,9 @@ df=GEOMETRY.df;
     
     if SOLVER.UW==1
         Pw=GLOBAL.pw;
-        Es_w=GLOBAL.Es_w;
+        if SOLVER.SMALL==1
+            Es_w=GLOBAL.Es_w;
+        end
     elseif SOLVER.UW==2
         Pw=GLOBAL.pw;
         dPw=GLOBAL.dpw;
@@ -96,6 +98,10 @@ df=GEOMETRY.df;
     if SOLVER.FRAC
         status=GLOBAL.status;
         W=GLOBAL.w;
+    end
+    
+    if steps==0
+        steps=GLOBAL.ste_p-1;
     end
 
 for cont=1:dd:steps
@@ -263,7 +269,7 @@ for cont=1:dd:steps
             for i=1:elements
                 fprintf(fid,[num2str(dPw((i*it-1)*sp+1,cont)) ' ' num2str(dPw((i*it-1)*sp+2,cont)) ' 0\n']);
             end
-        elseif SOLVER.UW==1
+        elseif SOLVER.UW==1 && SOLVER.SMALL==1
             %EW11
             fprintf(fid,'SCALARS EW11 float\n');
             fprintf(fid, 'LOOKUP_TABLE default\n');
