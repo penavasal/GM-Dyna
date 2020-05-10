@@ -215,7 +215,6 @@
         function [CONVER,NORMErec,FAIL]=...
             convergence(r,normr0,NORMErec,toll,iter,imax,FAIL)
         
-            FAIL=0;
         
             OBJ = norm(r)/normr0; 
             CONVER=0;
@@ -247,7 +246,7 @@
             
         end
         
-        function [a,CONVER]=a_factor_NR(a,NORMErec,toll,iter)
+        function [a,CONVER,FAIL]=a_factor_NR(a,NORMErec,toll,iter,FAIL)
             
             f1=NORMErec(iter-1);
             f2=NORMErec(iter);
@@ -262,7 +261,8 @@
                    CONVER=1;
                 else
                     fprintf('\n No convergence RM \n')
-                    stop;
+                    FAIL=1;
+                    CONVER=1;
                 end
             end
             

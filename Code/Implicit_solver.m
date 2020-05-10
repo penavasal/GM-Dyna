@@ -7,6 +7,7 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
     %--------------------------------------------------------------------------
     global SOLVER
     BLCK=STEP.BLCK;
+    
     STEP.dt = SOLVER.time_step(BLCK)*SOLVER.time_factor(BLCK);
     STEP.t  = STEP.t + STEP.dt;
     
@@ -63,10 +64,9 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
         end
         
         % 7. Update
+        STEP=Time_Scheme.step(STEP,Disp_field);
         [Disp_field,Mat_state,Int_var]=VECTORS.Update(...
                 Disp_field,Mat_state,Int_var);
-        STEP.dt = STEP.dt*SOLVER.time_factor(BLCK);
-        STEP.t  = STEP.t + STEP.dt;
 
     end
      

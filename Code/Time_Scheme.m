@@ -296,6 +296,91 @@ classdef Time_Scheme
 
         end
         
+        function STEP=step(STEP,Disp_field)
+            global SOLVER GEOMETRY TIME
+            
+            BLCK=STEP.BLCK;
+            
+            if SOLVER.autoadapt~=0
+                tol=SOLVER.autoadapt(BLCK);
+                sp=GEOMETRY.sp;
+                df=GEOMETRY.df;
+                nodes=GEOMETRY.nodes;
+                alpha=TIME{BLCK}.alpha;
+                d0  = Disp_field.d;
+                if alpha
+                    ob  = Disp_field.a;
+                else
+                    ob  = Disp_field.v;
+                end
+                if SOLVER.UW
+                    [us,os]=deal(zeros(nodes*sp,2));
+                    [uw,ow]=deal(zeros(nodes*(df-sp),2));
+                    [us(:,2),uw(:,2)]=Time_Scheme.split_vector(d0(:,2),us(:,2),uw(:,2));
+                    [us(:,1),uw(:,1)]=Time_Scheme.split_vector(d0(:,1),us(:,1),uw(:,1));
+                    [os(:,2),ow(:,2)]=Time_Scheme.split_vector(ob(:,2),os(:,2),ow(:,2));
+                    [os(:,1),ow(:,1)]=Time_Scheme.split_vector(ob(:,1),os(:,1),ow(:,1));
+                    w1=os(:,1)-os(:,2);
+                    w2=ow(:,1)-ow(:,2);
+                    if alpha
+                        eu1=STEP.dt^2*w1(:);
+                        eu2=STEP.dt^2*w2(:);
+                    else
+                        eu1=STEP.dt*w1(:);
+                        eu2=STEP.dt*w2(:);
+                    end
+                    error=max(norm(eu1)/norm(us),norm(eu2)/norm(uw));
+                else
+                    us=d0;
+                    os=ob;
+                    w1=os(:,1)-os(:,2);
+                    if alpha
+                        eu1=STEP.dt^2*w1(:);
+                    else
+                        eu1=STEP.dt*w1(:);
+                    end
+                    error=norm(eu1)/norm(us);
+                end
+                
+                %Autoadaptative time step
+                if error<0.2*tol || error>2*tol %
+                    if alpha
+                        STEP.dt = STEP.dt*(tol/error)^(1/3);
+                    else
+                        STEP.dt = STEP.dt*(tol/error)^(1/2);
+                    end
+                else
+                    if STEP.error > SOLVER.r_tolerance(BLCK)
+                        STEP.dt = STEP.dt*...
+                            (SOLVER.r_tolerance(BLCK)/STEP.error)^(1/3);
+                    else
+                        STEP.dt = STEP.dt*SOLVER.time_factor(BLCK);
+                    end
+                end
+            else
+                STEP.dt = STEP.dt*SOLVER.time_factor(BLCK);
+            end
+            STEP.t  = STEP.t + STEP.dt;
+        end
+        
+        function [v1,v2]=split_vector(vt,v1,v2)
+
+            global GEOMETRY SOLVER
+
+            df=GEOMETRY.df;
+            sp=GEOMETRY.sp;
+
+            for j=1:GEOMETRY.nodes
+                v1((j-1)*sp+1:j*sp,1)=vt((j-1)*df+1:(j-1)*df+sp,1);
+                if SOLVER.UW==1
+                    v2((j-1)*sp+1:j*sp,1)=vt((j-1)*df+sp+1:j*df,1);
+                elseif SOLVER.UW==2
+                    v2(j,1)=vt(j*df,1);
+                end   
+            end
+
+        end
+        
     end
 end
 

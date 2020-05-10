@@ -6,6 +6,7 @@ function [Disp_field,Mat_state,MAT_POINT,STEP]=...
     global SOLVER GEOMETRY
     
     BLCK=STEP.BLCK;
+    STEP.error=0;
     
     clear error du
         
@@ -78,7 +79,7 @@ function [Disp_field,Mat_state,MAT_POINT,STEP]=...
                 error('Fallo en el NR global \n');
                 STEP.FAIL=1;
             else
-                [CONVER,error_nr,STEP.FAIL]=LIB.convergence(GT,nGT0,error_nr,...
+                [CONVER,error_nr,FAIL]=LIB.convergence(GT,nGT0,error_nr,...
                     RTOL,iter,SOLVER.NR_iterations(BLCK),STEP.FAIL);
                 if CONVER==1     
                     break;
@@ -91,12 +92,15 @@ function [Disp_field,Mat_state,MAT_POINT,STEP]=...
                     break;
                 elseif (error_nr(iter)-error_nr(iter-1))>1e-8 && iter>3
                     d0(:,1)=d0(:,1)-du(:,iter);
-                    [a,CONVER]=LIB.a_factor_NR(a,error_nr,RTOL,iter);
+                    [a,CONVER,FAIL]=LIB.a_factor_NR(a,error_nr,RTOL,iter,STEP.FAIL);
                     if CONVER==1     
                         break;
                     end
                 else
                     A_conver=1;
+                end
+                if FAIL==1
+                    STEP.error=error_nr(iter);
                 end
             end
         end

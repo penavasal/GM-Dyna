@@ -255,6 +255,7 @@ function MAT_POINT=read_problem(str)
     theta=1*ones(SOLVER.BLOCKS,1);
     rho=0*ones(SOLVER.BLOCKS,1);
     SOLVER.time_factor=1*ones(SOLVER.BLOCKS,1);
+    SOLVER.autoadapt=zeros(SOLVER.BLOCKS,1);
     scheme=strings(SOLVER.BLOCKS,1);
     FILES=strings(SOLVER.BLOCKS,4);
     OUT=strings(SOLVER.BLOCKS,1);
@@ -288,6 +289,9 @@ function MAT_POINT=read_problem(str)
                 continue
             case 'TIME_FACTOR'
                 SOLVER.time_factor(BLCK)=b(t);  
+                continue
+            case 'AUTOADAPTIVE'
+                SOLVER.autoadapt(BLCK)=b(t);  
                 continue
             case 'DYNAMIC'
                 SOLVER.DYN(BLCK)=b(t);  
