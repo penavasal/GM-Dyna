@@ -44,6 +44,7 @@ function read_load(filetxt,BLCK,NODE_LIST)
     NLIST=strings(loads,1); % Lista de nodos
     VECTOR=zeros(sp,loads); % Directions of loads
     VALUE = strings(loads,1);
+    DIST = strings(loads,1);
     OUT = zeros(loads,1);
     INTERVAL=zeros(2,loads); % Intervals of loads
     TYPE=zeros(loads,1);
@@ -158,6 +159,10 @@ function read_load(filetxt,BLCK,NODE_LIST)
             VALUE(M)=bb{t};
             continue
         end
+        if strcmp(s1,'DISTRIBUTION')
+            DIST(M)=bb{t};
+            continue
+        end
         if strcmp(s1,'OUTPUT')
             OUT(M)=str2double(bb{t});
             continue
@@ -207,7 +212,7 @@ function read_load(filetxt,BLCK,NODE_LIST)
     interval(INTERVAL,loads,BLCK,VALUE,TYPE);
     %[load_nds]=localization(RANGE,TYPE,loads);
     
-    calculate_forces(NODE_LIST,VECTOR,TYPE,NLIST,loads,BLCK);
+    calculate_forces(NODE_LIST,VECTOR,TYPE,NLIST,loads,BLCK,DIST);
     
     for i=1:loads
         if OUT(i)==1
@@ -252,17 +257,7 @@ function interval(INTERVAL,loads,BLCK,VALUE,TYPE)
                 LOAD{BLCK}.value(4,m)='FILE';
             else
                 LOAD{BLCK}.value(1,m)=VALUE(m);
-                rr=VALUE{m};
-                for i=1:strlength(rr)
-                    if strcmp('x',rr(i)) || strcmp('y',rr(i)) || strcmp('z',rr(i))
-                        LOAD{BLCK}.value(4,m)='HYDROSTATIC';
-                        rr='0';
-                        break;
-                    end
-                end
-                if ~strcmp(rr,'0')
-                    LOAD{BLCK}.value(4,m)='FUNCTION';
-                end
+                LOAD{BLCK}.value(4,m)='FUNCTION';
             end
         else
             LOAD{BLCK}.value(4,m)='VALUE';
@@ -275,7 +270,7 @@ function interval(INTERVAL,loads,BLCK,VALUE,TYPE)
 end
 
 function calculate_forces...
-    (NODE_LIST,VECTOR,TYPE,NLIST,loads,BLCK)
+    (NODE_LIST,VECTOR,TYPE,NLIST,loads,BLCK,DIST)
     
     global GEOMETRY SOLVER LOAD
     
@@ -311,6 +306,12 @@ function calculate_forces...
     end
 
     for m=1:loads
+        
+        dd=DIST(m);
+        rr=strlength(dd);
+        if rr==0
+            dd='1';
+        end
         
         % Direction and nodes
         V=VECTOR(:,m)';
@@ -394,8 +395,14 @@ function calculate_forces...
         for j=1:long
             if TYPE(m)==1
                 nn=nod_f(j);
+                if ~strcmp(dd,'1')
+                    x=x_0(nn,1);
+                    y=x_0(nn,2);
+                end
+                d=eval(dd);
+                
                 for k=1:sp
-                    LOAD{BLCK}.ext_forces_s(nn*sp+1-k,m)=V(sp+1-k);
+                    LOAD{BLCK}.ext_forces_s(nn*sp+1-k,m)=d*V(sp+1-k);
                 end
             elseif TYPE(m)==2
                 if SOLVER.AXI
@@ -406,6 +413,12 @@ function calculate_forces...
                     area(k)=(x_0(nod_f(j,1),k)-x_0(nod_f(j,2),k))^2;
                 end
                 d=sqrt(sum(area));
+                
+                if ~strcmp(dd,'1')
+                    x=(x_0(nod_f(j,1),1)+x_0(nod_f(j,2),1))/2;
+                    y=(x_0(nod_f(j,1),2)+x_0(nod_f(j,2),2))/2;
+                end
+                d=eval(dd)*d;
                 if nod_f(j,3)==0
                     if SOLVER.AXI
                         f=2*pi*rr*V*d/2*t;
@@ -442,24 +455,34 @@ function calculate_forces...
 
             elseif TYPE(m)==3
                 nn=nod_f(j);
+                if ~strcmp(dd,'1')
+                    x=x_0(nn,1);
+                    y=x_0(nn,2);
+                end
+                d=eval(dd);
                 if SOLVER.UW==0
                     for k=1:sp
-                        LOAD{BLCK}.ext_acce(nn*sp+1-k,m)=V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*sp+1-k,m)=d*V(sp+1-k);
                     end
                 elseif SOLVER.UW==1
                     for k=1:sp
-                        LOAD{BLCK}.ext_acce(nn*df+1-k,m)=V(sp+1-k);
-                        LOAD{BLCK}.ext_acce(nn*df-sp+1-k,m)=V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*df+1-k,m)=d*V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*df-sp+1-k,m)=d*V(sp+1-k);
                     end
                 elseif SOLVER.UW==2
                     for k=1:sp
-                        LOAD{BLCK}.ext_acce(nn*df-k,m)=V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*df-k,m)=d*V(sp+1-k);
                     end
                 end
             elseif TYPE(m)==4
                 nn=nod_f(j);
+                if ~strcmp(dd,'1')
+                    x=x_0(nn,1);
+                    y=x_0(nn,2);
+                end
+                d=eval(dd);
                 for k=1:sp
-                    LOAD{BLCK}.ext_forces_w(nn*sp+1-k,m)=V(sp+1-k);
+                    LOAD{BLCK}.ext_forces_w(nn*sp+1-k,m)=d*V(sp+1-k);
                 end
             elseif TYPE(m)==5
                 if SOLVER.AXI
@@ -470,6 +493,13 @@ function calculate_forces...
                     area(k)=(x_0(nod_f(j,1),1)+x_0(nod_f(j,2),1))^2;
                 end
                 d=sqrt(sum(area));
+                
+                if ~strcmp(dd,'1')
+                    x=(x_0(nod_f(j,1),1)+x_0(nod_f(j,2),1))/2;
+                    y=(x_0(nod_f(j,1),2)+x_0(nod_f(j,2),2))/2;
+                end
+                d=eval(dd)*d;
+                
                 if nod_f(j,3)==0
                     if SOLVER.AXI
                         f=2*pi*rr*V*d/2*t;
