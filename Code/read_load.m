@@ -490,7 +490,7 @@ function calculate_forces...
                 end
                 area=zeros(sp,1);
                 for k=1:sp
-                    area(k)=(x_0(nod_f(j,1),1)+x_0(nod_f(j,2),1))^2;
+                    area(k)=(x_0(nod_f(j,1),k)-x_0(nod_f(j,2),k))^2;
                 end
                 d=sqrt(sum(area));
                 
