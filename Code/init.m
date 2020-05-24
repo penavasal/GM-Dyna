@@ -148,7 +148,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         end
         ev0=str2double(mmat{23,mati});
         es0=str2double(mmat{26,mati});
-        if p0 && (isempty(mmat{23,mati}) || isempty(mmat{26,mati}))
+        if ~isnan(p0) && (isempty(mmat{23,mati}) || isempty(mmat{26,mati}))
             if isempty(mmat{23,mati})
                 ev0=0;
             end

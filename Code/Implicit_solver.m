@@ -70,8 +70,10 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
 
     end
      
+    
     % SAVING LAST VALUES
     STEP.ste_p=STEP.ste_p+1;
+    fprintf('Finished block %i \n',STEP.BLCK);
     fprintf('ste_p %i \n',STEP.ste_p);
     
     GLOBAL.final_block(STEP.BLCK)=GLOBAL.ste_p;
