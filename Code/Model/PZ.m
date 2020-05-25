@@ -243,6 +243,10 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
             etaB=0;
         end
         
+        if H>1e22
+            H;
+        end
+        
         % Plastic multiplier
         incrlanda = discri/(H+n(1:2)'*De*ng(1:2));
         incrlandasum=incrlandasum+incrlanda;
@@ -472,6 +476,11 @@ function [H,zetamax]=define_H(Ge,etaf,eta,p,defplas,defvolplas,zetamax,Mg)
         zetamax=max(zetamax,zetacalcu);
     
         HDM=(zetamax/zetacalcu)^ganma;
+    end
+    
+    
+    if zetamax>1e8
+        H0;
     end
     
     Hf=(1-(eta/etaf))^4;
