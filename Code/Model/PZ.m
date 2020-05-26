@@ -242,6 +242,7 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
             eev0=eev_i-incredefplasvol;
             ees0=ees_i-incredefplasdes;
             
+            zetamax=zetamax0;
             
         else
       
