@@ -27,10 +27,10 @@ function SOLVER(MAT_POINT)
         if STEP.BLCK>1
             if SOLVER.Output(STEP.BLCK)~=SOLVER.Output(STEP.BLCK-1)  || ...
                     isfile(SOLVER.Output(STEP.BLCK))==0
-                save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER','MATERIAL');
+                save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER','MATERIAL','-v7.3');
             end
         else
-            save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER','MATERIAL');
+            save(SOLVER.Output(STEP.BLCK), 'GEOMETRY', 'VARIABLE', 'SOLVER','MATERIAL','-v7.3');
         end
 
         if SOLVER.IMPLICIT(STEP.BLCK)==0
