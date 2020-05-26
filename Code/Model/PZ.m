@@ -220,43 +220,68 @@ function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
         % Compute p, q, eta en build the Delast from the elastic law
         [De,p,q,eta]=Delast(Ge,ees_i,eev_i);
         signq=sign(q);
-      
-        % Vectors
-        [n,~]=build_vector(alpha,Mf,eta,q,signq);
-        discri=n(1:2)'*De*[dev_i;des_i];
         
-        [ng,~]=build_vector(alphag,Mg,eta,q,signq);
-        
-        
-        if discri<abs(p)*1e-8    
-            if abs(discri)<abs(p)*1e-2
-                discri=0;
-                [H]=define_H_u(Ge,p,eta,etaB,Mg);
-            else
-                [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
-                ng(1)=-abs(ng(1));
+        if p>1.0e-3 || (etaf-eta)<1.0e-3
+            
+            if p>1.0e-3
+                p=1e-4;
+                q=0;
+            elseif (etaf-eta)<1.0e-3
+                pf= -abs(q/etaf);
+                p=pf;
             end
-            zetamax=zetamax0;
-        else %if discri<0
-            % H calculation   
-            [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvol,zetamax0,Mg);
-            etaB=0;
+            
+            % Plastic Strain
+            incredefplasvol=dev_i;
+            incredefplasdes=des_i;
+
+            defplasdes_c=defplasdes_c+abs(incredefplasdes);
+            defplasvolc=defplasvolc+incredefplasvol;
+
+            % Elastic strain;
+            eev0=eev_i-incredefplasvol;
+            ees0=ees_i-incredefplasdes;
+            
+            
+        else
+      
+            % Vectors
+            [n,~]=build_vector(alpha,Mf,eta,q,signq);
+            discri=n(1:2)'*De*[dev_i;des_i];
+
+            [ng,~]=build_vector(alphag,Mg,eta,q,signq);
+
+
+            if discri<abs(p)*1e-8    
+                if abs(discri)<abs(p)*1e-2
+                    discri=0;
+                    [H]=define_H_u(Ge,p,eta,etaB,Mg);
+                else
+                    [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
+                    ng(1)=-abs(ng(1));
+                end
+                zetamax=zetamax0;
+            else %if discri<0
+                % H calculation   
+                [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvol,zetamax0,Mg);
+                etaB=0;
+            end
+
+            % Plastic multiplier
+            incrlanda = discri/(H+n(1:2)'*De*ng(1:2));
+            incrlandasum=incrlandasum+incrlanda;
+
+            % Plastic Strain
+            incredefplasvol=incrlanda*ng(1);
+            incredefplasdes=incrlanda*ng(2);
+
+            defplasdes_c=defplasdes_c+abs(incredefplasdes);
+            defplasvolc=defplasvolc+incredefplasvol;
+
+            % Elastic strain;
+            eev0=eev_i-incredefplasvol;
+            ees0=ees_i-incredefplasdes;             
         end
-        
-        % Plastic multiplier
-        incrlanda = discri/(H+n(1:2)'*De*ng(1:2));
-        incrlandasum=incrlandasum+incrlanda;
-        
-        % Plastic Strain
-        incredefplasvol=incrlanda*ng(1);
-        incredefplasdes=incrlanda*ng(2);
-        
-        defplasdes_c=defplasdes_c+abs(incredefplasdes);
-        defplasvolc=defplasvolc+incredefplasvol;
-        
-        % Elastic strain;
-        eev0=eev_i-incredefplasvol;
-        ees0=ees_i-incredefplasdes;
     end
     
     
@@ -413,15 +438,16 @@ end
 
 function [n,d]=build_vector(alpha,Mf,eta,q,signq)
 
-%         if eta>0.1 
+        if eta>0.0001
             if signq>=0
                 ns  = 1;
             else
                 ns  = -1;
             end
-%         else
-%             ns=0;
-%         end
+        else
+            ns=0;
+        end
+        
         nv  = (1+alpha)*(Mf-eta); 
         d   = nv;
         
