@@ -325,7 +325,7 @@ function [MAT_POINT,NODE_LIST]=...
     % Degrees of freedom
     if UW==0
         GEOMETRY.df=GEOMETRY.sp;
-    elseif UW==1
+    elseif UW==1 || UW==4
         GEOMETRY.df=2*GEOMETRY.sp;
     elseif UW==2
         GEOMETRY.df=GEOMETRY.sp+1;

@@ -101,7 +101,7 @@
                         Ee = logm(Be)/2;
                         if isnan(Ee)
                             error('Error in small strain tensor of elem e %i \n',e);
-                        elseif isreal(Ee)==0
+                        elseif ~isreal(Ee)
                             error('Complex in small strain tensor of elem e %i \n',e);
                         end
                     end
@@ -198,8 +198,11 @@
                     end
                 end
                 
-               
-                if SOLVER.UW==1
+               if e==60
+                   e;
+               end
+                
+                if SOLVER.UW==1 || SOLVER.UW==4
                 % ----------------------------
                 %% Pore Water Pressure Calculation matrix
                 % ----------------------------
@@ -207,7 +210,12 @@
                     n=1-(1-MAT{16,Mat(e)})/MAT_POINT{1}(e).J;
                     K_w=MAT{28,Mat(e)};
                     K_s=MAT{27,Mat(e)};
-                    Q=1/(n/K_w+(1-n)/K_s);
+                    if SOLVER.UW==4
+                        Q=W_retention.Q(i,Mat_state,K_s,K_w,n);
+                        Mat_state.Q(e,1)=Q;
+                    else
+                        Q=1/(n/K_w+(1-n)/K_s);
+                    end
 
                     %%% Strains %%%
                     if SOLVER.SMALL==0
@@ -238,7 +246,17 @@
                     end
 
                     % Pore pressure
-                    Mat_state.pw(e,1)=-Q*(tr_e+tr_ew);
+                    if SOLVER.UW==4
+                        Sw=Mat_state.sw(e,1);
+                        Mat_state.pw(e,1)=-Q*(Sw*tr_e+tr_ew);
+                        %Mat_state.sw(e,2)=Mat_state.sw(e,1);
+                        Mat_state.sw(e,1)=...
+                            W_retention.SW(e,Mat_state,MAT,Mat);
+                        krw=W_retention.K(e,STEP.BLCK,Mat_state.sw);
+                        Mat_state.k(e)=Mat_state.k(e)*krw;
+                    else
+                        Mat_state.pw(e,1)=-Q*(tr_e+tr_ew);
+                    end
                 end
                 
                 if SOLVER.FRAC>0
@@ -390,7 +408,12 @@
                 end
                 int_forces_1=Tt*sh*vol;
 
-                if SOLVER.UW==1
+                if SOLVER.UW==1 || SOLVER.UW==4
+                    if SOLVER.UW==4
+                        sw=Mat_state.sw(e,1);
+                    else
+                        sw=1;
+                    end
                     sh2=sh(1:2,:);
                     sh2w=shw(1:2,:);
                     if SOLVER.AXI
@@ -406,7 +429,7 @@
                                 Mat_state.fint(nod*df+1-sp-j,1)=...
                                     Mat_state.fint(nod*df+1-sp-j,1)-int_forces_1(3-j,i);
                                 Mat_state.fint(nod*df+1-j,1)=...
-                                    Mat_state.fint(nod*df+1-j,1)-int_forces_2(3-j,i);
+                                    Mat_state.fint(nod*df+1-j,1)-sw*int_forces_2(3-j,i);
                            end
                         end
                     else
@@ -415,7 +438,7 @@
                            for j=1:sp
                                 Mat_state.fint(nod*df-1-j,1)=...
                                     Mat_state.fint(nod*df-1-j,1)-int_forces_1(3-j,i)+...
-                                    int_forces_2(3-j,i);
+                                    sw*int_forces_2(3-j,i);
                            end
                         end
                         for i=1:nnw

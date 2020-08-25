@@ -86,7 +86,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
             jacobians(e)=det(F);
             
             
-            if SOLVER.UW==1
+            if SOLVER.UW==1 || SOLVER.UW==4
                 ndw = MAT_POINT{2}(e).near;
                 nn2 = length(ndw);         
                 b2  = MAT_POINT{2}(e).B;
@@ -172,7 +172,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                     MAT_POINT{1}(e).EP(:,1)=EP_(:);
                 end
             end
-            if SOLVER.UW==1
+            if SOLVER.UW==1 || SOLVER.UW==4
                 if SOLVER.F_BAR_W>0
                     %%%%%%   F_BAR W  %%%%%%
                     F_store_w(k)={F_w};
@@ -236,7 +236,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 end
             end
         end
-        if SOLVER.UW==1
+        if SOLVER.UW==1 || SOLVER.UW==4
             if SOLVER.F_BAR_W>0
                 for k=1:bb
                     F_w=F_store_w{k};
@@ -316,7 +316,7 @@ function [Mat_state,MAT_POINT]=update_E(d,Mat_state,MAT_POINT)
             Mat_state.Es((e-1)*dims+i,1)=E(i,1);
         end
                 
-        if SOLVER.UW==1
+        if SOLVER.UW==1 || SOLVER.UW==4
             ndw = MAT_POINT{2}(e).near;
             nn2 = length(ndw);         
             b2  = MAT_POINT{2}(e).B;

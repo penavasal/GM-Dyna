@@ -19,7 +19,7 @@ function [load_s,OUTPUT]=...
     ext_forces_s = LOAD{BLCK}.ext_forces_s;
     ext_acce     = LOAD{BLCK}.ext_acce;
     value        = LOAD{BLCK}.value;
-    if SOLVER.UW==1
+    if SOLVER.UW==1 || SOLVER.UW==4
         ext_forces_w = LOAD{BLCK}.ext_forces_w;
     end
     
@@ -62,11 +62,11 @@ function [load_s,OUTPUT]=...
         
         for i=1:GEOMETRY.nodes 
             tt=1;
-            if (SOLVER.UW==1 || SOLVER.UW==2) && SOLVER.IMPLICIT(BLCK)==1
+            if (SOLVER.UW==1 || SOLVER.UW==4 || SOLVER.UW==2) && SOLVER.IMPLICIT(BLCK)==1
                 tt=-1;
             end
                 
-            if SOLVER.UW==1
+            if SOLVER.UW==1 || SOLVER.UW==4
             load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...
                 +tt*ext_forces_s((i-1)*sp+1:i*sp,m)*val;
             acce((i-1)*df+1:i*df,m)=acce((i-1)*df+1:i*df,m)...

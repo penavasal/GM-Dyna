@@ -46,6 +46,8 @@ function MAT_POINT=read_problem(str)
     
     SOLVER.PHASES = {'' ''};
     
+    SOLVER.UNITS = {'M'};
+    
     % VARIABLES
     VARIABLE.g=0;
 
@@ -199,6 +201,12 @@ function MAT_POINT=read_problem(str)
                     SOLVER.PHASES{2,2}=1;
                     SOLVER.PHASES{3,1}='Pw';
                     SOLVER.PHASES{3,2}=1;
+                elseif strcmp(b2{t},'UWps')
+                    SOLVER.UW=4;
+                    SOLVER.PHASES{1,1}='U';
+                    SOLVER.PHASES{1,2}=1;
+                    SOLVER.PHASES{2,1}='W';
+                    SOLVER.PHASES{2,2}=1;
                 end
                 if SOLVER.UW>=1
                     if VARIABLE.g==0
@@ -223,6 +231,15 @@ function MAT_POINT=read_problem(str)
                 continue
             case 'PW_STAB'
                 SOLVER.Pstab=b(t);  
+                continue
+            case 'UNITS'
+                if strcmp(b2{t},'MM') || strcmp(b2{t},'MPa')
+                    SOLVER.UNITS={'MM'};
+                elseif strcmp(b2{t},'M') || strcmp(b2{t},'Pa')
+                    SOLVER.UNITS={'M'};
+                else
+                    error('Units not implemented yet');
+                end
                 continue
             case 'SAVE_FREQUENCY'
                 SOLVER.SAVE_I=b(t); % Save info each XX steps

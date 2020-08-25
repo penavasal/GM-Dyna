@@ -387,7 +387,7 @@ function [MAT_POINT]=bbm(patch_con,patch_el,MAT_POINT,Area,BBAR)
             T(i)={t};
             B(i)={b};
             clear t b
-        elseif SOLVER.UW==1
+        elseif SOLVER.UW==1 || SOLVER.UW==4
             b2=zeros(5,df*n);
             ts=zeros(1,n*df);
             tw=zeros(1,n*df);
@@ -438,7 +438,7 @@ function [MAT_POINT]=bbm(patch_con,patch_el,MAT_POINT,Area,BBAR)
             MAT_POINT(i).B=bb;
             clear b t tt bb;
         end
-    elseif SOLVER.UW==1
+    elseif SOLVER.UW==1 || SOLVER.UW==4
         for i=1:patch
             tw=Tw{patch_con(i,1)};
             ts=Ts{patch_con(i,1)};
@@ -617,7 +617,7 @@ function [MAT_POINT]=bbm_axi(patch_con,patch_el,MAT_POINT,Area,BBAR)
             MAT_POINT(i).B=bb;
             clear b t tt bb;
         end
-    elseif SOLVER.UW==1
+    elseif SOLVER.UW==1 || SOLVER.UW==4
         for i=1:elements
             r=MAT_POINT(i).xg(1);
             nb = MAT_POINT(i).near;

@@ -56,11 +56,11 @@ function read_material(filetxt,BLCK)
     
     BODIES(mats)=0;
     
-    MATERIAL(BLCK).MAT=cell(49,mats);   % Numero m¿ximo de propiedades reconocidas
+    MATERIAL(BLCK).MAT=cell(61,mats);   % Numero m¿ximo de propiedades reconocidas
     MATERIAL(BLCK).MODEL=zeros(mats,2);
     %RANGE=zeros(sp,2*mats); % Range of for materials
     
-    MATERIAL(BLCK).MAT(48,:)={1};
+    MATERIAL(BLCK).MAT(61,:)={1};
 
     M=0;
     ks=0;
@@ -367,6 +367,60 @@ function read_material(filetxt,BLCK)
                 continue
             case 'D'
                 MATERIAL(BLCK).MAT(49,M)={bb2(t)};
+                continue
+            case 'LAMBDA0'
+                MATERIAL(BLCK).MAT(50,M)={bb2(t)};
+                continue
+            case 'XI_VG'
+                MATERIAL(BLCK).MAT(50,M)={bb2(t)};
+                continue
+            case 'LAMBDA1'
+                MATERIAL(BLCK).MAT(51,M)={bb2(t)};
+                continue
+            case 'BETA_RW'
+                MATERIAL(BLCK).MAT(52,M)={bb2(t)};
+                continue
+            case 'ALPHA_RW'
+                MATERIAL(BLCK).MAT(53,M)={bb2(t)};
+                continue
+            case 'LAMBDAD'
+                MATERIAL(BLCK).MAT(54,M)={bb2(t)};
+                continue
+            case 'ALPHA_VG'
+                MATERIAL(BLCK).MAT(54,M)={bb2(t)};
+                continue
+            case 'XRD'
+                MATERIAL(BLCK).MAT(55,M)={bb2(t)};
+                continue 
+            case 'P0_VG'
+                MATERIAL(BLCK).MAT(55,M)={bb2(t)};
+                continue 
+            case 'YR'
+                MATERIAL(BLCK).MAT(56,M)={bb2(t)};
+                continue  
+            case 'SWR'
+                MATERIAL(BLCK).MAT(56,M)={bb2(t)};
+                continue 
+            case 'XRW'
+                MATERIAL(BLCK).MAT(57,M)={bb2(t)};
+                continue
+            case 'BETAD'
+                MATERIAL(BLCK).MAT(58,M)={bb2(t)};
+                continue   
+            case 'M_VG'
+                MATERIAL(BLCK).MAT(58,M)={bb2(t)};
+                continue             
+            case 'BETAW'
+                MATERIAL(BLCK).MAT(59,M)={bb2(t)};
+                continue            
+            case 'BETA1_SW'
+                MATERIAL(BLCK).MAT(60,M)={bb2(t)};
+                continue
+            case 'N_VG'
+                MATERIAL(BLCK).MAT(60,M)={bb2(t)};
+                continue
+            case 'RETENTION_CURVE'
+                MATERIAL(BLCK).MAT(61,M)=bb(t);
                 continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)

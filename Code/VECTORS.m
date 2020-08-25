@@ -45,12 +45,17 @@
                 GLOBAL.Be(:,ste_p)      = Mat_state.Be(:,1); %LEFT CAUCHY GREEN 
             end
             
-            if SOLVER.UW==1
+            if SOLVER.UW==1 || SOLVER.UW==4
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
                 if SOLVER.SMALL==0
                     GLOBAL.Fw(:,ste_p) = Mat_state.Fw(:,1);
                 else
                     GLOBAL.Esw(:,ste_p) = Mat_state.Esw(:,1);
+                end
+                if SOLVER.UW==4
+                    GLOBAL.sw(:,ste_p) = Mat_state.sw(:,1);
+                    GLOBAL.cs(:,ste_p) = Mat_state.cs(:,1);
+                    GLOBAL.Q(:,ste_p) = Mat_state.Q(:,1);
                 end
             elseif SOLVER.UW==2
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
@@ -100,12 +105,15 @@
                 Mat_state.Es_e(:,2)=Mat_state.Es_e(:,1);
             end
 
-            if SOLVER.UW==1
+            if SOLVER.UW==1 || SOLVER.UW==4
                 Mat_state.pw(:,2)=Mat_state.pw(:,1);
                 if SOLVER.SMALL==0
                     Mat_state.Fw(:,2)=Mat_state.Fw(:,1);
                 else
                     Mat_state.Esw(:,2)=Mat_state.Esw(:,1);
+                end
+                if SOLVER.UW==4
+                   Mat_state.sw(:,2)=Mat_state.sw(:,1);
                 end
             elseif SOLVER.UW==2
                 Mat_state.pw(:,2)=Mat_state.pw(:,1);
@@ -172,13 +180,16 @@
             
             if SOLVER.UW>0
                 Mat_state.pw(:,2)=GLOBAL.pw(:,ste_p);
-                if SOLVER.UW==1
+                if SOLVER.UW==1 || SOLVER.UW==4
                     if SOLVER.SMALL==0
                         Mat_state.Fw(:,2)=GLOBAL.Fw(:,ste_p);
                         Mat_state.Fw(:,1)=GLOBAL.Fw(:,ste_p);
                     else
                         Mat_state.Esw(:,2)=GLOBAL.Esw(:,ste_p);
-                    end   
+                    end  
+                    if SOLVER.UW==4
+                        Mat_state.sw(:,2)=GLOBAL.sw(:,ste_p);
+                    end
                 elseif SOLVER.UW==2
                     Mat_state.dpw(:,2)=GLOBAL.dpw(:,ste_p);
                 end

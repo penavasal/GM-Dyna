@@ -73,9 +73,14 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     Mat_state.Sigma=zeros(l2*elements,2);
     Mat_state.fint=zeros(l0,2);
     
-    if SOLVER.UW==1
+    if SOLVER.UW==1  || SOLVER.UW==4
         Mat_state.k=zeros(elements,1);
         Mat_state.pw=zeros(elements,3);
+        if SOLVER.UW==4
+            Mat_state.sw=ones(elements,2);
+            Mat_state.cs=zeros(elements,2);
+            Mat_state.Q=zeros(elements,2);
+        end
         if SOLVER.SMALL==0
             Mat_state.Fw=zeros(l1*elements,2);
         else
@@ -119,11 +124,16 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
     GLOBAL.Es(l2*elements,dim) = 0;
     GLOBAL.Es_p(l2*elements,dim) = 0;
     GLOBAL.xg(elements*GEOMETRY.sp,dim)=0;
-    if SOLVER.UW==1
+    if SOLVER.UW==1  || SOLVER.UW==4
         if SOLVER.SMALL==0
             GLOBAL.Fw(l1*elements,dim)=0;
         else
             GLOBAL.Esw(l2*elements,dim)=0;
+        end
+        if SOLVER.UW==4
+            GLOBAL.sw(1:elements,STEP.ste_p+1:dim)=1;
+            GLOBAL.Q(elements,dim)=0;
+            GLOBAL.cs(elements,dim)=0;
         end
     elseif SOLVER.UW==2
         GLOBAL.dpw(GEOMETRY.sp*elements,dim)=0;
@@ -175,6 +185,10 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
             Mat_state.k(i) = ...
                 mmat{15,mati}/...
                 mmat{42,mati}/VARIABLE.g;
+            if SOLVER.UW==4
+                krw=W_retention.K(i,STEP.BLCK,Mat_state.sw);
+                Mat_state.k(i)=Mat_state.k(i)*krw;
+            end
         end
     end
     
@@ -256,7 +270,7 @@ function [Mat_state]=ini_F(Mat_state,l1,elements,sp,UW)
     Mat_state.F(:,2)=Mat_state.F(:,1);
     Mat_state.Be(:,2)=Mat_state.Be(:,1);
     
-    if UW==1
+    if UW==1 || UW==4
         for e=1:elements       
             Mat_state.Fw((e-1)*l1+1,1)=1; 
             Mat_state.Fw((e-1)*l1+sp+2,1)=1;

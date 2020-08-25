@@ -243,7 +243,7 @@ function read_boundary(filetxt,BLCK,NODE_LIST)
         INTERVAL(2,loads)=SOLVER.Time_final(BLCK);
         TIED(loads)=0;
         OUT(loads)=0;
-        if SOLVER.UW==1
+        if SOLVER.UW==1 || SOLVER.UW==4
             TYPE(loads)=2;
             VECTOR(:,loads)=[1; 1];
         elseif SOLVER.UW==2
@@ -391,7 +391,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK)
         if SOLVER.UW==0 && (TYPE(m)==2 || TYPE(m)==4)
             disp('error, take care of the water boundary conditions!!');
             stop
-        elseif SOLVER.UW==1 && TYPE(m)==6
+        elseif (SOLVER.UW==1 || SOLVER.UW==4)&& TYPE(m)==6
             disp('error, take care of the water boundary conditions!!');
             stop
         elseif SOLVER.UW==2 && (TYPE(m)==2 || TYPE(m)==4)
@@ -407,7 +407,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK)
                             BOUNDARY{BLCK}.constrains(nod_f(i)*df+1-k,m)=1;
                         end
                     end
-                elseif TYPE(m)==1 && SOLVER.UW==1
+                elseif TYPE(m)==1 && (SOLVER.UW==1 || SOLVER.UW==4)
                     for k=1:sp
                         if V(sp+1-k)~=0
                             BOUNDARY{BLCK}.dad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
@@ -428,7 +428,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK)
                             BOUNDARY{BLCK}.constrains(nod_f(i)*df+1-k,m)=2;
                         end
                     end
-                elseif TYPE(m)==3 && SOLVER.UW==1
+                elseif TYPE(m)==3 && (SOLVER.UW==1 || SOLVER.UW==4)
                     for k=1:sp
                         if V(sp+1-k)~=0
                             BOUNDARY{BLCK}.vad(nod_f(i)*df-sp+1-k,m)=V(sp+1-k);
@@ -445,7 +445,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK)
                 elseif TYPE(m)==5
                     for k=1:sp
                         if V(sp+1-k)~=0
-                            if SOLVER.UW==1
+                            if SOLVER.UW==1 || SOLVER.UW==4
                                 BOUNDARY{BLCK}.dad(nod_f(i)*df-sp+1-k,m)=sign(V(sp+1-k));
                                 BOUNDARY{BLCK}.constrains(nod_f(i)*df-sp+1-k,m)=3;
                                 BOUNDARY{BLCK}.tied(nod_f(i)*df-sp+1-k,m)=...

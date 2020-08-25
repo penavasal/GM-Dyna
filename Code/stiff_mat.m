@@ -34,7 +34,7 @@ function [KG]=stiff_mat_S(MAT_POINT,Mat_state,e,KG,A,BLCK)
         dim=4;
         if SOLVER.UW==0 || SOLVER.UW==2
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume; % Por que negativo??
-        elseif SOLVER.UW==1
+        elseif SOLVER.UW==1 || SOLVER.UW==4
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume;
         end
         
@@ -58,7 +58,7 @@ function [KG]=stiff_mat_S(MAT_POINT,Mat_state,e,KG,A,BLCK)
         Nw= MAT_POINT{2}(e).N;
         [KG]=Mat_UPw(...
             KG,vol,b,bw,nb,nbw,n,nw,Nw,K_mat,Mat_state.k(e),sp,df);      
-    elseif SOLVER.UW==1
+    elseif SOLVER.UW==1 || SOLVER.UW==4
         % Material
         [KG]=Mat_UW(KG,vol,K_mat,b,bw,nb,nbw,n,nw,e,MAT_POINT{1}(e).J,sp,df,BLCK);
     end
@@ -88,7 +88,7 @@ function [KG]=stiff_mat_L(MAT_POINT,Mat_state,e,KG,T,A,BLCK)
         dim=4;
         if SOLVER.UW==0 || SOLVER.UW==2
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume; % Por que negativo??
-        elseif SOLVER.UW==1
+        elseif SOLVER.UW==1 || SOLVER.UW==4
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume;
         end
         
@@ -96,7 +96,7 @@ function [KG]=stiff_mat_L(MAT_POINT,Mat_state,e,KG,T,A,BLCK)
         dim=3;
         if SOLVER.UW==0 || SOLVER.UW==2
             vol=-volume;   % Por que negativo??
-        elseif SOLVER.UW==1
+        elseif SOLVER.UW==1 || SOLVER.UW==4
             vol=-volume;
         end 
     end
@@ -118,9 +118,15 @@ function [KG]=stiff_mat_L(MAT_POINT,Mat_state,e,KG,T,A,BLCK)
         Nw= MAT_POINT{2}(e).N;
         [KG]=Mat_UPw(...
             KG,vol,b,bw,nb,nbw,n,nw,Nw,K_mat+K_geo,Mat_state.k(e),sp,df);      
-    elseif SOLVER.UW==1
+    elseif SOLVER.UW==1 || SOLVER.UW==4
+        if SOLVER.UW==4
+            sw=Mat_state.sw(e,1);
+        else
+            sw=1;
+        end
         % Material
-        [KG]=Mat_UW(KG,vol,K_mat,b,bw,nb,nbw,n,nw,e,MAT_POINT{1}(e).J,sp,df,BLCK);
+        [KG]=Mat_UW(KG,vol,K_mat,b,bw,nb,nbw,n,nw,e,...
+            MAT_POINT{1}(e).J,sp,df,BLCK,sw,Mat_state);
         % Geometrical
         [KG]=Geo_UW(KG,vol,e,Mat_state,MAT_POINT,b,n,nb,T,sp,df,BLCK);
     end
@@ -144,7 +150,7 @@ function [KG]=assemble(KG,K_el,nb1,nb2,n1,n2,df)
     end
 end
 
-function [KG]=Mat_UW(KG,vol,Kel,b,bw,nb,nbw,n,nw,i,J,sp,df,BLCK)
+function [KG]=Mat_UW(KG,vol,Kel,b,bw,nb,nbw,n,nw,i,J,sp,df,BLCK,sw,Mat_state)
 
     global SOLVER MATERIAL GEOMETRY
     
@@ -154,19 +160,25 @@ function [KG]=Mat_UW(KG,vol,Kel,b,bw,nb,nbw,n,nw,i,J,sp,df,BLCK)
     K_w=MAT{28,Material(i)};
     K_s=MAT{27,Material(i)};
 
+    nn=1-(1-MAT{16,Material(i)})/J;
+    
+    if SOLVER.UW==4
+        Q=W_retention.Q(i,Mat_state,K_s,K_w,nn);
+    else
+        Q=1/(nn/K_w+(1-nn)/K_s);
+    end
+    
     if SOLVER.AXI
         m=[1 1 0 1];
     else
         m=[1 1 0];
     end
-    nn=1-(1-MAT{16,Material(i)})/J;
-    Q=1/(nn/K_w+(1-nn)/K_s);
 
     dN=m*b;
     dNw=m*bw;
     
-    Qu=Q*vol*(dN')*dN;
-    Quw=Q*vol*dN'*dNw;
+    Qu=sw*sw*Q*vol*(dN')*dN;
+    Quw=sw*Q*vol*dN'*dNw;
     Qwu=Quw';
     Qw=Q*vol*(dNw')*dNw;
     

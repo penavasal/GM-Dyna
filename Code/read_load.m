@@ -283,7 +283,7 @@ function calculate_forces...
     
     if loads
         LOAD{BLCK}.ext_forces_s = zeros(nodes*sp,loads);
-        if SOLVER.UW==1
+        if SOLVER.UW==1 || SOLVER.UW==4
             LOAD{BLCK}.ext_forces_w = zeros(nodes*sp,loads);
         end
         LOAD{BLCK}.ext_acce = zeros(nodes*df,loads);    
@@ -298,7 +298,7 @@ function calculate_forces...
         VL=NODE_LIST.VL;  
     else
         LOAD{BLCK}.ext_forces_s = 0;
-        if SOLVER.UW==1
+        if SOLVER.UW==1 || SOLVER.UW==4
             LOAD{BLCK}.ext_forces_w = 0;
         end
         LOAD{BLCK}.ext_acce = 0;   
@@ -463,8 +463,8 @@ function calculate_forces...
                 if SOLVER.UW==0
                     for k=1:sp
                         LOAD{BLCK}.ext_acce(nn*sp+1-k,m)=d*V(sp+1-k);
-                    end
-                elseif SOLVER.UW==1
+                    end 
+                elseif SOLVER.UW==1 || SOLVER.UW==4
                     for k=1:sp
                         LOAD{BLCK}.ext_acce(nn*df+1-k,m)=d*V(sp+1-k);
                         LOAD{BLCK}.ext_acce(nn*df-sp+1-k,m)=d*V(sp+1-k);
