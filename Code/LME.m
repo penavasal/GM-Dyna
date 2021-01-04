@@ -558,7 +558,6 @@
                 Nelder=1;
 
                 %Tolerance to make new re-mapping or not and proportion to do it
-                tol_search = 0.5;       % Optimum [0.4-0.7]
                 prop = 0.1;             % Proportion of gamma decreasing
 
 
@@ -617,22 +616,27 @@
                                 LME_param(M,2)=target_zero;
                                 LME_param(M,3)=max(2*eps,TolLag);
                                 LME_param(M,4)=Nelder;
-                                LME_param(M,5)=tol_search;
+                                LME_param(M,5)=0;
                                 LME_param(M,6)=prop;
                                 LME_param(M,7)=gamma_top;
                                 LME_param(M,8)=nb_grade;
                             end
                             ss=0;
                             M=M+1;
-                            ph=b2{t};
                             
-                            for i=1:length(ph)
+                            id=2;
+                            while ~isempty(data{id}{t})
+                                ph=data{id}{t};
+                                
                                 for k=1:phases
-                                    if strcmp(ph(i),SOLVER.PHASES{k,1})
+                                    if strcmp(ph,SOLVER.PHASES{k,1})
                                         SOLVER.PHASES{k,2}=M;
                                     end
                                 end
+                                id=id+1;
                             end
+                            
+ 
                             continue
                         case 'GAMMA_LME'
                             gamma_lme=b(t); 
@@ -681,7 +685,7 @@
                 LME_param(M,2)=target_zero;
                 LME_param(M,3)=max(2*eps,TolLag);
                 LME_param(M,4)=Nelder;
-                LME_param(M,5)=tol_search;
+                LME_param(M,5)=0;
                 LME_param(M,6)=prop;
                 LME_param(M,7)=gamma_top;
                 LME_param(M,8)=nb_grade;
@@ -852,7 +856,7 @@
                     end
                 end
                 
-                MAT_POINT=LME.separation(MAT_POINT,ph,SEP,NODE_LIST);
+                MAT_POINT=LME.separation(MAT_POINT,sh,SEP,NODE_LIST);
                 
                 gamma_lme = LME_param(sh,1);
                 gamma_=gamma_lme*ones(GEOMETRY.mat_points,1);

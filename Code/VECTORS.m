@@ -57,7 +57,7 @@
                     GLOBAL.cs(:,ste_p) = Mat_state.cs(:,1);
                     GLOBAL.Q(:,ste_p) = Mat_state.Q(:,1);
                 end
-            elseif SOLVER.UW==2
+            elseif SOLVER.UW==2 || SOLVER.UW==3
                 GLOBAL.pw(:,ste_p) = Mat_state.pw(:,1);
                 GLOBAL.dpw(:,ste_p) = Mat_state.dpw(:,1);
             end
@@ -115,7 +115,7 @@
                 if SOLVER.UW==4
                    Mat_state.sw(:,2)=Mat_state.sw(:,1);
                 end
-            elseif SOLVER.UW==2
+            elseif SOLVER.UW==2 || SOLVER.UW==3
                 Mat_state.pw(:,2)=Mat_state.pw(:,1);
                 Mat_state.dpw(:,2)=Mat_state.dpw(:,1);
             end
@@ -190,7 +190,7 @@
                     if SOLVER.UW==4
                         Mat_state.sw(:,2)=GLOBAL.sw(:,ste_p);
                     end
-                elseif SOLVER.UW==2
+                elseif SOLVER.UW==2 || SOLVER.UW==3
                     Mat_state.dpw(:,2)=GLOBAL.dpw(:,ste_p);
                 end
             end
@@ -237,7 +237,7 @@
             end
             
             % Recalculate shape functions
-            MAT_POINT=shape_function_calculation(0,MAT_POINT,Disp_field);
+            MAT_POINT=SH.calculation(0,MAT_POINT,Disp_field);
             
             % Constitutive
             [stiff_mtx,Int_var,Mat_state,STEP]=...

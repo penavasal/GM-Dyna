@@ -70,7 +70,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         Mat_state.Es=zeros(l2*elements,2);
         Mat_state.Es_e=zeros(l2*elements,2);
     end
-    Mat_state.Sigma=zeros(l2*elements,2);
+    Mat_state.Sigma=zeros(l2*elements,3);
     Mat_state.fint=zeros(l0,2);
     
     if SOLVER.UW==1  || SOLVER.UW==4
@@ -86,7 +86,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         else
             Mat_state.Esw=zeros(l2*elements,2);
         end
-    elseif SOLVER.UW==2
+    elseif SOLVER.UW==2 || SOLVER.UW==3
         Mat_state.k=zeros(elements,1);
         Mat_state.pw=zeros(elements,3);
         Mat_state.dpw=zeros(GEOMETRY.sp*elements,2);
@@ -135,7 +135,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
             GLOBAL.Q(elements,dim)=0;
             GLOBAL.cs(elements,dim)=0;
         end
-    elseif SOLVER.UW==2
+    elseif SOLVER.UW==2 || SOLVER.UW==3
         GLOBAL.dpw(GEOMETRY.sp*elements,dim)=0;
     end
     
@@ -244,12 +244,14 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         
         [~,GLOBAL.d(:,1),GLOBAL.v(:,1),~]=calculate_boundaries(STEP,0);
         
-        Disp_field.v(:,2)=GLOBAL.v(:,1);
-        Disp_field.a(:,2)=GLOBAL.a(:,1);
-        Disp_field.d(:,2)=GLOBAL.d(:,1);
+        Disp_field.d(:,1)=GLOBAL.d(:,1);
+        Disp_field.v(:,1)=GLOBAL.v(:,1);
+        Disp_field.a(:,1)=GLOBAL.a(:,1);
         
-        [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=initial_constitutive...
-        (GLOBAL,MAT_POINT,Mat_state,Int_var,STEP);
+        [Mat_state,MAT_POINT]=update_strain(Disp_field.d,Mat_state,MAT_POINT,STEP);
+        
+        [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP,Disp_field]=initial_constitutive...
+        (GLOBAL,MAT_POINT,Mat_state,Int_var,STEP,Disp_field);
     
     end 
 
@@ -333,8 +335,8 @@ function [dim,STEP]=fix_time(tp,ste_p)
     STEP.t=tb+tp0;
 end
 
-function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
-    initial_constitutive(GLOBAL,MAT_POINT,Mat_state,Int_var,STEP)
+function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP,Disp_field]=...
+    initial_constitutive(GLOBAL,MAT_POINT,Mat_state,Int_var,STEP,Disp_field)
 
     global GEOMETRY SOLVER  MATERIAL
         
@@ -369,10 +371,15 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
     % Constitutive calculation
     [stiff_mtx,Int_var,Mat_state,STEP]=Constitutive.strain2const(...
             STEP,Mat_state,Int_var,stiff_mtx,Kt,MAT_POINT);
+        
+    % ----------------------------
+    % Internal forces
+    % ----------------------------
+    [Mat_state]=Constitutive.internal_forces(MAT_POINT,Mat_state,STEP.BLCK);
     
     for e=1:GEOMETRY.mat_points        
         for i=1:dims
-            Mat_state.Sigma((e-1)*dims+i,3)=Mat_state.Sigma((e-1)*dims+i,1);
+            %Mat_state.Sigma((e-1)*dims+i,3)=Mat_state.Sigma((e-1)*dims+i,1);
             GLOBAL.Sigma((e-1)*dims+i,1)=Mat_state.Sigma((e-1)*dims+i,1);
         end
         
@@ -397,6 +404,12 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP]=...
         end
             
     end
+    
+    %STEP=Time_Scheme.step(STEP,Disp_field);
+    [Disp_field,Mat_state,Int_var]=VECTORS.Update(...
+                Disp_field,Mat_state,Int_var);
+    
+
 
 end
 

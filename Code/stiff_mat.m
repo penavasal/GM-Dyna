@@ -27,12 +27,17 @@ function [KG]=stiff_mat_S(MAT_POINT,Mat_state,e,KG,A,BLCK)
         nbw=MAT_POINT{2}(e).near;
         bw=MAT_POINT{2}(e).B;
         nw =length(nbw);
+        if SOLVER.UW==3
+            nbp=MAT_POINT{3}(e).near;
+            bp=MAT_POINT{3}(e).B;
+            np =length(nbw);   
+        end
     end
     
     volume=GEOMETRY.Area(e)*MAT_POINT{1}(e).J;
     if SOLVER.AXI
         dim=4;
-        if SOLVER.UW==0 || SOLVER.UW==2
+        if SOLVER.UW==0 || SOLVER.UW==2 || SOLVER.UW==3 
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume; % Por que negativo??
         elseif SOLVER.UW==1 || SOLVER.UW==4
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume;
@@ -57,7 +62,12 @@ function [KG]=stiff_mat_S(MAT_POINT,Mat_state,e,KG,A,BLCK)
     elseif SOLVER.UW==2
         Nw= MAT_POINT{2}(e).N;
         [KG]=Mat_UPw(...
-            KG,vol,b,bw,nb,nbw,n,nw,Nw,K_mat,Mat_state.k(e),sp,df);      
+            KG,vol,b,bw,nb,nbw,n,nw,Nw,K_mat,Mat_state.k(e),sp,df); 
+    elseif SOLVER.UW==3
+        Nw= MAT_POINT{2}(e).N;
+        Np= MAT_POINT{3}(e).N;
+        [KG]=Mat_UWPw(...
+            KG,vol,b,bp,nb,nbw,nbp,n,nw,np,Np,Nw,K_mat,sp,df); 
     elseif SOLVER.UW==1 || SOLVER.UW==4
         % Material
         [KG]=Mat_UW(KG,vol,K_mat,b,bw,nb,nbw,n,nw,e,MAT_POINT{1}(e).J,sp,df,BLCK);
@@ -81,12 +91,17 @@ function [KG]=stiff_mat_L(MAT_POINT,Mat_state,e,KG,T,A,BLCK)
         nbw=MAT_POINT{2}(e).near;
         bw=MAT_POINT{2}(e).B;
         nw =length(nbw);
+        if SOLVER.UW==3
+            nbp=MAT_POINT{3}(e).near;
+            bp=MAT_POINT{3}(e).B;
+            np =length(nbp);   
+        end
     end
     
     volume=GEOMETRY.Area(e)*MAT_POINT{1}(e).J;
     if SOLVER.AXI
         dim=4;
-        if SOLVER.UW==0 || SOLVER.UW==2
+        if SOLVER.UW==0 || SOLVER.UW==2 || SOLVER.UW==3
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume; % Por que negativo??
         elseif SOLVER.UW==1 || SOLVER.UW==4
             vol=-2*pi*MAT_POINT{1}(e).xg(1)*volume;
@@ -94,7 +109,7 @@ function [KG]=stiff_mat_L(MAT_POINT,Mat_state,e,KG,T,A,BLCK)
         
     else
         dim=3;
-        if SOLVER.UW==0 || SOLVER.UW==2
+        if SOLVER.UW==0 || SOLVER.UW==2 || SOLVER.UW==3
             vol=-volume;   % Por que negativo??
         elseif SOLVER.UW==1 || SOLVER.UW==4
             vol=-volume;
@@ -117,7 +132,12 @@ function [KG]=stiff_mat_L(MAT_POINT,Mat_state,e,KG,T,A,BLCK)
     elseif SOLVER.UW==2
         Nw= MAT_POINT{2}(e).N;
         [KG]=Mat_UPw(...
-            KG,vol,b,bw,nb,nbw,n,nw,Nw,K_mat+K_geo,Mat_state.k(e),sp,df);      
+            KG,vol,b,bw,nb,nbw,n,nw,Nw,K_mat+K_geo,Mat_state.k(e),sp,df);  
+    elseif SOLVER.UW==3
+        Nw= MAT_POINT{2}(e).N;
+        Np= MAT_POINT{3}(e).N;
+        [KG]=Mat_UWPw(...
+            KG,vol,b,bp,nb,nbw,nbp,n,nw,np,Np,Nw,K_mat+K_geo,sp,df); 
     elseif SOLVER.UW==1 || SOLVER.UW==4
         if SOLVER.UW==4
             sw=Mat_state.sw(e,1);
@@ -264,6 +284,60 @@ function [KG]=Mat_UPw(KG,vol,b,bw,nb,nbw,n,nw,Nw,K,k,sp,df)
         end
     end
     [KG]=assemble(KG,K_3,nb,nbw,n,nw,df);
+end
+
+function [KG]=Mat_UWPw(KG,vol,b,bp,nb,nbw,nbp,n,nw,np,Np,Nw,K,sp,df)
+
+    global SOLVER
+
+    if SOLVER.AXI
+        m=[1 1 0 1];
+    else
+        m=[1 1 0];
+    end
+    
+    Q=b'*m'*Np';
+    
+    Nw2=zeros(2,2*nw);
+    dNw=zeros(2,np);
+    for j=1:np
+        dNw(1,j)=bp(1,(j-1)*sp+1);
+        dNw(2,j)=bp(2,(j-1)*sp+2);
+    end
+    
+    for j=1:nw
+        Nw2(1,(j-1)*2+1)=Nw(j);
+        Nw2(2,(j-1)*2+2)=Nw(j);
+    end
+    
+    R=Nw2'*dNw;
+  
+    % ----------------------------
+    % Material stiffness
+    % ----------------------------
+    K_1=zeros(df*n);
+    K_2=zeros(df*nw,df*np);
+    K_3=zeros(df*n,df*np);
+    for j=1:n
+        for k=1:n
+            K_1((j-1)*df+1:j*df-1-sp,(k-1)*df+1:k*df-1-sp)=...
+                -vol*K((j-1)*sp+1:j*sp,(k-1)*sp+1:k*sp);
+        end
+    end
+    [KG]=assemble(KG,K_1,nb,nb,n,n,df);
+    for j=1:nw
+        for k=1:np
+            K_2((j-1)*df+1+sp:j*df-1,k*df)=-vol*R((j-1)*sp+1:j*sp,k);
+        end
+    end
+    [KG]=assemble(KG,K_2,nbw,nbp,nw,np,df);
+    for j=1:n
+        for k=1:np
+            K_3((j-1)*df+1:j*df-1-sp,k*df)=...
+                +vol*Q((j-1)*sp+1:j*sp,k);
+        end
+    end
+    [KG]=assemble(KG,K_3,nb,nbp,n,np,df);
 end
 
 function [KG]=Geo_UW(KG,vol,e,Mat_state,MAT_POINT,b,n,nb,T,sp,df,BLCK)

@@ -127,11 +127,18 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 [dFw]=LIB.v2m(dF_w);
                 F_w=dFw*F_w;
                 
-            elseif SOLVER.UW==2
-                N=MAT_POINT{2}(e).N;
-                ndw = MAT_POINT{2}(e).near;
-                nn2 = length(ndw);         
-                b2  = MAT_POINT{2}(e).B;
+            elseif SOLVER.UW==2 || SOLVER.UW==3
+                if SOLVER.UW==2
+                    N=MAT_POINT{2}(e).N;
+                    ndw = MAT_POINT{2}(e).near;
+                    nn2 = length(ndw);         
+                    b2  = MAT_POINT{2}(e).B;
+                else
+                    N=MAT_POINT{3}(e).N;
+                    ndw = MAT_POINT{3}(e).near;
+                    nn2 = length(ndw);         
+                    b2  = MAT_POINT{3}(e).B;
+                end
                 pwv=zeros(nn2,1);     %Incremental displacements _ solid
                 dN=zeros(2,nn2);
                 for i=1:nn2
@@ -167,7 +174,7 @@ function [Mat_state,MAT_POINT]=update_F(d,Mat_state,MAT_POINT,STEP)
                 
                 if SOLVER.REMAPPING
                     %Principal strecht
-                    C=F_'*F_;
+                    C=F'*F;
                     [EP_]=Principal(C);
                     MAT_POINT{1}(e).EP(:,1)=EP_(:);
                 end

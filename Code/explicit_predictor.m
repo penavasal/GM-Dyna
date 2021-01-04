@@ -3,7 +3,7 @@
 function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
             (STEP,Disp_field,MAT_POINT,Mat_state)
 
-    global GEOMETRY TIME
+    global GEOMETRY TIME SOLVER
     
     sp=GEOMETRY.sp;
     df=GEOMETRY.df;
@@ -76,35 +76,18 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
     end
     
     %% 2. REMAPPING
-%         REMAP=1;  %Flag
-%         iter=1;
-%         error_tol=min(h_ini.*sqrt(jacobians))*1e-6;
-%         wrap=zeros(GEOMETRY.mat_points,1);
-%         while REMAP==1           
-            [MAT_POINT]=update_mp(d0,MAT_POINT);
-            
-            [Mat_state,MAT_POINT]=update_strain(daf,Mat_state,MAT_POINT,STEP);
 
-%             if iter==1
-%                 xg1=xg2;
-%             else
-%                 error=norm(abs(xg1-xg2));
-%                 if error<error_tol
-%                     REMAP=0;
-%                 else
-%                     xg1=xg2;
-%                     if iter>=3
-%                         iter;
-%                     end
-%                 end
-%             end
-% 
-%             if REMAP==1
-%                 [B,near,p,gamma_,lam_LME,REMAP,wrap,EP]=LME_EP(jacobians,...
-%                     volume,x_a,xg,B,near,p,gamma_,lam_LME,wrap,EP,ste);
-%             end
-%             iter=iter+1;
-%         end
+         
+    [MAT_POINT]=update_mp(d0,MAT_POINT);
+            
+    [Mat_state,MAT_POINT]=update_strain(daf,Mat_state,MAT_POINT,STEP);
+
+    REMAP=SOLVER.REMAPPING;  %Flag
+    if REMAP==1
+        MAT_POINT=SH.remap(MAT_POINT,Disp_field);
+        %[B,near,p,gamma_,lam_LME,REMAP,wrap,EP]=LME_EP(jacobians,...
+        %             volume,x_a,xg,B,near,p,gamma_,lam_LME,wrap,EP,ste);
+    end
 
     %% 3. Assemble vectors
     Disp_field.x_a  = x_a;

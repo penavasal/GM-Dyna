@@ -353,7 +353,16 @@
                 if SOLVER.UW>0
                     ndw=MAT_POINT{2}(e).near;
                     B_w=MAT_POINT{2}(e).B;
-                    nnw =length(ndw); 
+                    nnw =length(ndw);
+                    if SOLVER.UW==3
+                        Nw1= MAT_POINT{2}(e).N;
+                        Nw=zeros(sp,sp*nnw);
+                        for i=1:nnw
+                            for j=1:sp
+                                Nw(j,(i-1)*sp+j)=Nw1(j);
+                            end
+                        end
+                    end
                 end
 
                 % Derivatives
@@ -476,6 +485,38 @@
                        nod=ndw(i);
                        Mat_state.fint(nod*df,1)=...
                                 Mat_state.fint(nod*df,1)-int_forces_3(i,1);
+                    end
+                    
+                elseif SOLVER.UW==3
+                    if SOLVER.AXI
+                        m=[1 1 0 1];
+                    else
+                        m=[1 1 0];
+                    end
+                    div=B_'*m';
+                    dN=zeros(2,nnw);
+                    for j=1:nnw
+                        dN(1,j)=B_w(1,(j-1)*sp+1);
+                        dN(2,j)=B_w(2,(j-1)*sp+2);
+                    end
+                    int_forces_2=div*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol;
+                    dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
+                    int_forces_3=Nw'*dPw*vol;
+                    for i=1:nn
+                       nod=nd(i);
+                       for j=1:sp
+                            Mat_state.fint(nod*df-sp-j,1)=...
+                                Mat_state.fint(nod*df-sp-j,1)-int_forces_1(3-j,i)+...
+                                int_forces_2(i*sp+1-j,1);
+                       end
+                    end
+                    %REVISAR!!!!!
+                    for i=1:nnw
+                       nod=ndw(i);
+                       for j=1:sp
+                            Mat_state.fint(nod*df-j,1)=...
+                                Mat_state.fint(nod*df-j,1)+int_forces_3(i*sp+1-j,1);
+                       end
                     end
                 else
                     for i=1:nn

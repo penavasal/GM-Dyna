@@ -30,14 +30,14 @@
                 elem=[1 2 3 4];
             end
 
-            tol = 1e-7;
+            tol = 1e-5;
             xi=xi_0;
             norm_f(1)=1000;
             norm_r_f(1)=1000;
             conver=0;
             a=1;
             i=1;
-            while conver==0
+            while conver==0 && i<200
                 i=i+1;
                  [~, N, ~,~,Dxdxi] = ...
                      FEM.elem_driver(coord,xi);

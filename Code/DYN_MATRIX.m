@@ -51,7 +51,7 @@ classdef DYN_MATRIX
             mass_mtx=zeros(GEOMETRY.nodes*df);
             damp_mtx=zeros(GEOMETRY.nodes*df);
 
-            if (alpha || SOLVER.UW==1 || SOLVER.UW==4  || SOLVER.UW==2) && ...
+            if (alpha || SOLVER.UW==1 || SOLVER.UW==4  || SOLVER.UW==2 || SOLVER.UW==3) && ...
                     SOLVER.DYN(BLCK)==1
                 for i=1:GEOMETRY.mat_points
                     
@@ -86,7 +86,39 @@ classdef DYN_MATRIX
                         mw  = length(ndw);
                         shw = MAT_POINT{2}(i).N;
                     end
-                    if SOLVER.UW==2
+                    if SOLVER.UW==3
+                        ndp = MAT_POINT{3}(i).near;
+                        mp  = length(ndp);
+                        shp = MAT_POINT{3}(i).N;
+                        b = MAT_POINT{1}(i).B;
+                        if SOLVER.AXI
+                            mm=[1 1 0 1];
+                        else
+                            mm=[1 1 0];
+                        end
+                        Qt=(b'*mm'*shp')';
+                        
+                        K_w=MATERIAL(BLCK).MAT{28,mati(i)};
+                        K_s=MATERIAL(BLCK).MAT{27,mati(i)};
+
+                        Q=1/(n/K_w+(1-n)/K_s);
+                        
+                        % stab
+                        if SOLVER.Pstab
+                            bp = MAT_POINT{1}(i).B;
+                            dN=zeros(2,mp);
+                            for j=1:mp
+                                dN(1,j)=bp(1,(j-1)*sp+1);
+                                dN(2,j)=bp(2,(j-1)*sp+2);
+                            end
+                            h=GEOMETRY.h_ini(i);
+                            tau=SOLVER.Pstab*h*h/Q;
+                            Hs=tau*(dN'*dN);
+                        else
+                            Hs=zeros(mp);
+                        end  
+                        
+                    elseif SOLVER.UW==2
                         bw= MAT_POINT{2}(i).B;
                         b = MAT_POINT{1}(i).B;
                         if SOLVER.AXI
@@ -102,7 +134,6 @@ classdef DYN_MATRIX
                         Q=1/(n/K_w+(1-n)/K_s);
                         
                         [A]=DYN_MATRIX.A_mat(m,mw,sh,bw);
-                        
                         
                         % stab
                         if SOLVER.Pstab
@@ -131,6 +162,10 @@ classdef DYN_MATRIX
                                     mass_mtx(nd(t1)*df-k,nd(t2)*df-k)=...
                                         mass_mtx(nd(t1)*df-k,nd(t2)*df-k)-...
                                         t*sh(t1)*sh(t2)*dens;
+                                elseif SOLVER.UW==3 && alpha
+                                    mass_mtx(nd(t1)*df-sp-k,nd(t2)*df-sp-k)=...
+                                        mass_mtx(nd(t1)*df-sp-k,nd(t2)*df-sp-k)-...
+                                        t*sh(t1)*sh(t2)*dens;
                                 elseif alpha
                                     mass_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)=...
                                         mass_mtx(nd(t1)*df+1-k,nd(t2)*df+1-k)+...
@@ -156,6 +191,10 @@ classdef DYN_MATRIX
                                         mass_mtx(ndw(t1)*df,nd(t2)*df-k)=...
                                             mass_mtx(ndw(t1)*df,nd(t2)*df-k)+...
                                             t*A(t1,t2*sp+1-k)*rho_w*Mat_state.k(i);
+                                    elseif SOLVER.UW==3 && alpha
+                                        mass_mtx(ndw(t1)*df-sp-k,nd(t2)*df-k)=...
+                                            mass_mtx(ndw(t1)*df-sp-k,nd(t2)*df-k)-...
+                                            t*shw(t1)*sh(t2)*rho_w;
                                     end
                                 end
                             end
@@ -166,6 +205,10 @@ classdef DYN_MATRIX
                                     if (SOLVER.UW==1 || SOLVER.UW==4)  && alpha
                                         mass_mtx(nd(t1)*df+1-k,ndw(t2)*df-1-k)=...
                                             mass_mtx(nd(t1)*df+1-k,ndw(t2)*df-1-k)-...
+                                            t*sh(t1)*shw(t2)*rho_w;
+                                    elseif SOLVER.UW==3  && alpha
+                                        mass_mtx(nd(t1)*df-k,ndw(t2)*df-sp-k)=...
+                                            mass_mtx(nd(t1)*df-k,ndw(t2)*df-sp-k)-...
                                             t*sh(t1)*shw(t2)*rho_w;
                                     end
                                 end
@@ -178,16 +221,47 @@ classdef DYN_MATRIX
                                         damp_mtx(ndw(t1)*df+1-k,ndw(t2)*df+1-k)=...
                                             damp_mtx(ndw(t1)*df+1-k,ndw(t2)*df+1-k)-...
                                             t*shw(t1)*shw(t2)/Mat_state.k(i);
+                                    elseif SOLVER.UW==3
+                                        damp_mtx(ndw(t1)*df-k,ndw(t2)*df-k)=...
+                                            damp_mtx(ndw(t1)*df-k,ndw(t2)*df-k)-...
+                                            t*shw(t1)*shw(t2)/Mat_state.k(i);
                                     elseif SOLVER.UW==2
                                         damp_mtx(ndw(t1)*df,ndw(t2)*df)=...
                                             damp_mtx(ndw(t1)*df,ndw(t2)*df)-...
-                                            t*shw(t1)*shw(t2)/Q-t*Hs(t1,t2);
+                                            t*shw(t1)*shw(t2)/Q+t*Hs(t1,t2);
                                     end
                                     if (SOLVER.UW==1 || SOLVER.UW==4) && alpha
                                         mass_mtx(ndw(t1)*df+1-k,ndw(t2)*df+1-k)=...
                                             mass_mtx(ndw(t1)*df+1-k,ndw(t2)*df+1-k)-...
                                             t*shw(t1)*shw(t2)*rho_w/n/sw;
+                                    elseif SOLVER.UW==3 && alpha
+                                        mass_mtx(ndw(t1)*df-k,ndw(t2)*df-k)=...
+                                            mass_mtx(ndw(t1)*df-k,ndw(t2)*df-k)-...
+                                            t*shw(t1)*shw(t2)*rho_w/n/sw;
                                     end
+                                end
+                            end
+                        end
+                        if SOLVER.UW==3
+                            for t1=1:mp
+                                for t2=1:m
+                                    for k=1:sp
+                                        damp_mtx(ndp(t1)*df,nd(t2)*df-sp-k)=...
+                                            damp_mtx(ndp(t1)*df,nd(t2)*df-sp-k)-...
+                                            t*Qt(t1,t2*sp+1-k);
+                                    end
+                                end
+                                for t2=1:mw
+                                    for k=1:sp
+                                        damp_mtx(ndp(t1)*df,ndw(t2)*df-k)=...
+                                            damp_mtx(ndp(t1)*df,ndw(t2)*df-k)-...
+                                            t*Qt(t1,t2*sp+1-k);
+                                    end
+                                end
+                                for t2=1:mp
+                                    damp_mtx(ndw(t1)*df,ndw(t2)*df)=...
+                                        damp_mtx(ndw(t1)*df,ndw(t2)*df)-...
+                                        t*shw(t1)*shw(t2)/Q-t*Hs(t1,t2);
                                 end
                             end
                         end
@@ -554,6 +628,10 @@ classdef DYN_MATRIX
                             mass(nd(t1)*df-sp+1-k,nd(t1)*df-sp+1-k)=...
                             mass(nd(t1)*df-sp+1-k,nd(t1)*df-sp+1-k)...
                                 +dens*t*sh(t1);
+                        elseif SOLVER.UW==3
+                            mass(nd(t1)*df-sp-k,nd(t1)*df-sp-k)=...
+                            mass(nd(t1)*df-sp-k,nd(t1)*df-sp-k)...
+                                +dens*t*sh(t1);
                         elseif SOLVER.UW==2
                             mass(nd(t1)*df-k,nd(t1)*df-k)=...
                             mass(nd(t1)*df-k,nd(t1)*df-k)...
@@ -569,6 +647,10 @@ classdef DYN_MATRIX
                             if SOLVER.UW==1 || SOLVER.UW==4
                                 mass(ndw(t1)*df+1-k,ndw(t1)*df+1-k)=...
                                 mass(ndw(t1)*df+1-k,ndw(t1)*df+1-k)...
+                                    +rho_w*t*shw(t1);
+                            elseif SOLVER.UW==3
+                                mass(ndw(t1)*df-k,ndw(t1)*df-k)=...
+                                mass(ndw(t1)*df-k,ndw(t1)*df-k)...
                                     +rho_w*t*shw(t1);
                             elseif SOLVER.UW==2
                                 mass(ndw(t1)*df,ndw(t1)*df-k)=...

@@ -90,7 +90,7 @@ df=GEOMETRY.df;
         if SOLVER.SMALL==1
             Es_w=GLOBAL.Es_w;
         end
-    elseif SOLVER.UW==2
+    elseif SOLVER.UW==2 || SOLVER.UW==3
         Pw=GLOBAL.pw;
         dPw=GLOBAL.dpw;
     end
@@ -157,26 +157,26 @@ for cont=1:dd:steps
          fprintf(fid,[num2str(a((i-1)*df+1,cont)) ' ' num2str(a((i-1)*df+2,cont)) ' 0\n']);
     end
     
-    if SOLVER.UW==1 
+    if SOLVER.UW==1 || SOLVER.UW==3
         %dw
         fprintf(fid, 'VECTORS d_w float \n');
         for j=1:length(nodes_p)
             i=nodes_p(j);
-            fprintf(fid,[num2str(d(i*df-1,cont)) ' ' num2str(d(i*df,cont)) ' 0\n']);
+            fprintf(fid,[num2str(d((i-1)*df+1+sp,cont)) ' ' num2str(d((i-1)*df+2+sp,cont)) ' 0\n']);
         end
         %Vw
         fprintf(fid, 'VECTORS v_w float \n');
         for j=1:length(nodes_p)
             i=nodes_p(j);
-            fprintf(fid,[num2str(v(i*df-1,cont)) ' ' num2str(v(i*df,cont)) ' 0\n']);
+            fprintf(fid,[num2str(v((i-1)*df+1+sp,cont)) ' ' num2str(v((i-1)*df+2+sp,cont)) ' 0\n']);
         end
         %Aw
          fprintf(fid, 'VECTORS a_w float \n');
         for j=1:length(nodes_p)
             i=nodes_p(j);
-             fprintf(fid,[num2str(a(i*df-1,cont)) ' ' num2str(a(i*df,cont)) ' 0\n']);
+             fprintf(fid,[num2str(a((i-1)*df+1+sp,cont)) ' ' num2str(a((i-1)*df+2+sp,cont)) ' 0\n']);
         end
-    elseif SOLVER.UW==2
+    elseif SOLVER.UW==2 || SOLVER.UW==3
         %pw
         fprintf(fid, 'SCALARS pw_nds float \n');
         fprintf(fid, 'LOOKUP_TABLE default\n');
@@ -263,7 +263,7 @@ for cont=1:dd:steps
         for i=1:elements
             fprintf(fid,[num2str(Pw(i*it,cont)) '\n']);
         end
-        if SOLVER.UW==2
+        if SOLVER.UW==2 || SOLVER.UW==3
                 %Grad Pore Pressure
             fprintf(fid, 'VECTORS Grad_Pore_Pressure float \n');
             for i=1:elements

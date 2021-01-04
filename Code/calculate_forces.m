@@ -62,7 +62,7 @@ function [load_s,OUTPUT]=...
         
         for i=1:GEOMETRY.nodes 
             tt=1;
-            if (SOLVER.UW==1 || SOLVER.UW==4 || SOLVER.UW==2) && SOLVER.IMPLICIT(BLCK)==1
+            if (SOLVER.UW==1 || SOLVER.UW==4 || SOLVER.UW==2 || SOLVER.UW==3) && SOLVER.IMPLICIT(BLCK)==1
                 tt=-1;
             end
                 
@@ -73,11 +73,16 @@ function [load_s,OUTPUT]=...
                 +tt*vec((i-1)*df+1:i*df,1)*val;
             load((i-1)*df+sp+1:i*df,m)=load((i-1)*df+sp+1:i*df,m)...
                 +tt*ext_forces_w((i-1)*sp+1:i*sp,m)*val;
-            elseif SOLVER.UW==0 || SOLVER.UW==2
+            elseif SOLVER.UW==0 || SOLVER.UW==2 
             load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...
                 +tt*ext_forces_s((i-1)*sp+1:i*sp,m)*val;
             acce((i-1)*df+1:(i-1)*df+sp,m)=acce((i-1)*df+1:(i-1)*df+sp,m)...
                 +tt*vec((i-1)*sp+1:i*sp,1)*val;
+            elseif SOLVER.UW==3
+            load((i-1)*df+1:(i-1)*df+sp,m)=load((i-1)*df+1:(i-1)*df+sp,m)...
+                +tt*ext_forces_s((i-1)*sp+1:i*sp,m)*val;
+            acce((i-1)*df+1:i*df-1,m)=acce((i-1)*df+1:i*df-1,m)...
+                +tt*vec((i-1)*df+1:i*df-1,1)*val;
             end
         end
         

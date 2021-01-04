@@ -22,6 +22,7 @@ function MAT_POINT=read_problem(str)
     AMP=1;
         
     SOLVER.REMAPPING = 0;
+    SOLVER.REMAPPING_tol = 1e-4;
     SOLVER.LIN = 0;
     SOLVER.AXI=0;
         
@@ -121,6 +122,7 @@ function MAT_POINT=read_problem(str)
                 continue
             case 'REMAPPING'
                 SOLVER.REMAPPING=b(t);
+                SOLVER.REMAPPING_tol=str2double(b3{t});
                 continue
             case 'FILE'
                 filename=b2{t};
@@ -437,7 +439,7 @@ function MAT_POINT=read_problem(str)
     % Add shape function parameters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    [MAT_POINT]=shape_function_calculation(1,MAT_POINT,0,NODE_LIST);
+    [MAT_POINT]=SH.calculation(1,MAT_POINT,0,NODE_LIST);
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

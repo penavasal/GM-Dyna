@@ -423,12 +423,15 @@ function plot_f(driver,str,folder,ste_p,hh,rr,PLT)
         for cont=1:rr:contador
             for j=1:Nodos
                 nodo=nodes_p(j);
-                if SOLVER.UW==1
-                    x2(j)=x(j)+hh*GLOBAL.d(df*nodo-3,cont);
-                    y2(j)=y(j)+hh*GLOBAL.d(df*nodo-2,cont);
+                if SOLVER.UW==1 || SOLVER.UW==4
+                    x2(j)=x(j)+hh*GLOBAL.d(df*nodo-sp-1,cont);
+                    y2(j)=y(j)+hh*GLOBAL.d(df*nodo-sp,cont);
                 elseif SOLVER.UW==2
                     x2(j)=x(j)+hh*GLOBAL.d(df*nodo-2,cont);
                     y2(j)=y(j)+hh*GLOBAL.d(df*nodo-1,cont);
+                elseif SOLVER.UW==3
+                    x2(j)=x(j)+hh*GLOBAL.d(df*nodo-sp-2,cont);
+                    y2(j)=y(j)+hh*GLOBAL.d(df*nodo-sp-1,cont);
                 else
                     x2(j)=x(j)+hh*GLOBAL.d(df*nodo-1,cont);
                     y2(j)=y(j)+hh*GLOBAL.d(df*nodo,cont);
@@ -486,12 +489,15 @@ function plot_f(driver,str,folder,ste_p,hh,rr,PLT)
         for cont=1:rr:ste_p       
             for j=1:Nodos
                 nodo=nodes_p(j);
-                if SOLVER.UW==1
-                    x1(j)=x(j)+hh*GLOBAL.d(df*nodo-3,cont);
-                    y1(j)=y(j)+hh*GLOBAL.d(df*nodo-2,cont);
+                if SOLVER.UW==1 || SOLVER.UW==4
+                    x1(j)=x(j)+hh*GLOBAL.d(df*nodo-sp-1,cont);
+                    y1(j)=y(j)+hh*GLOBAL.d(df*nodo-sp,cont);
                 elseif SOLVER.UW==2
                     x1(j)=x(j)+hh*GLOBAL.d(df*nodo-2,cont);
                     y1(j)=y(j)+hh*GLOBAL.d(df*nodo-1,cont);
+                elseif SOLVER.UW==3
+                    x1(j)=x(j)+hh*GLOBAL.d(df*nodo-sp-2,cont);
+                    y1(j)=y(j)+hh*GLOBAL.d(df*nodo-sp-1,cont);
                 else
                     x1(j)=x(j)+hh*GLOBAL.d(df*nodo-1,cont);
                     y1(j)=y(j)+hh*GLOBAL.d(df*nodo,cont);
@@ -841,7 +847,7 @@ function plot_col(str,PLT)
             pl=zeros(k,1);
             for j=1:k
                 if nn
-                    pl(j)=GLOBAL.d((list_col(j)-1)*df+3,plots(i));
+                    pl(j)=GLOBAL.d(list_col(j)*df,plots(i));
                 else
                     pl(j)=GLOBAL.pw(list_col(j),plots(i));
                 end
@@ -855,7 +861,7 @@ function plot_col(str,PLT)
             b=-1e30;
             for j=1:steps
                 if nn
-                    pp=GLOBAL.d((list_col(i)-1)*df+3,j)/P;
+                    pp=GLOBAL.d(list_col(i)*df,j)/P;
                 else
                     pp=GLOBAL.pw(list_col(i),j)/P;
                 end

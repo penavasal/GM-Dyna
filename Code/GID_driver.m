@@ -131,7 +131,7 @@ function print_file_2(str,str2,steps,dd)
     Es=GLOBAL.Es;
     if UW
         Pw=GLOBAL.pw;
-        if UW==2
+        if UW==2 || UW==3
             dPw=GLOBAL.dpw;
         end
     end
@@ -179,7 +179,7 @@ function print_file_2(str,str2,steps,dd)
         end
         fprintf( myfile , '%10s  \n' , 'End Values');
 
-        if UW==1
+        if UW==1 || UW==3 || UW==4
             % W disp
             fprintf(myfile, ['Result  Displacement_water WATER_PHASE ' num2str(GLOBAL.tp(cont)) ' Vector  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
@@ -189,13 +189,13 @@ function print_file_2(str,str2,steps,dd)
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
         end
-        if UW==2
+        if UW==2 || UW==3
             % Pw
             fprintf(myfile, ['Result  Pore_water_Pressure PORE_PRESSURE ' num2str(GLOBAL.tp(cont)) ' Scalar  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
             for j=1:length(nodes_p)
                 i=nodes_p(j);
-                fprintf(myfile,[num2str(i,'%10i') ' ' num2str(d((i-1)*df+3,cont)) '\n']);
+                fprintf(myfile,[num2str(i,'%10i') ' ' num2str(d(i*df,cont)) '\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
         end
@@ -209,7 +209,7 @@ function print_file_2(str,str2,steps,dd)
         end
         fprintf( myfile , '%10s  \n' , 'End Values');
 
-        if UW==1
+        if UW==1 || UW==3 || UW==4
             % W velo
             fprintf(myfile, ['Result  Velocity_water WATER_PHASE ' num2str(GLOBAL.tp(cont)) ' Vector  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
@@ -219,13 +219,13 @@ function print_file_2(str,str2,steps,dd)
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
         end
-        if UW==2
+        if UW==2 || UW==3
             % Pw velo
             fprintf(myfile, ['Result  Pore_water_Pressure_velocity PORE_PRESSURE ' num2str(GLOBAL.tp(cont)) ' Scalar  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
             for j=1:length(nodes_p)
                 i=nodes_p(j);
-                fprintf(myfile,[num2str(i,'%10i') ' ' num2str(v((i-1)*df+3,cont)) '\n']);
+                fprintf(myfile,[num2str(i,'%10i') ' ' num2str(v(i*df,cont)) '\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
         end
@@ -239,7 +239,7 @@ function print_file_2(str,str2,steps,dd)
         end
         fprintf( myfile , '%10s  \n' , 'End Values');
 
-        if UW==1
+        if UW==1 || UW==3 || UW==4
             % W velo
             fprintf(myfile, ['Result  Acceleration_water WATER_PHASE ' num2str(GLOBAL.tp(cont)) ' Vector  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
@@ -249,13 +249,13 @@ function print_file_2(str,str2,steps,dd)
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
         end
-        if UW==2
+        if UW==2 || UW==3
             % Pw acce
             fprintf(myfile, ['Result  Pore_water_Pressure_acce PORE_PRESSURE ' num2str(GLOBAL.tp(cont)) ' Scalar  OnNodes\n']);
             fprintf( myfile , '%6s  \n' ,  'Values');
             for j=1:length(nodes_p)
                 i=nodes_p(j);
-                fprintf(myfile,[num2str(i,'%10i') ' ' num2str(a((i-1)*df+3,cont)) '\n']);
+                fprintf(myfile,[num2str(i,'%10i') ' ' num2str(a(i*df,cont)) '\n']);
             end
             fprintf( myfile , '%10s  \n' , 'End Values'); 
         end   
@@ -459,7 +459,7 @@ function print_file_2(str,str2,steps,dd)
                 end
             end
             fprintf( myfile , '%10s  \n' , 'End Values');
-            if UW==2
+            if UW==2 || UW==3
                 % Pw
                 fprintf(myfile, ['Result  Pore_Pressure_Gradient PORE_PRESSURE ' num2str(GLOBAL.tp(cont)) ' Vector  OnGaussPoints Group1\n']);
                 fprintf( myfile , '%6s  \n' ,  'Values');

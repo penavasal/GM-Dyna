@@ -1,4 +1,5 @@
 
+
 function MAT_POINT=shape_function_calculation(...
     INITIAL,MAT_POINT,Disp_field,NODE_LIST)
 
@@ -66,7 +67,11 @@ function MAT_POINT=shape_function_calculation(...
             if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')...
                     || strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
                 shf=2;
-                SOLVER.PHASES{2,2}=2;
+                if SOLVER.UW==3
+                    SOLVER.PHASES{3,2}=2;
+                else
+                    SOLVER.PHASES{2,2}=2;
+                end
             else
                 shf=1;
             end
@@ -226,7 +231,11 @@ function MAT_POINT=shape_function_calculation(...
                 if strcmp(GEOMETRY.ELEMENT,'Q8P4-4') || strcmp(GEOMETRY.ELEMENT,'Q8P4')...
                         || strcmp(GEOMETRY.ELEMENT,'T6P3-3') || strcmp(GEOMETRY.ELEMENT,'T6P3')
                     shf=2;
-                    SOLVER.PHASES{2,2}=2;
+                    if SOLVER.UW==3
+                        SOLVER.PHASES{3,2}=2;
+                    else
+                        SOLVER.PHASES{2,2}=2;
+                    end
                 else
                     shf=1;
                 end
@@ -286,10 +295,10 @@ function MAT_POINT=shape_function_calculation(...
         % MAKE Bbar - Patch
         for ph=1:phases
             if SOLVER.B_BAR==1
-                [MAT_POINT{ph}]=bbar_matrix(GEOMETRY.patch_con,GEOMETRY.patch_el,...
+                [MAT_POINT{ph}]=SH.bbar_matrix(GEOMETRY.patch_con,GEOMETRY.patch_el,...
                     GEOMETRY.mat_points,MAT_POINT{ph},volume,SOLVER.B_BAR);
             else
-                [MAT_POINT{ph}]=b_m(GEOMETRY.mat_points,GEOMETRY.sp,MAT_POINT{ph});
+                [MAT_POINT{ph}]=SH.b_m(GEOMETRY.mat_points,GEOMETRY.sp,MAT_POINT{ph});
             end
         end
     end
@@ -350,11 +359,11 @@ function[MAT_POINT]=bbar_matrix...
 
     global SOLVER
             
-    [MAT_POINT]=new_nb(MAT_POINT,patch_con,elements);
+    [MAT_POINT]=SH.new_nb(MAT_POINT,patch_con,elements);
     if SOLVER.AXI==0
-        [MAT_POINT]=bbm(patch_con,patch_el,MAT_POINT,Area,BBAR);
+        [MAT_POINT]=SH.bbm(patch_con,patch_el,MAT_POINT,Area,BBAR);
     elseif SOLVER.AXI==0
-        [MAT_POINT]=bbm_axi(patch_con,patch_el,MAT_POINT,Area,BBAR);
+        [MAT_POINT]=SH.bbm_axi(patch_con,patch_el,MAT_POINT,Area,BBAR);
     end
 
 end
@@ -703,6 +712,28 @@ function [MAT_POINT]=bbm_axi(patch_con,patch_el,MAT_POINT,Area,BBAR)
     end
 end
     
+function MAT_POINT=remap(MAT_POINT,i)
+
+    global SOLVER
+    tol=SOLVER.REMAPPING_tol;
+   
+    
+    dis(3)=0;
+    Ep=MAT_POINT(i).EP;
+    num=min(Ep(:,1),Ep(:,2));
+    for j=1:3
+        dis(j)=(Ep(j,1)-Ep(j,2))/num(j);
+    end
+    Dis=max(abs(dis));
+    
+    if Dis>tol
+        MAT_POINT.REM=dis;
+    else
+        MAT_POINT.REM=zeros(3,1);
+    end
+
+end
+
 % function [patch_con,patch_el]=patch_nodes(x_a,k_bd,elem)
 % 
 %     [nodes,~]=size(x_a);

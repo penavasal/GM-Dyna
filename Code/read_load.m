@@ -473,6 +473,11 @@ function calculate_forces...
                     for k=1:sp
                         LOAD{BLCK}.ext_acce(nn*df-k,m)=d*V(sp+1-k);
                     end
+                elseif SOLVER.UW==3
+                    for k=1:sp
+                        LOAD{BLCK}.ext_acce(nn*df-k,m)=d*V(sp+1-k);
+                        LOAD{BLCK}.ext_acce(nn*df-sp-k,m)=d*V(sp+1-k);
+                    end
                 end
             elseif TYPE(m)==4
                 nn=nod_f(j);
