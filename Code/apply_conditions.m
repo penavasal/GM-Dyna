@@ -19,7 +19,14 @@ function [InvK,GT]=apply_conditions(type,STEP,matrix,GT)
         if (abs(rcond(matrix)))<1e-14
             %fprintf('fail with K matrix in ste %i \n',STEP.ste);
         end
+        
+        if isnan(rcond(matrix)) || rcond(matrix)<1e-12
+            disp('error in matrix condition')
+        end
+            
         InvK=matrix\I;
+        
+        
     
     %%%% ONLY RESIDUUM VECTOR (FIRST ITER of NEWTON-RAPHSON)
     elseif type==1

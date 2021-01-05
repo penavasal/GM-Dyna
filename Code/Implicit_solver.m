@@ -36,17 +36,24 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
             MAT_POINT,Mat_state,Int_var);
     
         % --------------------------------------------------------
-
-        % 3. Recompute mass and damping matrices
+        % 3. Remapping
+        REMAP=SOLVER.REMAPPING;  %Flag
+        if REMAP==1
+            MAT_POINT=SH.remap(MAT_POINT,Disp_field);
+        %[B,near,p,gamma_,lam_LME,REMAP,wrap,EP]=LME_EP(jacobians,...
+        %             volume,x_a,xg,B,near,p,gamma_,lam_LME,wrap,EP,ste);
+        end
+        
+        % 4. Recompute mass and damping matrices
         if SOLVER.DYN(BLCK)==1
             [MATRIX]=MATRIX.matrices(Mat_state,MAT_POINT,Disp_field.d,MATRIX,BLCK);
         end
         
-        % 4. Constitutive & Stiffness_mat
+        % 5. Constitutive & Stiffness_mat
         [stiff_mtx,Int_var,Mat_state,STEP]=...
                 Constitutive.update(2,STEP,Int_var,Mat_state,MAT_POINT);
         
-        % 5. Storage
+        % 6. Storage
         if rem(STEP.ste,SOLVER.SAVE_I)==0
             STEP.ste_p=STEP.ste_p+1;
             fprintf('ste_p %i \n',STEP.ste_p);
@@ -55,7 +62,7 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
                 Int_var,MAT_POINT,out_list1);
         end
 
-        % 6. Save info
+        % 7. Save info
         if ((rem(STEP.ste/SOLVER.SAVE_I,SOLVER.SAVE_F)==0) || (STEP.FAIL==1))
             save(SOLVER.Output(BLCK),'MAT_POINT','GLOBAL','-append')
             if STEP.FAIL==1
@@ -63,7 +70,7 @@ function [STEP,MAT_POINT,GLOBAL]=Implicit_solver(STEP,MAT_POINT,...
             end  
         end
         
-        % 7. Update
+        % 8. Update
         STEP=Time_Scheme.step(STEP,Disp_field);
         [Disp_field,Mat_state,Int_var]=VECTORS.Update(...
                 Disp_field,Mat_state,Int_var);
