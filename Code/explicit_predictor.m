@@ -17,9 +17,6 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
     af=TIME{BLCK}.af;
     %am=TIME{BLCK}.am;
     
-%     if STEP.ste==395
-%         ste;
-%     end
     
     x_a = Disp_field.x_a;
     d0  = Disp_field.d;
@@ -36,9 +33,13 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
         if af~=1
             for i=1:nodes*df
                 if boundary(i)==0
-                    d0(i,1)=d0(i,2)+time_step*v0(i,2)+...
-                        (0.5-beta)*time_step^2*a0(i,2);
-                    v0(i,1)=v0(i,2)+(1-gamma)*time_step*a0(i,2);
+                    if SOLVER.UW==2 && mod(i,3)==0
+                        d0(i,1)=d0(i,2)+(1-gamma)*time_step*v0(i,2);
+                    else
+                        d0(i,1)=d0(i,2)+time_step*v0(i,2)+...
+                            (0.5-beta)*time_step^2*a0(i,2);
+                        v0(i,1)=v0(i,2)+(1-gamma)*time_step*a0(i,2);
+                    end
                 elseif boundary(i)==1
                     d0(i,1)=d0(i,2)+i_disp(i,1);
                     v0(i,1)=i_disp(i,1)/time_step;
@@ -55,6 +56,10 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
         else
             daf=d0;
         end
+        
+%         if SOLVER.UW==2
+%             Mat_state=PW.predictor(Mat_state,MAT_POINT,d0);
+%         end
 
         for j=1:nodes
             for i=1:sp

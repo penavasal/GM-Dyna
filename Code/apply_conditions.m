@@ -20,9 +20,9 @@ function [InvK,GT]=apply_conditions(type,STEP,matrix,GT)
             %fprintf('fail with K matrix in ste %i \n',STEP.ste);
         end
         
-        if isnan(rcond(matrix)) || rcond(matrix)<1e-12
-            disp('error in matrix condition')
-        end
+%         if isnan(rcond(matrix)) || rcond(matrix)<1e-12
+%             disp('error in matrix condition')
+%         end
             
         InvK=matrix\I;
         

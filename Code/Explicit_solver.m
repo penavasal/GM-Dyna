@@ -29,8 +29,9 @@ function [STEP,MAT_POINT,GLOBAL]=Explicit_solver(...
         
 
         % 3. Recompute mass and damping matrices
-        [MATRIX] = MATRIX.lumped_mass(MAT_POINT,MATRIX,BLCK);
-        [MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
+        [MATRIX] = MATRIX.expl_mat(MAT_POINT,Mat_state,MATRIX,BLCK);
+        %[MATRIX] = MATRIX.lumped_mass(MAT_POINT,MATRIX,BLCK);
+        %[MATRIX] = MATRIX.lumped_damp(MAT_POINT,Mat_state,MATRIX);
 
         % 4. Constitutive &/O Stiffness_mat
         [~,Int_var,Mat_state,STEP]=...

@@ -38,6 +38,21 @@ function [Disp_field]=explicit_corrector...
             split_vector(int_Ft(:,2),int_Fs(:,2),int_Fw(:,2));
         [int_Fs(:,1),int_Fw(:,1)]=...
             split_vector(int_Ft(:,1),int_Fs(:,1),int_Fw(:,1)); 
+    elseif SOLVER.UW==2
+        [pw,vpw,apw,load_pw,int_Fw]=deal(zeros(nodes,2));
+        [us(:,2),pw(:,2)]=split_vector_up(d0(:,2),us(:,2),pw(:,2));
+        [us(:,1),pw(:,1)]=split_vector_up(d0(:,1),us(:,1),pw(:,1));
+        [vs(:,2),~]=split_vector_up(v0(:,2),vs(:,2),vpw(:,2));
+        [vs(:,1),vpw(:,1)]=split_vector_up(v0(:,1),vs(:,1),vpw(:,1));
+        [as(:,2),~]=split_vector_up(a0(:,2),as(:,2),apw(:,2));
+        [load_s(:,2),load_pw(:,2)]=...
+            split_vector_up(load_t(:,2),load_s(:,2),load_pw(:,2));
+        [load_s(:,1),load_pw(:,1)]=...
+            split_vector_up(load_t(:,1),load_s(:,1),load_pw(:,1)); 
+        [int_Fs(:,2),int_Fw(:,2)]=...
+            split_vector_up(int_Ft(:,2),int_Fs(:,2),int_Fw(:,2));
+        [int_Fs(:,1),int_Fw(:,1)]=...
+            split_vector_up(int_Ft(:,1),int_Fs(:,1),int_Fw(:,1)); 
     else
         int_Fs=int_Ft;
         load_s=load_t;
@@ -53,7 +68,7 @@ function [Disp_field]=explicit_corrector...
     %%  1.  Solver   %%%%
 
     if SOLVER.UW==1
-        % 5.1 W Solver
+        % 1.1 W Solver
         residual=MATRIX.l_mass_w*(int_Fs(:,1)-int_Fs(:,2)) - ...
             (MATRIX.l_mass_w-MATRIX.l_mass)*(int_Fw(:,1)-int_Fw(:,2))...
             + time_step*MATRIX.l_mass*MATRIX.l_damp*aw(:,2)...
@@ -82,11 +97,13 @@ function [Disp_field]=explicit_corrector...
          residual=(int_Fs(:,1)-int_Fs(:,2))-(int_Fw(:,1)-int_Fw(:,2))-...
              MATRIX.l_mass_w*daw+(load_s(:,1)-load_s(:,2));
         
+    elseif SOLVER.UW==2
+        residual=(int_Fs(:,1)-int_Fs(:,2))+(load_s(:,1)-load_s(:,2));
     else
         residual=-(int_Fs(:,1)-int_Fs(:,2))+(load_s(:,1)-load_s(:,2));
     end
 
-    % 5.2 U Solver
+    % 1.2 U Solver
 
     for i=1:nodes
         for j=1:sp
@@ -140,10 +157,27 @@ function [Disp_field]=explicit_corrector...
         end
     end
     
+    if SOLVER.UW==2
+        %2.1 pw_dot Corrector
+        pw_dot = MATRIX.l_damp*vs(:,1) + load_pw(:,1) + int_Fw(:,1) + ...
+            MATRIX.l_mass_w*as(:,1);
+        for i=1:nodes
+            if (boundary((i-1)*df+sp+1)==0)
+                pw(i,1)=pw(i,1)+...
+                    gamma*time_step*pw_dot(i);
+                vpw(i,1)=pw_dot(i,1);
+            end
+        end
+    end
+    
     %% 3. Assemble vectors
     if SOLVER.UW==1
         [Disp_field.v(:,1)]=join_vector(vs(:,1),vw(:,1));
         [Disp_field.a(:,1)]=join_vector(as(:,1),aw(:,1));
+    elseif SOLVER.UW==2
+        [Disp_field.d(:,1)]=join_vector_up(us(:,1),pw(:,1));
+        [Disp_field.v(:,1)]=join_vector_up(vs(:,1),vpw(:,1));
+        [Disp_field.a(:,1)]=join_vector_up(as(:,1),zeros(nodes,1)); 
     else
         Disp_field.a=as;
         Disp_field.v=vs;
@@ -166,6 +200,20 @@ function [v1,v2]=split_vector(vt,v1,v2)
 
 end
 
+function [v1,v2]=split_vector_up(vt,v1,v2)
+
+    global GEOMETRY
+    
+    df=GEOMETRY.df;
+    sp=GEOMETRY.sp;
+        
+    for j=1:GEOMETRY.nodes
+        v1((j-1)*sp+1:j*sp,1)=vt((j-1)*df+1:(j-1)*df+sp,1);
+        v2(j,1)=vt(j*df,1);
+    end
+
+end
+
 function [vt]=join_vector(v1,v2)
 
     global GEOMETRY
@@ -179,3 +227,21 @@ function [vt]=join_vector(v1,v2)
     end
 
 end
+
+function [vt]=join_vector_up(v1,v2)
+
+    global GEOMETRY
+    
+    df=GEOMETRY.df;
+    sp=GEOMETRY.sp;
+    
+    
+    vt=zeros(df*GEOMETRY.nodes,1);
+        
+    for j=1:GEOMETRY.nodes
+        vt((j-1)*df+1:(j-1)*df+sp,1)=v1((j-1)*sp+1:j*sp,1);
+        vt(j*df,1)=v2(j,1);
+    end
+
+end
+

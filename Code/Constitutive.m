@@ -337,7 +337,10 @@
 
         function [Mat_state]=internal_forces(MAT_POINT,Mat_state,BLCK)
 
-            global GEOMETRY SOLVER
+            global GEOMETRY SOLVER MATERIAL
+            
+            Material=GEOMETRY.material;
+            MAT=MATERIAL(BLCK).MAT;
 
             sig=zeros(4,1);
             Mat_state.fint(:,1) = zeros(GEOMETRY.nodes*GEOMETRY.df,1);
@@ -471,8 +474,6 @@
                         dN(2,j)=B_w(2,(j-1)*sp+2);
                     end
                     int_forces_2=div*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol;
-                    dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
-                    int_forces_3=Mat_state.k(e)*dN'*dPw*vol;
                     for i=1:nn
                        nod=nd(i);
                        for j=1:sp
@@ -481,10 +482,30 @@
                                 int_forces_2(i*sp+1-j,1);
                        end
                     end
-                    for i=1:nnw
-                       nod=ndw(i);
-                       Mat_state.fint(nod*df,1)=...
-                                Mat_state.fint(nod*df,1)-int_forces_3(i,1);
+                    if SOLVER.IMPLICIT(BLCK)==1
+                        dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
+                        int_forces_3=Mat_state.k(e)*dN'*dPw*vol;
+                        for i=1:nnw
+                           nod=ndw(i);
+                           Mat_state.fint(nod*df,1)=...
+                                    Mat_state.fint(nod*df,1)-int_forces_3(i,1);
+                        end
+                        
+                    else
+                        K_w=MATERIAL(BLCK).MAT{28,Material(e)};
+                        K_s=MATERIAL(BLCK).MAT{27,Material(e)};
+                        n=1-(1-MAT{16,Material(e)})/MAT_POINT{1}(e).J;
+
+                        Q=1/(n/K_w+(1-n)/K_s);
+                        
+                        
+                        dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
+                        int_forces_3=Q*Mat_state.k(e)*dN'*dPw*vol;
+                        for i=1:nnw
+                           nod=ndw(i);
+                           Mat_state.fint(nod*df,1)=...
+                                    Mat_state.fint(nod*df,1)+int_forces_3(i,1);
+                        end
                     end
                     
                 elseif SOLVER.UW==3

@@ -81,6 +81,7 @@ classdef DYN_MATRIX
                     nd = MAT_POINT{1}(i).near;
                     m  = length(nd);
                     sh = MAT_POINT{1}(i).N;
+                    
                     if SOLVER.UW>0
                         ndw = MAT_POINT{2}(i).near;
                         mw  = length(ndw);
@@ -451,40 +452,8 @@ classdef DYN_MATRIX
 
         end
 
-        function [obj]=lumped_damp(MAT_POINT,Mat_state,obj)
-
-            global GEOMETRY SOLVER
-
-            sp=GEOMETRY.sp;
-
-            C=zeros(GEOMETRY.nodes*sp);
-            if SOLVER.UW
-                % Lumped Damp **********************
-                for i=1:GEOMETRY.mat_points
-                    volume=GEOMETRY.Area(i)*MAT_POINT{1}(i).J;
-                    
-                    if SOLVER.AXI
-                        t=2*pi*MAT_POINT{1}(i).xg(1)*volume;
-                    else
-                        t=volume;
-                    end
-                    nd = MAT_POINT{2}(i).near;
-                    m  = length(nd);
-                    sh = MAT_POINT{2}(i).N;
-                    for t1=1:m
-                        for k=1:sp
-                            C(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
-                            C(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
-                                +t*sh(t1)/Mat_state.k(i);
-                        end
-                    end
-                end
-            end
-            obj.l_damp=C;
-        end
-        
-        function [obj]=lumped_mass(MAT_POINT,obj,BLCK)
-
+        function [obj]=expl_mat(MAT_POINT,Mat_state,obj,BLCK)
+            
             global MATERIAL GEOMETRY SOLVER
 
             Material=GEOMETRY.material;
@@ -492,19 +461,29 @@ classdef DYN_MATRIX
 
             sp=GEOMETRY.sp;
 
-
-            mass=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
-
-            if SOLVER.UW
+            % Allocate
+            mass=zeros(GEOMETRY.nodes*sp);
+            if SOLVER.UW==1||SOLVER.UW==4
+                C=zeros(GEOMETRY.nodes*sp);
                 mass_w=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
-                if SOLVER.IMPLICIT==0
+                if SOLVER.IMPLICIT==0 
                     mass_wn=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
                 end
+            elseif SOLVER.UW==2
+                C=zeros(GEOMETRY.nodes,GEOMETRY.nodes*sp);
+                mass_w=zeros(GEOMETRY.nodes,GEOMETRY.nodes*sp);
             end
-
-            % Lumped Mass **********************
-            for i=1:GEOMETRY.mat_points
+            
+            for i=1:GEOMETRY.mat_points 
+                % Volume
                 volume=GEOMETRY.Area(i)*MAT_POINT{1}(i).J;
+                if SOLVER.AXI
+                    t=2*pi*MAT_POINT{1}(i).xg(1)*volume;
+                else
+                    t=volume;
+                end
+                
+                % Density
                 if SOLVER.UW
                     if SOLVER.UW==4
                         sw=Mat_state.sw(i,1);
@@ -518,38 +497,73 @@ classdef DYN_MATRIX
                     dens=MAT{3,Material(i)}/MAT_POINT{1}(i).J;
                 end
                 
-                if SOLVER.AXI
-                    t=2*pi*MAT_POINT{1}(i).xg(1)*volume;
-                else
-                    t=volume;
-                end
-
+                % Shape function
                 nd = MAT_POINT{1}(i).near;
                 m  = length(nd);
                 sh = MAT_POINT{1}(i).N;
                 
-                if SOLVER.UW
-                    ndw = MAT_POINT{2}(i).near;
-                    mw  = length(ndw);
-                    shw = MAT_POINT{2}(i).N;
-                end
-                
+                % Solid Lumped Mass **********************
                 for k=1:sp
                     for t1=1:m
                         mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                         mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
                             +dens*t*sh(t1);
                     end
-
-                    if SOLVER.UW
-                        for t1=1:mw
+                end
+                
+                if SOLVER.UW>0
+                    ndw = MAT_POINT{2}(i).near;
+                    mw  = length(ndw);
+                    shw = MAT_POINT{2}(i).N;
+                end
+                
+                if SOLVER.UW==1 ||SOLVER.UW==4
+                    val=1/Mat_state.k(i);
+                    for t1=1:mw
+                        for k=1:sp
+                            % Lumped Damp **********************
+                            C(ndw(t1)*sp+1-k,ndw(t1)*sp+1-k)=...
+                            C(ndw(t1)*sp+1-k,ndw(t1)*sp+1-k)...
+                                +t*shw(t1)*val;
+                            % Lumped water mass **********************
                             mass_w(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                             mass_w(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
                                 +rho_w*t*shw(t1);
+                            % Lumped water-porosity mass **********************
                             if SOLVER.IMPLICIT==0
                                 mass_wn(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                                 mass_wn(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
                                     +rho_w/sw/n*t*shw(t1);
+                            end
+                        end
+                    end
+                elseif SOLVER.UW==2
+                    bw= MAT_POINT{2}(i).B;
+                    b = MAT_POINT{1}(i).B;
+                    if SOLVER.AXI
+                        mm=[1 1 0 1];
+                    else
+                        mm=[1 1 0];
+                    end
+                    Qt=(b'*mm'*shw')';
+
+                    K_w=MATERIAL(BLCK).MAT{28,Material(i)};
+                    K_s=MATERIAL(BLCK).MAT{27,Material(i)};
+
+                    Q=1/(n/K_w+(1-n)/K_s);
+
+                    [A]=DYN_MATRIX.A_mat(m,mw,sh,bw);
+                    
+                    for t1=1:mw
+                        for t2=1:m
+                            for k=1:sp
+                                C(ndw(t1),nd(t2)*sp+1-k)=...
+                                    C(ndw(t1),nd(t2)*sp+1-k)-...
+                                    t*Q*Qt(t1,t2*sp+1-k);
+
+                                mass_w(ndw(t1),nd(t2)*sp+1-k)=...
+                                    mass_w(ndw(t1),nd(t2)*sp+1-k)+...
+                                    t*Q*A(t1,t2*sp+1-k)*rho_w*Mat_state.k(i);
                             end
                         end
                     end
@@ -558,12 +572,12 @@ classdef DYN_MATRIX
             
             obj.l_mass=mass;
             if SOLVER.UW
+                obj.l_damp=C;
                 obj.l_mass_w=mass_w;
-                if SOLVER.IMPLICIT(BLCK)==0
+                if SOLVER.IMPLICIT(BLCK)==0 && SOLVER.UW==1||SOLVER.UW==4
                     obj.l_mass_wn=mass_wn;
                 end
             end
-            
         end
         
         function [obj]=lumped_mass_bf(MAT_POINT,Mat_state,obj,BLCK)
