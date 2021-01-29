@@ -473,6 +473,7 @@
                         dN(1,j)=B_w(1,(j-1)*sp+1);
                         dN(2,j)=B_w(2,(j-1)*sp+2);
                     end
+
                     int_forces_2=div*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol;
                     for i=1:nn
                        nod=nd(i);
@@ -498,9 +499,20 @@
 
                         Q=1/(n/K_w+(1-n)/K_s);
                         
+                        % stab
+                        if SOLVER.Pstab
+                            rho_w=MAT{42,Material(i)};
+                            n=1-(1-MAT{16,Material(i)})/MAT_POINT{1}(i).J;
+                            dens=n*rho_w+(1-n)*MAT{3,Material(i)};
+                            h=GEOMETRY.h_ini(i);
+                            Vc=MATERIAL(BLCK).MAT{6,Material(i)};
+                            tau=SOLVER.Pstab*h/Vc/dens;
+                        else
+                            tau=0;
+                        end 
                         
                         dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
-                        int_forces_3=Q*Mat_state.k(e)*dN'*dPw*vol;
+                        int_forces_3=Q*(Mat_state.k(e)+tau)*dN'*dPw*vol;
                         for i=1:nnw
                            nod=ndw(i);
                            Mat_state.fint(nod*df,1)=...

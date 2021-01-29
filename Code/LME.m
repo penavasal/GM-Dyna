@@ -542,7 +542,6 @@
 
                 global LME_param SOLVER
 
-
                 % As described in [1], gamma measures the degree of locality, the larger,
                 % the closer to Delaunay finite elements
 
@@ -844,7 +843,7 @@
         function MAT_POINT=initialize(MAT_POINT,NODE_LIST)
             
             global GEOMETRY LME_param SOLVER
-            
+ 
             SEP=LME.read;
             
             [phases,~]=size(SOLVER.PHASES);

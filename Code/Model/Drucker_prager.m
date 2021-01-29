@@ -57,7 +57,7 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
     
     [snorm]=s_j2(s);             %L2-norm of deviatoric stress
     %[snorm2]=s_j2(s2);
-    sy=-sy;
+    %sy=-sy;
     
     if snorm - 3*alfn*p - beta*sy < tol
         dEp=zeros(3);
@@ -250,7 +250,7 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
         Sc=-(p-3*alfm*K*dg)*I+d1*s;
     end
     
-    sy=-sy;
+    %sy=-sy;
 %     [ss,p]=split(Sc);
 %     [q]=s_j2(ss);
 %     Q= sqrt(3/2)*q

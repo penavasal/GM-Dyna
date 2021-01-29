@@ -68,7 +68,7 @@ function [A,T,W]=Neo_Hookean(Kt,e,b,J,P0,BLCK)
     elseif MODEL(Material(e))==1.2
 
         % Neo-Hookean Ehlers
-        n0 = MAT(16,Material(e));
+        n0 = MAT{16,Material(e)};
 
         if n0==0
             n0=1;

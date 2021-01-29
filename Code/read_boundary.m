@@ -247,6 +247,7 @@ function read_boundary(filetxt,BLCK,NODE_LIST)
         INTERVAL(2,loads)=SOLVER.Time_final(BLCK);
         TIED(loads)=0;
         OUT(loads)=0;
+        DIST(loads)="";
         if SOLVER.UW==1 || SOLVER.UW==4
             TYPE(loads)=2;
             VECTOR(:,loads)=[1; 1];

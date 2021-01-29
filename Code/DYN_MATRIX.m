@@ -554,6 +554,15 @@ classdef DYN_MATRIX
 
                     [A]=DYN_MATRIX.A_mat(m,mw,sh,bw);
                     
+                    % stab
+                    if SOLVER.Pstab
+                        h=GEOMETRY.h_ini(i);
+                        Vc=MATERIAL(BLCK).MAT{6,Material(i)};
+                        tau=SOLVER.Pstab*h/Vc;
+                    else
+                        tau=0;
+                    end 
+                    
                     for t1=1:mw
                         for t2=1:m
                             for k=1:sp
@@ -563,7 +572,7 @@ classdef DYN_MATRIX
 
                                 mass_w(ndw(t1),nd(t2)*sp+1-k)=...
                                     mass_w(ndw(t1),nd(t2)*sp+1-k)+...
-                                    t*Q*A(t1,t2*sp+1-k)*rho_w*Mat_state.k(i);
+                                    t*Q*A(t1,t2*sp+1-k)*(rho_w*Mat_state.k(i)-tau);
                             end
                         end
                     end
