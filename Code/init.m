@@ -177,7 +177,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
             if isempty(mmat{7,mati})
                Int_var.Sy(i,2)=0;
             else
-                Int_var.Sy(i,2) = mmat{7,mati};
+                Int_var.Sy(i,2) = -mmat{7,mati};
             end
             GLOBAL.Sy(i,1)=Int_var.Sy(i,2);
         end
