@@ -4,8 +4,9 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
 
     global MATERIAL GEOMETRY
     
-    MODEL=MATERIAL(BLCK).MODEL;
+    
     Mat=GEOMETRY.material;
+    MODEL=MATERIAL(BLCK).MODEL(Mat(e),:);
     MAT=MATERIAL(BLCK).MAT;
     
     % Initial values

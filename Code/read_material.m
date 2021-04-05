@@ -56,7 +56,7 @@ function read_material(filetxt,BLCK)
     
     BODIES(mats)=0;
     
-    MATERIAL(BLCK).MAT=cell(61,mats);   % Numero m¿ximo de propiedades reconocidas
+    MATERIAL(BLCK).MAT=cell(64,mats);   % Numero m¿ximo de propiedades reconocidas
     MATERIAL(BLCK).MODEL=zeros(mats,2);
     %RANGE=zeros(sp,2*mats); % Range of for materials
     
@@ -120,6 +120,10 @@ function read_material(filetxt,BLCK)
                     continue
                 case 'PZ_BACKWARD'
                     MATERIAL(BLCK).MODEL(M)=4.1;
+                    continue
+                case 'VISCO_DEGRADATION'
+                    MATERIAL(BLCK).MODEL(M)=5.0;
+                    MATERIAL(BLCK).MODEL(M,2)=3;
                     continue
                 otherwise
                     disp('Error, no such material model!')
@@ -422,6 +426,15 @@ function read_material(filetxt,BLCK)
             case 'RETENTION_CURVE'
                 MATERIAL(BLCK).MAT(61,M)=bb(t);
                 continue
+            case 'TAU95'
+                MATERIAL(BLCK).MAT(62,M)={bb2(t)};
+                continue            
+            case 'DELTA95'
+                MATERIAL(BLCK).MAT(63,M)={bb2(t)};
+                continue
+            case 'XI95'
+                MATERIAL(BLCK).MAT(64,M)={bb2(t)};
+                continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)
                 stop
@@ -472,18 +485,19 @@ function read_material(filetxt,BLCK)
                 end
             end
         end
-        if MATERIAL(BLCK).MODEL(i)<3
+        if MATERIAL(BLCK).MODEL(i)<3 || (MATERIAL(BLCK).MODEL(i)<6 && MATERIAL(BLCK).MODEL(i)>=5)
             MATERIAL(BLCK).MAT(:,i)=elastic_tools(MATERIAL(BLCK).MAT(:,i));
         end
         if MATERIAL(BLCK).MODEL(i)<3 && MATERIAL(BLCK).MODEL(i)>=2
             MATERIAL(BLCK).MAT(:,i)=dp_tools(MATERIAL(BLCK).MAT(:,i),MATERIAL(BLCK).MODEL(i));
         elseif MATERIAL(BLCK).MODEL(i)<4 && MATERIAL(BLCK).MODEL(i)>=3
             MATERIAL(BLCK).MAT(:,i)=mcc_tools(MATERIAL(BLCK).MAT(:,i));
-        elseif MATERIAL(BLCK).MODEL(i)<5 && MATERIAL(BLCK).MODEL(i)>=4
-            MATERIAL(BLCK).MAT(:,i)=pz_tools(MATERIAL(BLCK).MAT(:,i));
+        elseif (MATERIAL(BLCK).MODEL(i)<5 && MATERIAL(BLCK).MODEL(i)>=4 )||...
+            (MATERIAL(BLCK).MODEL(i)<6 && MATERIAL(BLCK).MODEL(i)>=5)
+            MATERIAL(BLCK).MAT(:,i)=dp_tools(MATERIAL(BLCK).MAT(:,i),MATERIAL(BLCK).MODEL(i));
         end
         
-        % Fracture
+        % Non local failure
         if MATERIAL(BLCK).MODEL(i,2)==1
             if SOLVER.FRAC==1 || SOLVER.FRAC==0
                 SOLVER.FRAC=1;
@@ -493,6 +507,16 @@ function read_material(filetxt,BLCK)
         elseif MATERIAL(BLCK).MODEL(i,2)==2
             if SOLVER.FRAC==2 || SOLVER.FRAC==0
                 SOLVER.FRAC=2;
+            else
+                error('Two different fracture criteria')
+            end
+            
+            if isempty(MATERIAL(BLCK).MAT{47,i})
+                MATERIAL(BLCK).MAT(47,i)={0};
+            end
+        elseif MATERIAL(BLCK).MODEL(i,2)==3
+            if SOLVER.FRAC==3 || SOLVER.FRAC==0
+                SOLVER.FRAC=3;
             else
                 error('Two different fracture criteria')
             end
@@ -573,7 +597,7 @@ function Mat=dp_tools(Mat,MODEL)
         end
     end
     
-    if isempty(Mat{19}) & isempty(Mat{11}) & MODEL~=2.0
+    if isempty(Mat{19}) & isempty(Mat{11}) & ~(MODEL==2.0 || MODEL==5.0)
         disp('Error, no critical state line!')
         stop
     elseif isempty(Mat{19})

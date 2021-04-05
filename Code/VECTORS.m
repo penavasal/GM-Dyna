@@ -66,8 +66,11 @@
                 GLOBAL.w(:,ste_p)      = Mat_state.w(:,1);
                 GLOBAL.status(:,ste_p) = Mat_state.status(:,1);
                 if SOLVER.FRAC>1
-                    GLOBAL.e_ini(:,ste_p) = Mat_state.e_ini(:,1);
+                    GLOBAL.e_ini(:,1) = Mat_state.e_ini(:,2);
+                    GLOBAL.e_ini(:,ste_p+1) = Mat_state.e_ini(:,1);
                 end
+                
+                if SOLVER.FRAC<3
                 GLOBAL.E.K(ste_p,SOLVER.BODIES)=0;
                 GLOBAL.E.W(ste_p,SOLVER.BODIES)=0;
                 GLOBAL.E.D(ste_p,1)=STEP.ENERGY.D;
@@ -76,6 +79,7 @@
                 
                 GLOBAL.Force(ste_p,SOLVER.BODIES*GEOMETRY.sp)=0;
                 [GLOBAL.Force]=FRAC.forces(MAT_POINT,STEP,GLOBAL.Force,Disp_field.v);
+                end
             end
 
             GLOBAL.tp(ste_p,1)=STEP.t;
@@ -231,7 +235,8 @@
                 Mat_state.w(:,1)=GLOBAL.w(:,ste_p);
                 Mat_state.status(:,2)=GLOBAL.status(:,ste_p);
                 if SOLVER.FRAC>1
-                    Mat_state.e_ini(:,1)=GLOBAL.e_ini(:,ste_p);
+                    Mat_state.e_ini(:,1)=GLOBAL.e_ini(:,ste_p+1);
+                    Mat_state.e_ini(:,2)=GLOBAL.e_ini(:,1);
                 end
                 STEP.ENERGY.D=GLOBAL.E.D(ste_p,1);
             end
@@ -501,13 +506,13 @@
             Es0=Es1-Es2e;
             
             %CHECK
-            khar=-K/P02;
-            ghar=-G/P02;
-            ees=(Es1-Es0);
-            eev=0;
+            %khar=-K/P02;
+            %ghar=-G/P02;
+            %ees=(Es1-Es0);
+            %eev=0;
             
-            p=P02*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
-            q=-P02*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+            %p=P02*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+            %q=-P02*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
                
             val=[P02,Ev0,Es0];
             

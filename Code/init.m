@@ -201,8 +201,8 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         GLOBAL.w(elements,dim) = 0;
         GLOBAL.status(elements,dim) = 0;
         if SOLVER.FRAC>1
-            Mat_state.e_ini=zeros(elements,1);
-            GLOBAL.e_ini(elements,dim) = 0;
+            Mat_state.e_ini=zeros(elements,2);
+            GLOBAL.e_ini(elements,dim+1) = 0;
         end
         
         [MAT_POINT]=FRAC.eps_nb(MAT_POINT,STEP.BLCK);
