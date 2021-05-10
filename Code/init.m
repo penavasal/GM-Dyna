@@ -201,7 +201,7 @@ function [STEP,MAT_POINT,Disp_field,Int_var,Mat_state,GLOBAL,...
         GLOBAL.w(elements,dim) = 0;
         GLOBAL.status(elements,dim) = 0;
         if SOLVER.FRAC>1
-            Mat_state.e_ini=zeros(elements,2);
+            Mat_state.e_ini=zeros(elements,4);
             GLOBAL.e_ini(elements,dim+1) = 0;
         end
         

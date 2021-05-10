@@ -69,7 +69,7 @@
                 wk   = MAT{47,Mat(e)};
                 fk   = MAT{48,Mat(e)};
                 D    = MAT{49,Mat(e)};
-                if Mat_state.status(e,2)==0  &&  Mat_state.e_ini(e)==0
+                if Mat_state.status(e,2)==0  &&  Mat_state.e_ini(e,1)==0
                     eps_list=MAT_POINT{1}(e).epsilon;
                     if eps_list(1)>0    
                         f=0;
@@ -92,12 +92,12 @@
 
                         % ------- G > Gc ?? --------
                         if ft>0 && Crit(e)>0 && f>ft
-                            Mat_state.e_ini(e)=Max_e(e);
+                            Mat_state.e_ini(e,1)=Max_e(e);
                         end
                     end
                 elseif Mat_state.status(e,2)~=1
                     %chi=(Max_e(e)-E_ini(e))*2*Ceps*h(e)/wc;
-                    wn=(Max_e(e)-Mat_state.e_ini(e))*2.5*D;
+                    wn=(Max_e(e)-Mat_state.e_ini(e,1))*2.5*D;
                     if wn<=wk  
                         chi=wn/wk*(1-fk);
                     else
@@ -360,9 +360,9 @@
             end
             dE=dE/M;
 
-            E_ini(1)=E_ini(1)+abs(dE);
+            E_ini(1)=E_ini(3)+abs(dE);
 
-            if E_ini(2)==0
+            if E_ini(4)==0
                 sy=mat95(3);
                 H=0;
             else
@@ -370,7 +370,7 @@
                 tau=mat95(1);
                 xi95=mat95(2);
 
-                xi=E_ini(1)-E_ini(2);
+                xi=E_ini(1)-E_ini(4);
 
                 sy=tau+(sy0-tau)*exp(-3*xi/xi95);
                 H=-3*(sy0-tau)/xi95*exp(-3*xi/xi95);

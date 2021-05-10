@@ -167,13 +167,13 @@
                         epsvol  = Int_var.epsv(e,2);
                         [A,T,Gamma,epsvol,dgamma,Sy,etaB,H,Ee,STEP]=...
                                 PZ(Kt,STEP,e,Gamma,epsvol,dgamma,Sy,etaB,H,Ee,deps,P0);
-                        Int_var.epsv(e,1)= epsvol;
+                        Int_var.epsv(e,1)= epsvol;pedromen
                         Int_var.H(e,1)   = H;
                         Int_var.eta(e,1) = etaB;
                     elseif MODEL(Mat(e),1)>=5 && MODEL(Mat(e),1)<6
                         E_ini=Mat_state.e_ini(e,:);
                         [A,T,Gamma,dgamma,Sy,Ee,E_ini]=...
-                            Degradation(Kt,e,Gamma,dgamma,Ee,Edev,E_ini,P0,BLCK,dt,MAT_POINT);
+                            Degradation(Kt,e,Gamma,Ee,Edev,E_ini,P0,BLCK,dt,MAT_POINT);
                         Mat_state.e_ini(e,:)=E_ini;
                     end
                     Int_var.Sy(e,1)     = Sy;
@@ -311,7 +311,7 @@
             % ----------------------------
             %% FRACTURE PROCESS
             % ----------------------------
-            if SOLVER.FRAC>0
+            if SOLVER.FRAC>0 || SOLVER.FRAC<3
                 
                 VECS.Wlist=Wlist;
                 VECS.Crit=Crit;

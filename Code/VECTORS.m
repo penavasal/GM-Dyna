@@ -126,6 +126,10 @@
             
             if SOLVER.FRAC
                 Mat_state.status(:,2)=Mat_state.status(:,1);
+                if SOLVER.FRAC==3
+                    Mat_state.e_ini(:,3)=Mat_state.e_ini(:,1);
+                    Mat_state.e_ini(:,4)=Mat_state.e_ini(:,2);
+                end
             end
 
             Int_var.gamma(:,3)  = Int_var.gamma(:,2);
@@ -237,6 +241,8 @@
                 if SOLVER.FRAC>1
                     Mat_state.e_ini(:,1)=GLOBAL.e_ini(:,ste_p+1);
                     Mat_state.e_ini(:,2)=GLOBAL.e_ini(:,1);
+                    Mat_state.e_ini(:,3)=GLOBAL.e_ini(:,ste_p+1);
+                    Mat_state.e_ini(:,4)=GLOBAL.e_ini(:,1);
                 end
                 STEP.ENERGY.D=GLOBAL.E.D(ste_p,1);
             end

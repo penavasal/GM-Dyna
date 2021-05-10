@@ -1,6 +1,6 @@
 
-function [A,Sc,gamma,dgamma,sy,Ee,E_ini]=...
-    Degradation(Kt,e,gamma,dgamma,Ee,Edev,E_ini,P0,BLCK,dt,MAT_POINT)
+function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
+    Degradation(Kt,e,gamma,Ee,Edev,E_ini,P0,BLCK,dt,MAT_POINT)
 
     global MATERIAL GEOMETRY
     
@@ -53,7 +53,7 @@ function [A,Sc,gamma,dgamma,sy,Ee,E_ini]=...
     %------------------
     % Plastic corrector
     %------------------
-        if E_ini(2)==0
+        if E_ini(4)==0
             E_ini(2)=E_ini(1);
         end
     
@@ -66,43 +66,93 @@ function [A,Sc,gamma,dgamma,sy,Ee,E_ini]=...
         error=1e32;
         iter=1;
         gm(iter)=g;
-        dgm(iter)=0;
+        dgm(iter)=1e-12;
         ddg(iter)=1e32;
+        a=1;
         %-------------CLASSIC----ITERATOR------------------------------
         while error>tol && abs(ddg(iter))>2*eps  &&  iter<300
             if(iter<300) 
-                t=-1;
 
-                f(iter)=(q - 3*G*dgm(iter))/sy - (1+(dgm(iter)/mu/dt)^N_1);  % fi=0
-                df=-H*(q - 3*G*dgm(iter))/sy^2 - 3*G/sy - N_1/mu/dt*(dgm(iter)/mu/dt)^(N_1-1);       % dfi/dgamma
+                % OPCION 1
+                %f(iter)=(q - 3*G*dgm(iter))/sy - (1+(dgm(iter)/mu/dt)^N_1);  % fi=0
+                %df=-H*(q - 3*G*dgm(iter))/sy^2 - 3*G/sy - N_1/mu/dt*(dgm(iter)/mu/dt)^(N_1-1);       % dfi/dgamma
+                
+                %OPCION 2
+%                 if dgm(iter)>0
+%                     d1=(1+(dgm(iter)/mu/dt)^N_1);
+%                     d2=N_1/mu/dt*(dgm(iter)/mu/dt)^(N_1-1);
+%                 else
+%                     d1=1;
+%                     d2=0;
+%                 end
+%                 
+%                 AA=isreal(d1);
+%                 if  AA(1)==0
+%                     fprintf('Imaginary number %i \n',e);
+%                 end
+%                 
+%                 f(iter)=q - 3*G*dgm(iter) - d1*sy;  % fi=0
+%                 df= - 3*G - H*d1 - sy*d2;  
 
+
+                %if dgm(iter)>0
+                    d0=dgm(iter)*mu+dt;
+                    d1=(dt/d0)^N_1;
+                    d2=N_1*mu/d0;
+                %else
+                    %d1=1;
+                    %d2=0;
+                %end
+                
+                AA=isreal(d1);
+                if  AA(1)==0
+                    fprintf('Imaginary number %i \n',e);
+                end
+                
+                f(iter)=d1*(q - 3*G*dgm(iter)) - sy;  % fi=0
+                df= - d1*(3*G +  d2*(q - 3*G*dgm(iter))) - H;
+
+                
                 iter=iter+1;
-                ddg(iter)=t*f(iter-1)/df;              %increment of dgamma
+                ddg(iter)=-a*f(iter-1)/df;              %increment of dgamma
                 
                 dgm(iter)=dgm(iter-1)+ddg(iter);
+                
+                if dgm(iter)<0
+                    fprintf('Negative plastic iterator %i \n',e);
+                    dgm(iter)=0;
+                end
 
                 gm(iter)=gm(iter-1)+ddg(iter);
 
 
-                count=0;
-                while (dgm(iter)<0.0 && count<loop)
+%                 count=0;
+%                 while (dgm(iter)<0.0 && count<loop)
+% 
+%                     dgm(iter)=dgm(iter-1)/2;
+%                     gm(iter)=gm(1)+dgm(iter);
+%                     
+%                     f(iter-1)=(q - 3*G*dgm(iter))/sy - (1+(dgm(iter)/mu/dt)^N_1);  % fi=0
+%                     df=-H*(q - 3*G*dgm(iter))/sy^2 - 3*G/sy - N_1/mu/dt*(dgm(iter)/mu/dt)^(N_1-1);       % dfi/dgamma
+% 
+%                     ddg(iter)=-a*f(iter-1)/df;             %increment of dgamma
+%                     dgm(iter)=dgm(iter-1)+ddg(iter);
+%                     gm(iter)=gm(iter-1)+ddg(iter);
+%                     
+%                     count=count+1;
+% 
+%                 end
 
-                    dgm(iter)=dgm(iter-1)/2;
-                    gm(iter)=gm(1)+dgm(iter);
+                if (abs(f(iter-1))-error)>1e-8 && iter>3
+                    dgm(iter)=dgm(iter-1)-ddg(iter);
+                    gm(iter)=gm(iter-1)-ddg(iter);
                     
-                    f(iter-1)=(q - 3*G*dgm(iter))/sy - (1+(dgm(iter)/mu/dt)^N_1);  % fi=0
-                    df=-H*(q - 3*G*dgm(iter))/sy^2 - 3*G/sy - N_1/mu/dt*(dgm(iter)/mu/dt)^(N_1-1);       % dfi/dgamma
-
-                    ddg(iter)=t*f(iter-1)/df;             %increment of dgamma
-                    dgm(iter)=dgm(iter-1)+ddg(iter);
-                    gm(iter)=gm(iter-1)+ddg(iter);
-
-                end
-
-                if abs(f(iter-1))>=error
-                    ddg(iter)=ddg(iter)/10;
-                    dgm(iter)=dgm(iter-1)+ddg(iter);
-                    gm(iter)=gm(iter-1)+ddg(iter);
+                    f1=error;
+                    f2=abs(f(iter-1));
+                    a=a*a*f1/2/(f2+f1*a-f1);
+                    
+                    iter=iter-1;
+                    
                 else
                     error=abs(f(iter-1));
                 end
@@ -120,6 +170,7 @@ function [A,Sc,gamma,dgamma,sy,Ee,E_ini]=...
     
         Sc=-p*I+d1*s;
     end
+    
     
     %sy=-sy;
 %     [ss,p]=split(Sc);
@@ -142,41 +193,18 @@ function [A,Sc,gamma,dgamma,sy,Ee,E_ini]=...
     
     if Kt==1 || Kt==2 || Kt==4
         
-        if Kt==4
-            dg=0;
-        end
-        
         % Coefficients
-        if dg==0            %Elastic
+        if dg==0 || Kt==4           %Elastic
             D2=2*G;
             D3=K;
             D4=0;
-            D5=0;
-            D6=0;
-            D7=1.0;
             
-        elseif dg1==0       %Classic
-            D1=1 - 2*G*dg/snorm;
-            D2=2*G*D1;
-            C2=1/(9*alfm*alfn*K + 2*G + ads*beta*H);
-            D3=K-9*K^2*alfn*alfm*C2;
-            D4=4*G^2*(C2-dg/snorm)/snorm/snorm;
-            D5=6*K*G*alfm*C2/snorm;
-            D6=6*K*G*alfn*C2/snorm;
-            D7=1.0;
         else
-%             D2=0;
-%             D3=K;
-%             D4=0;
-%             D5=-K/(2*G*alfm*dg);
-%             D6=0;
-%             D7=alfm*beta*H*dg / (3*alfn*K*coef + alfm*beta*H*dg);
-            D2=0;
-            D3=K*alfm*dg;
-            D4=0;
-            D5=-K/(2*G);
-            D6=0;
-            D7=beta*H / (3*alfn*K*coef + alfm*beta*H*dg);
+            D1=1 - 3*G*dg/q;
+            D2=2*G*D1;
+            C2=1/(3*G + H*(1+(dg/mu/dt)^N_1)+sy*N_1/mu/dt*(dg/mu/dt)^(N_1-1));
+            D3=K;
+            D4=6*G^2*(C2-dg/q)/snorm/snorm;
         end
         
         % Matrixes
@@ -187,11 +215,9 @@ function [A,Sc,gamma,dgamma,sy,Ee,E_ini]=...
         I1=m'*m;
         M1=I4-1/3*I1;
         M1(3,3)=0.5*M1(3,3);              % Shear term
-        M2=m'*s_vec';
-        M3=s_vec*m;
         M4=s_vec*s_vec';
         
-        A=(D3*I1+D2*M1-D5*M2-D6*M3-D4*M4)*D7;
+        A=D3*I1+D2*M1-D4*M4;
         
     end
     
