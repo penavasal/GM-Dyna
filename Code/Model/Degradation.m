@@ -67,16 +67,16 @@ function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
         iter=1;
         gm(iter)=g;
         dgm(iter)=1e-12;
-        ddg(iter)=1e32;
+        ddg(iter)=1e7;
         a=1;
         %-------------CLASSIC----ITERATOR------------------------------
         while error>tol && abs(ddg(iter))>2*eps  &&  iter<300
             if(iter<300) 
 
                 % OPCION 1
-                %f(iter)=(q - 3*G*dgm(iter))/sy - (1+(dgm(iter)/mu/dt)^N_1);  % fi=0
-                %df=-H*(q - 3*G*dgm(iter))/sy^2 - 3*G/sy - N_1/mu/dt*(dgm(iter)/mu/dt)^(N_1-1);       % dfi/dgamma
-                
+%                 f(iter)=(q - 3*G*dgm(iter))/sy - (1+(dgm(iter)/mu/dt)^N_1);  % fi=0
+%                 df=-H*(q - 3*G*dgm(iter))/sy^2 - 3*G/sy - N_1/mu/dt*(dgm(iter)/mu/dt)^(N_1-1);       % dfi/dgamma
+%                 
                 %OPCION 2
 %                 if dgm(iter)>0
 %                     d1=(1+(dgm(iter)/mu/dt)^N_1);
@@ -94,7 +94,7 @@ function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
 %                 f(iter)=q - 3*G*dgm(iter) - d1*sy;  % fi=0
 %                 df= - 3*G - H*d1 - sy*d2;  
 
-
+                %OPCION 3
                 %if dgm(iter)>0
                     d0=dgm(iter)*mu+dt;
                     d1=(dt/d0)^N_1;
@@ -120,7 +120,7 @@ function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
                 
                 if dgm(iter)<0
                     fprintf('Negative plastic iterator %i \n',e);
-                    dgm(iter)=0;
+                    %dgm(iter)=0;
                 end
 
                 gm(iter)=gm(iter-1)+ddg(iter);
@@ -150,6 +150,11 @@ function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
                     f1=error;
                     f2=abs(f(iter-1));
                     a=a*a*f1/2/(f2+f1*a-f1);
+                    
+                    if a<1e-4
+                        error=0;
+                        break;
+                    end
                     
                     iter=iter-1;
                     

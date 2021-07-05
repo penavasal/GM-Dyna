@@ -311,7 +311,7 @@
             % ----------------------------
             %% FRACTURE PROCESS
             % ----------------------------
-            if SOLVER.FRAC>0 || SOLVER.FRAC<3
+            if SOLVER.FRAC>0 && SOLVER.FRAC<3
                 
                 VECS.Wlist=Wlist;
                 VECS.Crit=Crit;
