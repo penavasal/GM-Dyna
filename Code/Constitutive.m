@@ -151,7 +151,7 @@
                     if MODEL(Mat(e),1)>=2 && MODEL(Mat(e),1)<3
                         epsvol  = Int_var.epsv(e,2);
                         [A,T,epsvol,Gamma,dgamma,Sy,Ee]=...
-                            Drucker_prager(Kt,e,epsvol,Gamma,dgamma,Sy,Ee,P0,BLCK);
+                            Drucker_prager(Kt,e,epsvol,Gamma,dgamma,Sy,Ee,P0,BLCK,dt);
                         Int_var.epsv(e,1)= epsvol;
                     elseif MODEL(Mat(e),1)>=3 && MODEL(Mat(e),1)<4
                         

@@ -1,6 +1,6 @@
 
 function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
-    Drucker_prager(Kt,e,epvol,gamma,dgamma,sy,Ee,P0,BLCK)
+    Drucker_prager(Kt,e,epvol,gamma,dgamma,sy,Ee,P0,BLCK,dt)
 
     global MATERIAL GEOMETRY
     
@@ -71,10 +71,15 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
     % Plastic corrector
     %------------------
         N_1=1/MAT{9,Mat(e)};
+        
+        eps=1/MAT{14,Mat(e)};
+        mu=MAT{13,Mat(e)};
+        
         ads = sqrt(3*alfm*alfm+1);
         dg=0;               % initial delta_gamma = 0
         g=gamma;            % gamma = gamma_0
         [H]=der_Sy(-MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,g);
+        
         
         %%%%
         p_lim = (4.5*K*alfm*snorm/G + beta/alfn*(snorm*ads*H/2/G + sy))/3;
@@ -100,9 +105,13 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
                     else
                         [H]=der_Sy(-MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gm(iter));   % H=dS/dE (Hardening law)
                     end
+                    
+                    d0=dgm(iter)*mu+dt;
+                    d1=(dt/d0)^eps;
+                    d2=eps*mu/d0;
 
-                    f(iter)=snorm - 2*G*dgm(iter) - 3*alfn*(p-3*K*alfm*dgm(iter)) - beta*s_y;  % fi=0
-                    df=9*K*alfn*alfm-2*G-H*beta*ads;                     % dfi/dgamma
+                    f(iter)=d1*(snorm - 2*G*dgm(iter)) - 3*alfn*(p-3*K*alfm*dgm(iter)) - beta*s_y;  % fi=0
+                    df=-d1*(2*G+d2*(snorm - 2*G*dgm(iter)))+9*K*alfn*alfm-H*beta*ads;                     % dfi/dgamma
 
                     iter=iter+1;
                     ddg(iter)=t*f(iter-1)/df;                     %increment of dgamma
@@ -125,8 +134,8 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
                             [H]=der_Sy(-MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gm(iter));   % H=dS/dE (Hardening law)
                         end
 
-                        f(iter-1)=snorm - 2*G*dgm(iter) - 3*alfn*(p-3*K*alfm*dg) - beta*s_y;  % fi=0
-                        df=9*K*alfn*alfm-2*G-H*beta*ads;                     % dfi/dgamma
+                        f(iter-1)=d1*(snorm - 2*G*dgm(iter)) - 3*alfn*(p-3*K*alfm*dg) - beta*s_y;  % fi=0
+                        df=9*K*alfn*alfm-d1*(2*G+d2*(snorm - 2*G*dgm(iter)))-H*beta*ads;                     % dfi/dgamma
 
                         ddg(iter)=t*f(iter-1)/df;                     %increment of dgamma
                         dgm(iter)=dgm(iter-1)+ddg(iter);
@@ -150,7 +159,7 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
             gamma=gm(iter);
             dgamma=dgm(iter);
             dg=dgamma;
-            d1=1-2*G*dgamma/snorm;
+            dd1=1-2*G*dgamma/snorm;
             dEp=dgamma*alfm*I+dgamma*s/snorm;
             epvol=epvol+3*dgamma*alfm;
         else
@@ -243,12 +252,12 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
            dgamma=sqrt(dg1*dg1+3*alfm*alfm*dg*dg);
            gamma=gamma+dgamma;
            s_y=max(0,sig_y(-MAT{7,Mat(e)},MAT{10,Mat(e)},N_1,gamma));
-           d1=0;
+           dd1=0;
            dEp=dg*alfm*I+dg1*s/snorm;
            epvol=epvol+3*dg*alfm;
         end
         sy=s_y;
-        Sc=-(p-3*alfm*K*dg)*I+d1*s;
+        Sc=-(p-3*alfm*K*dg)*I+dd1*s;
     end
     
     %sy=-sy;
@@ -288,7 +297,7 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
         elseif dg1==0       %Classic
             D1=1 - 2*G*dg/snorm;
             D2=2*G*D1;
-            C2=1/(9*alfm*alfn*K + 2*G + ads*beta*H);
+            C2=1/(9*alfm*alfn*K + 2*G + ads*beta*H/d1+d2*(snorm - 2*G*dgm(iter)));
             D3=K-9*K^2*alfn*alfm*C2;
             D4=4*G^2*(C2-dg/snorm)/snorm/snorm;
             D5=6*K*G*alfm*C2/snorm;
