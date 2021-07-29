@@ -207,10 +207,7 @@
                         Mat_state.Es_e((e-1)*dims+i,1)=evec(i,1);
                     end
                 end
-                
-               if e==60
-                   e;
-               end
+               
                 
                 if SOLVER.UW==1 || SOLVER.UW==4
                 % ----------------------------
@@ -269,7 +266,7 @@
                     end
                 end
                 
-                if SOLVER.FRAC>0
+                if SOLVER.FRAC>0 && SOLVER.FRAC<3
                     
                     Cauchy(e)={T};
                     Wlist(e)=W;

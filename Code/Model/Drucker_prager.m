@@ -72,8 +72,13 @@ function [A,Sc,epvol,gamma,dgamma,sy,Ee]=...
     %------------------
         N_1=1/MAT{9,Mat(e)};
         
-        eps=1/MAT{14,Mat(e)};
-        mu=MAT{13,Mat(e)};
+        if isempty(MAT{14,Mat(e)}) || isempty(MAT{13,Mat(e)})
+            eps=1;
+            mu=0;
+        else
+            eps=1/MAT{14,Mat(e)};
+            mu=MAT{13,Mat(e)};
+        end
         
         ads = sqrt(3*alfm*alfm+1);
         dg=0;               % initial delta_gamma = 0
