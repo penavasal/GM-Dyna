@@ -56,9 +56,14 @@ function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
         if E_ini(4)==0
             E_ini(2)=E_ini(1);
         end
-    
-        N_1=1/MAT{14,Mat(e)};
-        mu=MAT{13,Mat(e)};
+        
+        if isempty(MAT{14,Mat(e)}) || isempty(MAT{13,Mat(e)})
+            N_1=1;
+            mu=0;
+        else
+            N_1=1/MAT{14,Mat(e)};
+            mu=MAT{13,Mat(e)};
+        end
         
         g=gamma;            % gamma = gamma_0
         
