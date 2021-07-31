@@ -299,6 +299,9 @@
                     %% Stiffness matrix
                     % ----------------------------
                     if Kt==1 || Kt==2 || Kt==4
+                        if isnan(rcond(A))
+                            pause;
+                        end
                         [stiff_mtx]=...
                             stiff_mat(MAT_POINT,Mat_state,e,stiff_mtx,T,A,BLCK);
                     end 

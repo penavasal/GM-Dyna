@@ -212,7 +212,7 @@ function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
         else
             D1=1 - 3*G*dg/q;
             D2=2*G*D1;
-            C2=1/(3*G + H*(1+(dg/mu/dt)^N_1)+sy*N_1/mu/dt*(dg/mu/dt)^(N_1-1));
+            C2=1/(3*G + H*(1+(dt/(mu*dg+dt))^(-N_1))+N_1*mu*q/(mu*dg+dt));
             D3=K;
             D4=6*G^2*(C2-dg/q)/snorm/snorm;
         end
@@ -229,6 +229,9 @@ function [A,Sc,gamma,dg,sy,Ee,E_ini]=...
         
         A=D3*I1+D2*M1-D4*M4;
         
+        if isnan(rcond(A))
+            pause;
+        end
     end
     
 end
