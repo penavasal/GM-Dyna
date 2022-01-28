@@ -1179,10 +1179,12 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
         pls=0;
         lls=0;
         vls=0;
+        abcs=0;
         rbs=0;
         rbs_nds=[];
         BC={};
         PL={};
+        ABC={};
         LL={};
         VL={};
         RB={};
@@ -1225,6 +1227,28 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
                         end
                         rbs_nds=union(rbs_nds,[str2double(data{t,1}) str2double(data{t,2})]);
                         RB{rbs}=list;
+                        clear num list
+                    else
+                        fprintf('Error, bad numbering of set of LOADs!!\n')
+                        stop
+                    end
+                end
+                continue
+            case 'ABSORBING_BC'
+                num=str2double(data{t,3});
+                if num~=0
+                    abcs=abcs+1;
+                    if abcs==str2double(data{t,2})
+                        list=zeros(num,3);
+                        for i=1:num
+                            t=t+1;
+                            list(i,1)=str2double(data{t,1});
+                            list(i,2)=str2double(data{t,2});
+                            if NNE==8 || NNE==6
+                              list(i,3)=str2double(data{t,3});  
+                            end
+                        end
+                        ABC{abcs}=list;
                         clear num list
                     else
                         fprintf('Error, bad numbering of set of LOADs!!\n')
@@ -1366,5 +1390,6 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
     end
 
     NODE_LIST=struct('bcs',bcs,'pls',pls,'lls',lls,'vls',vls,'rbs',rbs,...
-        'BC',{BC},'PL',{PL},'LL',{LL},'VL',{VL},'RB',{RB});
+        'abcs',abcs,'BC',{BC},'PL',{PL},'LL',{LL},'VL',{VL},'RB',{RB},...
+        'ABC',{ABC});
 end

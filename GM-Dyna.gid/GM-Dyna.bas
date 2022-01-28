@@ -74,6 +74,30 @@ RIGID_BODY *i *total1
 *endif
 *end
 *end
+*Set Cond ABSORBING_BC *elems
+*Set var valor1 = 1
+*loop elems *OnlyInCond
+*Set var valor = Cond(1,Int)
+*if(valor > valor1)
+*Set var valor1 = valor
+*endif
+*end elemes
+*for(i=1;i<=valor1;i=i+1)
+*Set var total1 = 0
+*loop elems *OnlyInCond
+*Set var valor = Cond(1,Int)
+*if(valor == i)
+*Set var total1 = total1 + 1
+*endif
+*end
+ABSORBING_BC *i *total1
+*loop elems *OnlyInCond
+*Set var valor = Cond(1,Int)
+*if(valor == i)
+*globalnodes
+*endif
+*end
+*end
 END_BC
 //-----------------------------------------------------------------------
 LOADS

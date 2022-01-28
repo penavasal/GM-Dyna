@@ -6,6 +6,7 @@ classdef DYN_MATRIX
         damp;
         l_mass;
         l_damp;
+        l_damp_w;
         l_mass_w;
         l_mass_wn;
         
@@ -22,6 +23,7 @@ classdef DYN_MATRIX
 
             obj.l_mass=zeros(GEOMETRY.nodes*sp);
             obj.l_damp=zeros(GEOMETRY.nodes*sp);
+            obj.l_damp_w=zeros(GEOMETRY.nodes*sp);
             
             obj.damp=zeros(GEOMETRY.nodes*df);
             obj.mass=zeros(GEOMETRY.nodes*df);
@@ -40,7 +42,7 @@ classdef DYN_MATRIX
         
         function [obj]=matrices(Mat_state,MAT_POINT,d,obj,BLCK)
 
-            global MATERIAL TIME SOLVER GEOMETRY
+            global MATERIAL TIME SOLVER GEOMETRY BOUNDARY
 
             alpha=TIME{BLCK}.alpha;
             sp=GEOMETRY.sp;
@@ -50,6 +52,22 @@ classdef DYN_MATRIX
 
             mass_mtx=zeros(GEOMETRY.nodes*df);
             damp_mtx=zeros(GEOMETRY.nodes*df);
+            
+            
+            
+            if SOLVER.absorbing 
+                constrains  = BOUNDARY{BLCK}.constrains;
+                [dofs,bds]=size(constrains);
+                abc=zeros(dofs,1);
+                for i=1:dofs
+                    for j=1:bds
+                        if constrains(i,j)==4
+                            abc(i)=1;
+                            break;
+                        end
+                    end
+                end
+            end
 
             if (alpha || SOLVER.UW==1 || SOLVER.UW==4  || SOLVER.UW==2 || SOLVER.UW==3) && ...
                     SOLVER.DYN(BLCK)==1
@@ -76,17 +94,30 @@ classdef DYN_MATRIX
                     else
                         t=volume;
                     end
+                     
                     
                     % Shape function
                     nd = MAT_POINT{1}(i).near;
                     m  = length(nd);
-                    sh = MAT_POINT{1}(i).N;
+                    sh = MAT_POINT{1}(i).N;                
                     
                     if SOLVER.UW>0
                         ndw = MAT_POINT{2}(i).near;
                         mw  = length(ndw);
                         shw = MAT_POINT{2}(i).N;
                     end
+                    
+                    %Absorbing
+                    if SOLVER.absorbing
+                        for j=1:m
+                            for k=1:df
+                                if abc(nd(j)*df+1-k)==1
+                                    
+                                end
+                            end
+                        end
+                    end
+                    
                     if SOLVER.UW==3
                         ndp = MAT_POINT{3}(i).near;
                         mp  = length(ndp);
@@ -452,27 +483,49 @@ classdef DYN_MATRIX
 
         end
 
-        function [obj]=expl_mat(MAT_POINT,Mat_state,obj,BLCK)
+        function [obj]=expl_mat(MAT_POINT,Mat_state,obj,BLCK,STEP)
             
-            global MATERIAL GEOMETRY SOLVER
+            global MATERIAL GEOMETRY SOLVER BOUNDARY
 
             Material=GEOMETRY.material;
             MAT=MATERIAL(BLCK).MAT;
 
             sp=GEOMETRY.sp;
+            t   = STEP.t;
 
             % Allocate
             mass=zeros(GEOMETRY.nodes*sp);
             if SOLVER.UW==1||SOLVER.UW==4
-                C=zeros(GEOMETRY.nodes*sp);
+                Cw=zeros(GEOMETRY.nodes*sp);
                 mass_w=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
                 if SOLVER.IMPLICIT==0 
                     mass_wn=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
                 end
             elseif SOLVER.UW==2
-                C=zeros(GEOMETRY.nodes,GEOMETRY.nodes*sp);
+                Cw=zeros(GEOMETRY.nodes,GEOMETRY.nodes*sp);
                 mass_w=zeros(GEOMETRY.nodes,GEOMETRY.nodes*sp);
             end
+            if SOLVER.absorbing
+                C=zeros(GEOMETRY.nodes*sp);
+                ABC    = BOUNDARY{BLCK}.abc;
+                bds    = BOUNDARY{BLCK}.size;
+                type   = BOUNDARY{BLCK}.Type;
+                b_mult = BOUNDARY{BLCK}.b_mult; 
+                
+                LIST=[];
+                for j=1:bds
+                    if t<eval(b_mult(2,j)) || t>eval(b_mult(3,j))
+                        continue;
+                    elseif type(j)~=7
+                        continue;
+                    else
+                        LIST= [LIST;ABC{j}];
+                    end
+                end
+                [abcs,sz]=size(LIST);
+            end
+           
+            
             
             for i=1:GEOMETRY.mat_points 
                 % Volume
@@ -502,12 +555,93 @@ classdef DYN_MATRIX
                 m  = length(nd);
                 sh = MAT_POINT{1}(i).N;
                 
+                % Absorbing
+                if SOLVER.absorbing
+                    elem=GEOMETRY.elem(MAT_POINT{1}(i).element,:);
+                    j=1;
+                    while j<=abcs
+                        A=ismember(LIST(j,:),elem);
+                        if A(1) && A(2)
+                            V=zeros(sp,1);
+                            for k=1:sp
+                                V(k)=GEOMETRY.x_0(LIST(j,1),k)-...
+                                    GEOMETRY.x_0(LIST(j,2),k);
+                            end
+                            d=sqrt(sum(V.^2));
+                            nv=norm(V);
+                            if nv==0
+                                continue
+                            else
+                                V=V/norm(V);
+                            end
+                            if V(2)==0
+                                theta=0;
+                            elseif V(1)==0
+                                theta=pi/2;
+                            else
+                                theta=atan(abs(V(2))/abs(V(1)));
+                            end
+                            vc=MAT{6,Material(i)};    
+                            vs=sqrt(MAT{4,Material(i)}/dens); 
+                            quad=LIST(j,sz);
+                            if quad
+                                d=d/4;
+                            else
+                                d=d/4;
+                            end
+                            
+                            if SOLVER.UW==1 ||SOLVER.UW==4
+                                K_w=MATERIAL(BLCK).MAT{28,Material(i)};
+                                K_s=MATERIAL(BLCK).MAT{27,Material(i)};
+
+                                Q=1/(n/K_w+(1-n)/K_s);
+                                vcw=sqrt(Q/rho_w);
+                            end
+                            break;
+                        end
+                        j=j+1;
+                    end
+                    
+                end
+                
                 % Solid Lumped Mass **********************
                 for k=1:sp
                     for t1=1:m
                         mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                         mass(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
                             +dens*t*sh(t1);
+                    end
+                end
+                
+                % Absorbing
+                if SOLVER.absorbing && j<=abcs
+                    for t1=1:m
+                        for t2=1:sz
+                            nda=LIST(j,t2);
+                            if nd(t1)==nda
+                                if quad
+                                    if t2<sz
+                                        C(nd(t1)*sp-1,nd(t1)*sp-1)=...
+                                        C(nd(t1)*sp-1,nd(t1)*sp-1)...
+                                            +dens*d*(vs*cos(theta)+vc*sin(theta));
+                                        C(nd(t1)*sp,nd(t1)*sp)=C(nd(t1)*sp,nd(t1)*sp)...
+                                            +dens*d*(vs*cos(pi/2-theta)+vc*sin(pi/2-theta));
+                                    else
+                                        C(nd(t1)*sp-1,nd(t1)*sp-1)=...
+                                        C(nd(t1)*sp-1,nd(t1)*sp-1)...
+                                            +2*dens*d*(vs*cos(theta)+vc*sin(theta));
+                                        C(nd(t1)*sp,nd(t1)*sp)=C(nd(t1)*sp,nd(t1)*sp)...
+                                            +2*dens*d*(vs*cos(pi/2-theta)+vc*sin(pi/2-theta));
+                                    end
+                                else
+                                    C(nd(t1)*sp-1,nd(t1)*sp-1)=...
+                                    C(nd(t1)*sp-1,nd(t1)*sp-1)...
+                                        +dens*d*(vs*cos(theta)+vc*sin(theta));
+                                    C(nd(t1)*sp,nd(t1)*sp)=C(nd(t1)*sp,nd(t1)*sp)...
+                                        +dens*d*(vs*cos(pi/2-theta)+vc*sin(pi/2-theta));
+                                end
+                            end
+                        end
                     end
                 end
                 
@@ -522,8 +656,8 @@ classdef DYN_MATRIX
                     for t1=1:mw
                         for k=1:sp
                             % Lumped Damp **********************
-                            C(ndw(t1)*sp+1-k,ndw(t1)*sp+1-k)=...
-                            C(ndw(t1)*sp+1-k,ndw(t1)*sp+1-k)...
+                            Cw(ndw(t1)*sp+1-k,ndw(t1)*sp+1-k)=...
+                            Cw(ndw(t1)*sp+1-k,ndw(t1)*sp+1-k)...
                                 +t*shw(t1)*val;
                             % Lumped water mass **********************
                             mass_w(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
@@ -534,6 +668,36 @@ classdef DYN_MATRIX
                                 mass_wn(nd(t1)*sp+1-k,nd(t1)*sp+1-k)=...
                                 mass_wn(nd(t1)*sp+1-k,nd(t1)*sp+1-k)...
                                     +rho_w/sw/n*t*shw(t1);
+                            end
+                        end
+                        
+                        % Absorbing water
+                        if SOLVER.absorbing && j<=abcs
+                            for t2=1:sz
+                                nda=LIST(j,t2);
+                                if ndw(t1)==nda
+                                    if quad
+                                        if t2<sz
+                                            Cw(ndw(t1)*sp-1,ndw(t1)*sp-1)=...
+                                            Cw(ndw(t1)*sp-1,ndw(t1)*sp-1)...
+                                                +rho_w*d*vc*sin(theta);
+                                            Cw(ndw(t1)*sp,ndw(t1)*sp)=Cw(ndw(t1)*sp,ndw(t1)*sp)...
+                                                +rho_w*d*vc*sin(pi/2-theta);
+                                        else
+                                            Cw(ndw(t1)*sp-1,ndw(t1)*sp-1)=...
+                                            Cw(ndw(t1)*sp-1,ndw(t1)*sp-1)...
+                                                +2*rho_w*d*vc*sin(theta);
+                                            Cw(ndw(t1)*sp,ndw(t1)*sp)=Cw(ndw(t1)*sp,ndw(t1)*sp)...
+                                                +2*rho_w*d*vc*sin(pi/2-theta);
+                                        end
+                                    else
+                                        Cw(ndw(t1)*sp-1,ndw(t1)*sp-1)=...
+                                        Cw(ndw(t1)*sp-1,ndw(t1)*sp-1)...
+                                            +rho_w*d*vc*sin(theta);
+                                        Cw(ndw(t1)*sp,ndw(t1)*sp)=Cw(ndw(t1)*sp,ndw(t1)*sp)...
+                                            +rho_w*d*vcw*sin(pi/2-theta);
+                                    end
+                                end
                             end
                         end
                     end
@@ -566,8 +730,8 @@ classdef DYN_MATRIX
                     for t1=1:mw
                         for t2=1:m
                             for k=1:sp
-                                C(ndw(t1),nd(t2)*sp+1-k)=...
-                                    C(ndw(t1),nd(t2)*sp+1-k)-...
+                                Cw(ndw(t1),nd(t2)*sp+1-k)=...
+                                    Cw(ndw(t1),nd(t2)*sp+1-k)-...
                                     t*Q*Qt(t1,t2*sp+1-k);
 
                                 mass_w(ndw(t1),nd(t2)*sp+1-k)=...
@@ -580,8 +744,11 @@ classdef DYN_MATRIX
             end
             
             obj.l_mass=mass;
-            if SOLVER.UW
+            if SOLVER.absorbing
                 obj.l_damp=C;
+            end
+            if SOLVER.UW
+                obj.l_damp_w=Cw;
                 obj.l_mass_w=mass_w;
                 if SOLVER.IMPLICIT(BLCK)==0 && SOLVER.UW==1||SOLVER.UW==4
                     obj.l_mass_wn=mass_wn;

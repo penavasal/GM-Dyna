@@ -85,6 +85,10 @@ function read_boundary(filetxt,BLCK,NODE_LIST)
                     case 'PORE_PRESSURE'
                         TYPE(M)=6;
                         continue
+                    case 'ABSORBING_BC'
+                        TYPE(M)=7;
+                        SOLVER.absorbing = 1;
+                        continue
                     otherwise
                         disp('Error, type of boundary not implemented yet!')
                         stop
@@ -326,12 +330,16 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK,DIST)
     BOUNDARY{BLCK}.vad  = zeros(GEOMETRY.nodes*df,loads);
     BOUNDARY{BLCK}.Type = TYPE;
     BOUNDARY{BLCK}.tied = zeros(GEOMETRY.nodes*df,loads); 
+    BOUNDARY{BLCK}.abc = {};
     
     BOUNDARY{BLCK}.size=loads;
     
     bcs=NODE_LIST.bcs;
     BC=NODE_LIST.BC;
-
+    abcs=NODE_LIST.abcs;
+    ABC=NODE_LIST.ABC;
+    
+   
     for m=1:loads
         
         dd=DIST(m);
@@ -345,7 +353,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK,DIST)
         V=VECTOR(:,m)';
         nv=norm(V);
         if nv==0
-            if TYPE(m)~=6
+            if TYPE(m)~=6 && TYPE(m)~=7
                 disp('Error on the vector of boundary conditon');
                 stop;
             end
@@ -355,23 +363,40 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK,DIST)
         
         %NODE LIST
         
-        ll=str2double(NLIST(m));
-        if isnan(ll)
-            if strcmp(NLIST(m),'FULL')
-                nod_f=linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
-            elseif strcmp(NLIST(m),'Q8')
-                nod_f=setdiff(GEOMETRY.elem,GEOMETRY.elem_c,'sorted');
+        if TYPE(m)<4 || TYPE(m)==6
+            ll=str2double(NLIST(m));
+            if isnan(ll)
+                if strcmp(NLIST(m),'FULL')
+                    nod_f=linspace(1,GEOMETRY.nodes,GEOMETRY.nodes)';
+                elseif strcmp(NLIST(m),'Q8')
+                    nod_f=setdiff(GEOMETRY.elem,GEOMETRY.elem_c,'sorted');
+                else
+                    fprintf('Error, unrecognized list of nodes: %s !! \n',ll)
+                    stop
+                end
             else
+                if ll>bcs
+                    fprintf('Error, unrecognized list of nodes: %i !! \n',ll)
+                    stop
+                else
+                    nod_f=BC{ll};
+                end 
+            end
+        elseif TYPE(m)==7
+            ll=str2double(NLIST(m));
+            if isnan(ll)
                 fprintf('Error, unrecognized list of nodes: %s !! \n',ll)
                 stop
-            end
-        else
-            if ll>bcs
-                fprintf('Error, unrecognized list of nodes: %i !! \n',ll)
-                stop
             else
-                nod_f=BC{ll};
-            end 
+                if ll>abcs
+                    fprintf('Error, unrecognized list of nodes: %i !! \n',ll)
+                    stop
+                else
+                    nod_f=ABC{ll};
+                end 
+            end
+            
+            BOUNDARY{BLCK}.abc{1,m}=nod_f;
         end
         
         if TYPE(m)==5
@@ -410,7 +435,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK,DIST)
         elseif SOLVER.UW==2 && (TYPE(m)==2 || TYPE(m)==4)
             disp('error, take care of the water boundary conditions!!');
             stop
-        else
+        elseif TYPE(m)~=7
             [long,~]=size(nod_f);
             for i=1:long
                 
@@ -514,7 +539,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK,DIST)
                     BOUNDARY{BLCK}.constrains(nod_f(i)*df-1,m)=1;
                 end
             end
-        end    
+        end  
     end
 end
 

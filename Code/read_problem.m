@@ -49,6 +49,8 @@ function MAT_POINT=read_problem(str)
     
     SOLVER.UNITS = {'M'};
     
+    SOLVER.absorbing = 0;
+    
     % VARIABLES
     VARIABLE.g=0;
 
