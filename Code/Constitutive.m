@@ -1,7 +1,7 @@
  classdef Constitutive
     methods(Static)
         function [stiff_mtx,Int_var,Mat_state,STEP]=...
-            update(Kt,STEP,Int_var,Mat_state,MAT_POINT)
+            update(Kt,STEP,Int_var,Mat_state,Disp_field,MAT_POINT)
 
             global GEOMETRY
 
@@ -19,7 +19,7 @@
                 % ----------------------------
                 % Internal forces
                 % ----------------------------
-                [Mat_state]=Constitutive.internal_forces(MAT_POINT,Mat_state,STEP.BLCK);
+                [Mat_state]=Constitutive.internal_forces(MAT_POINT,Mat_state,Disp_field,STEP.BLCK);
             end   
         end
 
@@ -345,7 +345,7 @@
             end
         end
 
-        function [Mat_state]=internal_forces(MAT_POINT,Mat_state,BLCK)
+        function [Mat_state]=internal_forces(MAT_POINT,Mat_state,Disp_field,BLCK)
 
             global GEOMETRY SOLVER MATERIAL
             
@@ -375,6 +375,12 @@
                                 Nw(j,(i-1)*sp+j)=Nw1(j);
                             end
                         end
+                    end
+
+                    if SOLVER.UW==4 || SOLVER.UW==5
+                        sw=Mat_state.sw(e,1);
+                    else
+                        sw=1;
                     end
                 end
 
@@ -511,11 +517,11 @@
                         
                         % stab
                         if SOLVER.Pstab
-                            rho_w=MAT{42,Material(i)};
-                            n=1-(1-MAT{16,Material(i)})/MAT_POINT{1}(i).J;
-                            dens=n*rho_w+(1-n)*MAT{3,Material(i)};
-                            h=GEOMETRY.h_ini(i);
-                            Vc=MATERIAL(BLCK).MAT{6,Material(i)};
+                            rho_w=MAT{42,Material(e)};
+                            n=1-(1-MAT{16,Material(e)})/MAT_POINT{1}(e).J;
+                            dens=n*rho_w+(1-n)*MAT{3,Material(e)};
+                            h=GEOMETRY.h_ini(e);
+                            Vc=MATERIAL(BLCK).MAT{6,Material(e)};
                             tau=SOLVER.Pstab*h/Vc/dens;
                         else
                             tau=0;
@@ -542,24 +548,81 @@
                         dN(1,j)=B_w(1,(j-1)*sp+1);
                         dN(2,j)=B_w(2,(j-1)*sp+2);
                     end
-                    int_forces_2=div*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol;
+                    
+                    int_forces_2=div*(Mat_state.pw(e,1)-Mat_state.pw(e,3))*vol; %Matrix Q * Pw
                     dPw=Mat_state.dpw((e-1)*sp+1:e*sp,1);
-                    int_forces_3=Nw'*dPw*vol;
-                    for i=1:nn
-                       nod=nd(i);
-                       for j=1:sp
-                            Mat_state.fint(nod*df-sp-j,1)=...
-                                Mat_state.fint(nod*df-sp-j,1)-int_forces_1(3-j,i)+...
-                                int_forces_2(i*sp+1-j,1);
-                       end
-                    end
-                    %REVISAR!!!!!
-                    for i=1:nnw
-                       nod=ndw(i);
-                       for j=1:sp
-                            Mat_state.fint(nod*df-j,1)=...
-                                Mat_state.fint(nod*df-j,1)+int_forces_3(i*sp+1-j,1);
-                       end
+                    int_forces_3=Nw'*dPw*vol; % R * Pw
+
+                   %if SOLVER.IMPLICIT(BLCK)==1
+                        for i=1:nn
+                           nod=nd(i);
+                           for j=1:sp
+                                Mat_state.fint(nod*df-sp-j,1)=...
+                                    Mat_state.fint(nod*df-sp-j,1)-int_forces_1(3-j,i)+...
+                                    sw*int_forces_2(i*sp+1-j,1);
+                           end
+                        end
+    
+                        for i=1:nnw
+                           nod=ndw(i);
+                           for j=1:sp
+                                Mat_state.fint(nod*df-j,1)=...
+                                    Mat_state.fint(nod*df-j,1)+int_forces_3(i*sp+1-j,1);
+                           end
+                        end
+
+                    if SOLVER.IMPLICIT(BLCK)==0
+
+                    %else
+                        v =zeros(nn*sp,1);     % velocities _ solid
+                        vw=zeros(nnw*sp,1);     % velocities _ water
+                        for l=1:sp
+                            for j=1:nn
+                                nod=nd(j);
+                                v((j-1)*sp+l,1)=Disp_field.v((nod-1)*df+l,1);
+                            end
+                            for j=1:nnw
+                                nod=ndw(j);
+                                vw((j-1)*sp+l,1)=Disp_field.v((nod-1)*df+sp+l,1);
+                            end
+                        end
+                        divw=B_w'*m';
+                        ndp = MAT_POINT{3}(e).near;
+                        mp  = length(ndp);
+                        shp = MAT_POINT{3}(e).N;
+
+                        int_forces_4=-(sw*div'*v+divw'*vw)*shp;
+
+                        if SOLVER.Pstab
+                            rho_w=MAT{42,Material(e)};
+                            n=1-(1-MAT{16,Material(e)})/MAT_POINT{1}(e).J;
+                            dens=n*rho_w+(1-n)*MAT{3,Material(e)};
+                            h=GEOMETRY.h_ini(e);
+                            Vc=MATERIAL(BLCK).MAT{6,Material(e)};
+                            tau=SOLVER.Pstab*h*h/Vc/Vc * (dens-rho_w)/(rho_w*dens) * n/(n-1);
+
+                            B_p=MAT_POINT{3}(e).B; 
+                            dNp=zeros(2,mp);
+                            vp=zeros(mp,1);
+                            for j=1:mp
+                                nod=ndp(j);
+                                dNp(1,j)=B_p(1,(j-1)*sp+1);
+                                dNp(2,j)=B_p(2,(j-1)*sp+2);
+                                vp(j,1)=Disp_field.v(nod*df,1);
+                            end
+
+                            int_forces_5= tau * (dNp'*dNp) * vp;
+
+                            int_forces_4=int_forces_4 - int_forces_5;
+                            
+                        end
+
+                        for j=1:mp
+                           nod=ndp(j);
+                           Mat_state.fint(nod*df,1)=...
+                                Mat_state.fint(nod*df,1)+int_forces_4(j,1);
+                        end
+
                     end
                 else
                     for i=1:nn

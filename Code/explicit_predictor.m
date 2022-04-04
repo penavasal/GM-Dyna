@@ -35,6 +35,8 @@ function [Disp_field,Mat_state,MAT_POINT]=explicit_predictor...
                 if boundary(i)==0
                     if SOLVER.UW==2 && mod(i,3)==0
                         d0(i,1)=d0(i,2)+(1-gamma)*time_step*v0(i,2);
+                    elseif SOLVER.UW==3 && mod(i,5)==0
+                        d0(i,1)=d0(i,2)+(1-gamma)*time_step*v0(i,2);
                     else
                         d0(i,1)=d0(i,2)+time_step*v0(i,2)+...
                             (0.5-beta)*time_step^2*a0(i,2);

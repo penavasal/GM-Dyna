@@ -375,7 +375,7 @@ function [GLOBAL,Mat_state,stiff_mtx,Int_var,MAT_POINT,STEP,Disp_field]=...
     % ----------------------------
     % Internal forces
     % ----------------------------
-    [Mat_state]=Constitutive.internal_forces(MAT_POINT,Mat_state,STEP.BLCK);
+    [Mat_state]=Constitutive.internal_forces(MAT_POINT,Mat_state,Disp_field,STEP.BLCK);
     
     for e=1:GEOMETRY.mat_points        
         for i=1:dims

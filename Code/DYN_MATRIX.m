@@ -9,6 +9,7 @@ classdef DYN_MATRIX
         l_damp_w;
         l_mass_w;
         l_mass_wn;
+        l_mass_p;
         
     end
     
@@ -32,6 +33,9 @@ classdef DYN_MATRIX
                 obj.l_mass_w=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
                 if SOLVER.IMPLICIT==0
                     obj.l_mass_wn=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
+                    if SOLVER.UW==3
+                        obj.l_mass_p=zeros(GEOMETRY.nodes,GEOMETRY.nodes);
+                    end
                 end
             end
             
@@ -504,7 +508,14 @@ classdef DYN_MATRIX
             elseif SOLVER.UW==2
                 Cw=zeros(GEOMETRY.nodes,GEOMETRY.nodes*sp);
                 mass_w=zeros(GEOMETRY.nodes,GEOMETRY.nodes*sp);
+            elseif SOLVER.UW==3
+                Cw=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
+                mass_w=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
+                mass_p=zeros(GEOMETRY.nodes,GEOMETRY.nodes);
+                mass_wn=zeros(GEOMETRY.nodes*sp,GEOMETRY.nodes*sp);
             end
+
+            % Absorbing BC
             if SOLVER.absorbing
                 C=zeros(GEOMETRY.nodes*sp);
                 ABC    = BOUNDARY{BLCK}.abc;
@@ -538,14 +549,26 @@ classdef DYN_MATRIX
                 
                 % Density
                 if SOLVER.UW
-                    if SOLVER.UW==4
+                    if SOLVER.UW==4 || SOLVER.UW==5
                         sw=Mat_state.sw(i,1);
                     else
                         sw=1;
                     end
                     rho_w=MAT{42,Material(i)};
                     n=1-(1-MAT{16,Material(i)})/MAT_POINT{1}(i).J;
-                    dens=n*rho_w+sw*(1-n)*MAT{3,Material(i)};
+                    dens=sw*n*rho_w+(1-n)*MAT{3,Material(i)};
+
+                    if SOLVER.UW==3 || SOLVER.UW==2
+                        K_w=MATERIAL(BLCK).MAT{28,Material(i)};
+                        K_s=MATERIAL(BLCK).MAT{27,Material(i)};
+                        
+                        if sw==1
+                            Q=1/(n/K_w+(1-n)/K_s);
+                        else
+                            Q=W_retention.Q(i,Mat_state,K_s,K_w,n);
+                        end
+                    end
+
                 else
                     dens=MAT{3,Material(i)}/MAT_POINT{1}(i).J;
                 end
@@ -649,9 +672,14 @@ classdef DYN_MATRIX
                     ndw = MAT_POINT{2}(i).near;
                     mw  = length(ndw);
                     shw = MAT_POINT{2}(i).N;
+                    if SOLVER.UW==3
+                        ndp = MAT_POINT{3}(i).near;
+                        mp  = length(ndp);
+                        shp = MAT_POINT{3}(i).N;
+                    end
                 end
                 
-                if SOLVER.UW==1 ||SOLVER.UW==4
+                if SOLVER.UW==1 || SOLVER.UW==4 || SOLVER.UW==3
                     val=1/Mat_state.k(i);
                     for t1=1:mw
                         for k=1:sp
@@ -701,6 +729,16 @@ classdef DYN_MATRIX
                             end
                         end
                     end
+
+                    if SOLVER.UW==3
+                        for t1=1:mp
+                            % Lumped Damp **********************
+                            mass_p(ndp(t1),ndp(t1))=...
+                            mass_p(ndp(t1),ndp(t1))+t*shp(t1)/Q;
+                        end
+
+                    end
+
                 elseif SOLVER.UW==2
                     bw= MAT_POINT{2}(i).B;
                     b = MAT_POINT{1}(i).B;
@@ -710,11 +748,6 @@ classdef DYN_MATRIX
                         mm=[1 1 0];
                     end
                     Qt=(b'*mm'*shw')';
-
-                    K_w=MATERIAL(BLCK).MAT{28,Material(i)};
-                    K_s=MATERIAL(BLCK).MAT{27,Material(i)};
-
-                    Q=1/(n/K_w+(1-n)/K_s);
 
                     [A]=DYN_MATRIX.A_mat(m,mw,sh,bw);
                     
@@ -750,8 +783,11 @@ classdef DYN_MATRIX
             if SOLVER.UW
                 obj.l_damp_w=Cw;
                 obj.l_mass_w=mass_w;
-                if SOLVER.IMPLICIT(BLCK)==0 && SOLVER.UW==1||SOLVER.UW==4
+                if SOLVER.IMPLICIT(BLCK)==0 && SOLVER.UW==1||SOLVER.UW==4||SOLVER.UW==3
                     obj.l_mass_wn=mass_wn;
+                end
+                if SOLVER.IMPLICIT(BLCK)==0 && SOLVER.UW==3
+                    obj.l_mass_p=mass_p;
                 end
             end
         end

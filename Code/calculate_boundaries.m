@@ -1,7 +1,7 @@
 
 function [boundary,i_disp,velo,matrix]=calculate_boundaries(STEP,matrix)
 
-    global BOUNDARY
+    global BOUNDARY SOLVER
     
     ste = STEP.ste;
     BLCK= STEP.BLCK;
@@ -56,9 +56,14 @@ function [boundary,i_disp,velo,matrix]=calculate_boundaries(STEP,matrix)
                     if constrains(i,m)==1
                         if boundary(i)==1
                             aux_disp=val*dad(i,m);
-                            if aux_disp~=i_disp(i)
-                                disp('Duplicated boundary conditions');
-                                stop;
+                            if aux_disp~=i_disp(i) 
+                                if (SOLVER.UW==3 && rem(i,5)==0) || (SOLVER.UW==2 && rem(i,3)==0)
+                                    boundary(i)=constrains(i,m);
+                                    i_disp(i)=val*dad(i,m);
+                                else
+                                    disp('Duplicated boundary conditions');
+                                    stop;
+                                end
                             end
                         else
                             boundary(i)=constrains(i,m);

@@ -447,7 +447,7 @@ function calculate_boundaries(NLIST,NODE_LIST,VECTOR,TIED,TYPE,loads,BLCK,DIST)
                 d=eval(dd);
                 
                 
-                if (TYPE(m)==2) || (TYPE(m)==1 && SOLVER.UW==0)
+                if (TYPE(m)==2 && SOLVER.UW==1) || (TYPE(m)==1 && SOLVER.UW==0)
                     for k=1:sp
                         if V(sp+1-k)~=0
                             BOUNDARY{BLCK}.dad(nod_f(i)*df+1-k,m)=d*V(sp+1-k);
