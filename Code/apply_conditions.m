@@ -21,7 +21,7 @@ function [InvK,GT]=apply_conditions(type,STEP,matrix,GT)
         end
         
          if isnan(rcond(matrix)) || rcond(matrix)<1e-12
-             disp('error in matrix condition')
+             %disp('error in matrix condition')
          end
             
         InvK=matrix\I;
