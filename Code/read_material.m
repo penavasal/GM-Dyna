@@ -56,11 +56,11 @@ function read_material(filetxt,BLCK)
     
     BODIES(mats)=0;
     
-    MATERIAL(BLCK).MAT=cell(64,mats);   % Numero m¿ximo de propiedades reconocidas
+    MATERIAL(BLCK).MAT=cell(77,mats);   % Numero m¿ximo de propiedades reconocidas
     MATERIAL(BLCK).MODEL=zeros(mats,2);
     %RANGE=zeros(sp,2*mats); % Range of for materials
     
-    MATERIAL(BLCK).MAT(61,:)={1};
+    MATERIAL(BLCK).MAT(77,:)={1};
 
     M=0;
     ks=0;
@@ -120,6 +120,9 @@ function read_material(filetxt,BLCK)
                     continue
                 case 'PZ_BACKWARD'
                     MATERIAL(BLCK).MODEL(M)=4.1;
+                    continue
+                case 'PZ_STATE'
+                    MATERIAL(BLCK).MODEL(M)=4.4;
                     continue
                 case 'VISCO_DEGRADATION'
                     MATERIAL(BLCK).MODEL(M)=5.0;
@@ -434,6 +437,54 @@ function read_material(filetxt,BLCK)
                 continue
             case 'XI95'
                 MATERIAL(BLCK).MAT(64,M)={bb2(t)};
+                continue
+            case 'H1'
+                MATERIAL(BLCK).MAT(65,M)={bb2(t)};
+                continue
+            case 'H2'
+                MATERIAL(BLCK).MAT(66,M)={bb2(t)};
+                continue
+            case 'M0'
+                MATERIAL(BLCK).MAT(67,M)={bb2(t)};
+                continue
+            case 'M1'
+                MATERIAL(BLCK).MAT(68,M)={bb2(t)};
+                continue
+            case 'D0'
+                MATERIAL(BLCK).MAT(69,M)={bb2(t)};
+                continue
+            case 'HV0'
+                MATERIAL(BLCK).MAT(70,M)={bb2(t)};
+                continue
+            case 'BETA_V'
+                MATERIAL(BLCK).MAT(71,M)={bb2(t)};
+                continue
+            case 'PATM'
+                MATERIAL(BLCK).MAT(72,M)={bb2(t)};
+                continue
+            case 'RDEN'
+                MATERIAL(BLCK).MAT(73,M)={bb2(t)};
+                continue
+            case 'KDEN'
+                MATERIAL(BLCK).MAT(74,M)={bb2(t)};
+                continue
+            case 'E_CS'
+                MATERIAL(BLCK).MAT(75,M)={bb2(t)};
+                continue
+            case 'E_GAMMA'
+                MATERIAL(BLCK).MAT(75,M)={bb2(t)};
+                continue
+            case 'E_G'
+                MATERIAL(BLCK).MAT(75,M)={bb2(t)};
+                continue
+            case 'LAMBDA_CS'
+                MATERIAL(BLCK).MAT(76,M)={bb2(t)};
+                continue
+            case 'XI_CS'
+                MATERIAL(BLCK).MAT(77,M)={bb2(t)};
+                continue
+            case 'E_0'
+                MATERIAL(BLCK).MAT(78,M)={bb2(t)};
                 continue
             otherwise
                 fprintf('Error, no such material property: %s !! \n',s1)

@@ -1056,7 +1056,7 @@ function [x,elem,NNE,El_type]=read_mesh(str1,str2,DIM)
 end
 
 function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
-
+%
 
     close all
     
@@ -1393,3 +1393,4 @@ function [x,elem,NNE,material,NODE_LIST]=read_dat(str1,str2,DIM)
         'abcs',abcs,'BC',{BC},'PL',{PL},'LL',{LL},'VL',{VL},'RB',{RB},...
         'ABC',{ABC});
 end
+

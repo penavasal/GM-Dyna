@@ -13,7 +13,7 @@ function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee,STEP]=...
     MODEL=MATERIAL(BLCK).MODEL(Mat(e));
     MAT=MATERIAL(BLCK).MAT;
         
-    Ge(16)=0;
+    Ge(29)=0;
         
     Ge(1) = -MAT{29,Mat(e)}/P0(1);%khar;
     Ge(2) = -MAT{4,Mat(e)}/P0(1);%ghar;
@@ -31,6 +31,19 @@ function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee,STEP]=...
     Ge(14)= MAT{41,Mat(e)};%ganma_vol;
     Ge(15)= P0(2);%Ev0
     Ge(16)= P0(3);%Es0
+    Ge(17) = MAT{65,Mat(e)};%H1;
+    Ge(18) = MAT{66,Mat(e)};%H2;
+    Ge(19) = MAT{67,Mat(e)};%M0;
+    Ge(20) = MAT{68,Mat(e)};%M1;
+    Ge(21) = MAT{69,Mat(e)};%D0;
+    Ge(22) = MAT{70,Mat(e)};%HV0;
+    Ge(23) = MAT{71,Mat(e)};%beta_v;
+    Ge(24) = MAT{72,Mat(e)};%Patm;
+    Ge(25) = MAT{73,Mat(e)};%Rden;
+    Ge(26) = MAT{74,Mat(e)};%kappa_den;
+    Ge(27) = MAT{75,Mat(e)};%e_cs;
+    Ge(28) = MAT{76,Mat(e)};%lambda_cs;
+    Ge(29) = MAT{77,Mat(e)};%xi_cs;
     
     
     % Compute principal Kirchhoff tension 
@@ -43,6 +56,9 @@ function [A,TTe,gamma,epsvol,dgamma,zetamax,etaB,H,Ee,STEP]=...
     elseif MODEL==4.3
         [TTe,Ee,H,A,dgamma,gamma,epsvol,zetamax,etaB]=...
             PZ_modified_Euler(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
+    elseif MODEL==4.4
+        [TTe,Ee,H,A,dgamma,gamma,epsvol,zetamax,etaB]=...
+            PZ_forward_state(ste,Ge,Ee_tr,H,Kt,gamma,epsvol,dgamma_,deps,zetamax,etaB);
     end
     
     STEP.FAIL=FAIL;
@@ -305,6 +321,126 @@ end
 
 
 function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
+            PZ_forward_state(ste,Ge,defepr,H,Kt,defplasdes,defplasvol,...
+            dgamma_,deps,zetamax0,etaB)
+
+    ITER=50;
+        
+    alpha = Ge(3);
+    alphag= Ge(4);  
+
+    % Compute volumetric and deviatoric trial strain
+    [eevtrial,eestrial,theta_e,~,~,epsedev]=invar(defepr,'STRAIN');
+    [dev,des]=invar(deps,'STRAIN');
+    
+    dev_i=dev/ITER;
+    des_i=des/ITER;
+    
+    ees0=eestrial-des;
+    eev0=eevtrial-dev;
+    defplasdes_c=defplasdes;
+    defplasvolc=defplasvol;
+    
+    % Define Mg and Mf
+    [Mg,Mf]=define_M(Ge,theta_e);
+    etaf  = (1 + 1/alpha)*Mf;
+    
+    incrlandasum=0;
+    
+    for I=1:ITER
+        
+        eev_i=eev0+dev_i;
+        ees_i=ees0+des_i;
+        
+        % Compute p, q, eta en build the Delast from the elastic law
+        [De,p,q,eta]=Delast(Ge,ees_i,eev_i);
+        signq=sign(q);
+        
+        if p>1.0e-3 || (etaf-eta)<1.0e-3
+            
+            if p>1.0e-3
+                p=1e-4;
+                q=0;
+            elseif (etaf-eta)<1.0e-3
+                pf= -abs(q/etaf);
+                p=pf;
+            end
+            
+            % Plastic Strain
+            incredefplasvol=dev_i;
+            incredefplasdes=des_i;
+
+            defplasdes_c=defplasdes_c+abs(incredefplasdes);
+            defplasvolc=defplasvolc+incredefplasvol;
+
+            % Elastic strain;
+            eev0=eev_i-incredefplasvol;
+            ees0=ees_i-incredefplasdes;
+            
+            zetamax=zetamax0;
+            
+        else
+      
+            % Vectors
+            [n,~]=build_vector(alpha,Mf,eta,q,signq);
+            discri=n(1:2)'*De*[dev_i;des_i];
+
+            [ng,~]=build_vector(alphag,Mg,eta,q,signq);
+
+
+            if discri<abs(p)*1e-8    
+                if abs(discri)<abs(p)*1e-2
+                    discri=0;
+                    [H]=define_H_u(Ge,p,eta,etaB,Mg);
+                else
+                    [H,etaB]=define_H_u(Ge,p,eta,etaB,Mg);
+                    ng(1)=-abs(ng(1));
+                end
+                zetamax=zetamax0;
+            else %if discri<0
+                % H calculation   
+                [H,zetamax]=define_H(Ge,etaf,eta,p,defplasdes_c,defplasvol,zetamax0,Mg);
+                etaB=0;
+            end
+
+
+            if H>1e22
+                H;
+            end
+
+            % Plastic multiplier
+            incrlanda = discri/(H+n(1:2)'*De*ng(1:2));
+            incrlandasum=incrlandasum+incrlanda;
+
+            % Plastic Strain
+            incredefplasvol=incrlanda*ng(1);
+            incredefplasdes=incrlanda*ng(2);
+
+            defplasdes_c=defplasdes_c+abs(incredefplasdes);
+            defplasvolc=defplasvolc+incredefplasvol;
+
+            % Elastic strain;
+            eev0=eev_i-incredefplasvol;
+            ees0=ees_i-incredefplasdes;             
+        end
+
+    end
+    
+    
+    defplasdes=defplasdes_c; 
+    defplasvol=defplasvolc;
+    incrlanda=incrlandasum;
+    
+  
+  % D elastoplastic, Stress and Strain
+ [aep,TTe,Ee]=aep_calculation(Kt,Ge,p,q,eev0,ees0,epsedev,eestrial,...
+     incrlanda,dgamma_,H,Mg,Mf,De);
+  
+end
+
+
+
+function [TTe,Ee,H,aep,incrlanda,defplasdes,defplasvol,zetamax,etaB]=...
             PZ_modified_Euler(ste,Ge,defepr,H,Kt,defplasdes,defplasvol,...
             dgamma_,deps,zetamax,etaB)
 
@@ -466,24 +602,42 @@ function [n,d]=build_vector(alpha,Mf,eta,q,signq)
 
 end
 
-function [De,p,q,eta]=Delast(Ge,ees1,eev1)
+function [De,p,q,eta]=Delast(Ge,ees1,eev1,varargin)%e,p)
 
     khar  = Ge(1);
     ghar  = Ge(2);
     p0    = Ge(7);
+    patm  = Ge(24);
     ev0    = Ge(15);
     es0    = Ge(16);
+
+    MOD=3;
+
+    if MOD==1
     
-    eev = eev1-ev0;
-    ees = ees1-es0;
+        eev = eev1-ev0;
+        ees = ees1-es0;
+    
+        p=p0*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+        q=-p0*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
+        eta=abs(q/p);
+    
+        K=-khar*p;
+        J=khar*q;
+        G=-(ghar*p+(khar*(q^2)/(3*p)));
 
-    p=p0*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
-    q=-p0*3*ees*ghar*exp(khar*eev+(3*ghar*khar*(ees^2)/2));
-    eta=abs(q/p);
+    elseif MOD==2
+        G=3*ghar;
+        K = G*2*(1+nu)/3/(1-2*nu);
+        J=0;
+    elseif MOD==3
+        e=varargin{1};
+        p=varargin{2};
+        G= ghar*((2.97-e)^2)*sqrt(p*patm)/(1+e);
+        K = G*2*(1+nu)/3/(1-2*nu);
+        J=0;
+    end
 
-    K=-khar*p;
-    J=khar*q;
-    G=-(ghar*p+(khar*(q^2)/(3*p)));
     De=[K J;J 3*G];
 
 end
